@@ -726,41 +726,39 @@ class IAppPlayerConfig {
     bool isLiveStream = false;
     IAppPlayerVideoFormat format = IAppPlayerVideoFormat.other;
 
-    // 使用原始URL进行协议检测
+    // 将URL转换为小写
+    final lowerUrl = url.toLowerCase();
     final urlLength = url.length;
     
     // 快速协议检测
     if (urlLength > 7) {
-      final firstChar = url[0].toLowerCase();
-      if (firstChar == 'r') {
-        // 可能是rtmp或rtsp协议
-        if (url.substring(0, 7).toLowerCase() == _rtmpProtocol.substring(0, 7) ||
-            url.substring(0, 8).toLowerCase() == _rtmpsProtocol.substring(0, 8) ||
-            url.substring(0, 7).toLowerCase() == _rtspProtocol.substring(0, 7) ||
-            url.substring(0, 8).toLowerCase() == _rtspsProtocol.substring(0, 8)) {
-          isLiveStream = true;
-        }
+      // 检查RTMP/RTMPS/RTSP/RTSPS协议
+      if (lowerUrl.startsWith(_rtmpProtocol) ||
+          lowerUrl.startsWith(_rtmpsProtocol) ||
+          lowerUrl.startsWith(_rtspProtocol) ||
+          lowerUrl.startsWith(_rtspsProtocol)) {
+        isLiveStream = true;
       }
     }
     
     // 如果不是直播协议，检查文件扩展名
     if (!isLiveStream) {
       // 查找查询参数位置
-      final queryIndex = url.indexOf('?');
+      final queryIndex = lowerUrl.indexOf('?');
       final effectiveLength = queryIndex > 0 ? queryIndex : urlLength;
       
       // 从后向前查找最后一个点的位置
       var lastDotIndex = -1;
       for (var i = effectiveLength - 1; i >= 0; i--) {
-        if (url[i] == '.') {
+        if (lowerUrl[i] == '.') {
           lastDotIndex = i;
           break;
         }
       }
       
       if (lastDotIndex > 0 && lastDotIndex < effectiveLength - 1) {
-        // 提取扩展名并转换为小写
-        final extension = url.substring(lastDotIndex, effectiveLength).toLowerCase();
+        // 提取扩展名
+        final extension = lowerUrl.substring(lastDotIndex, effectiveLength);
         
         // 使用switch进行快速匹配
         switch (extension) {
