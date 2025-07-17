@@ -1,0 +1,108 @@
+group 'com.itvapp.iapp_player.iapp_player'
+version '1.6.8'
+buildscript {
+    ext.media3Version = "1.6.1"
+    ext.workVersion = "2.9.0"
+    ext.kotlinVersion = "1.9.23"
+    
+    repositories {
+        google()
+        mavenCentral()
+    }
+    
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.6.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+    }
+}
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+}
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+android {
+    namespace "com.itvapp.iapp_player"
+    compileSdk 35
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+    
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+    
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 35
+        
+        // 包含主要的两个架构
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
+    }
+    
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+        disable 'InvalidPackage', 'GradleDependency'
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    
+    packagingOptions {
+        pickFirst 'META-INF/**'
+        pickFirst 'lib/*/libc++_shared.so'
+    }
+}
+dependencies {
+    // Media3 核心播放器和流媒体支持
+    implementation "androidx.media3:media3-exoplayer:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-hls:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-dash:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-smoothstreaming:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-rtsp:$media3Version"
+    
+    // UI 组件
+    implementation "androidx.media3:media3-ui:$media3Version"
+    
+    // 会话和通知
+    implementation "androidx.media3:media3-session:$media3Version"
+    
+    // 核心组件和数据源
+    implementation "androidx.media3:media3-common:$media3Version"
+    implementation "androidx.media3:media3-datasource:$media3Version"
+    implementation "androidx.media3:media3-datasource-rtmp:$media3Version"
+    implementation "androidx.media3:media3-datasource-cronet:$media3Version"
+    implementation "androidx.media3:media3-extractor:$media3Version"
+    
+    // 基础解码器
+    implementation "androidx.media3:media3-decoder:$media3Version"
+    
+    // 解码器扩展
+    implementation "org.jellyfin.media3:media3-ffmpeg-decoder:${media3Version}+1"
+    
+    // 额外的 Media3 组件
+    implementation "androidx.media3:media3-container:$media3Version"
+    implementation "androidx.media3:media3-effect:$media3Version"
+    implementation "androidx.media3:media3-database:$media3Version"
+    
+    // WorkManager
+    implementation "androidx.work:work-runtime-ktx:$workVersion"
+    
+    // Kotlin 标准库
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+}

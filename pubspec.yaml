@@ -1,0 +1,39 @@
+name: iapp_player
+description: Advanced video player customized for itvapp_live_tv with Media3 support. It solves many typical use cases and it's easy to run.
+version: 1.6.8+1
+homepage: https://www.itvapp.net/
+documentation: https://www.itvapp.net/iappplayer/
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"  
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # 升级依赖版本Android和Media3
+  cupertino_icons: ^1.0.8
+  wakelock_plus: ^1.2.10      
+  meta: ^1.12.0
+  flutter_widget_from_html_core: ^0.15.1
+  visibility_detector: ^0.4.0+2
+  path_provider: ^2.1.5      
+  collection: ^1.18.0
+  xml: 6.5.0      
+
+dev_dependencies:
+  lint: 2.3.0
+  flutter_test:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.itvapp.iapp_player
+        pluginClass: IAppPlayerPlugin
+      ios:
+        pluginClass: IAppPlayerPlugin
