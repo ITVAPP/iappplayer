@@ -3,6 +3,7 @@ description: Advanced video player customized for itvapp_live_tv with Media3 sup
 version: 1.6.8+1
 homepage: https://www.itvapp.net/
 documentation: https://www.itvapp.net/iappplayer/
+license: Apache-2.0
 
 environment:
   sdk: ">=3.5.0 <4.0.0"  
