@@ -1,3 +1,7 @@
+/*
+ * Copyright 2024 itvapp.net and iapp_player contributors
+ * Licensed under the Apache License, Version 2.0
+ */
 import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
