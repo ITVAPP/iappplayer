@@ -1,6 +1,6 @@
 # IAppPlayer
 
-[![Back to Home](https://img.shields.io/badge/🏠-TV%20Box%20App%20Store-blue?style=for-the-badge)](https://www.itvapp.net)
+[![Back to Home](https://img.shields.io/badge/🏠-TV%20Treasure%20App%20Store-blue?style=for-the-badge)](https://www.itvapp.net)
 [![中文](https://img.shields.io/badge/📄-中文-green?style=for-the-badge)](docs/README_CN.md)
 [![GitHub Issues](https://img.shields.io/github/issues/ITVAPP/IAppPlayer?style=for-the-badge)](https://github.com/ITVAPP/IAppPlayer/issues)
 [![GitHub Forks](https://img.shields.io/github/forks/ITVAPP/IAppPlayer?style=for-the-badge)](https://github.com/ITVAPP/IAppPlayer/network)
@@ -203,7 +203,7 @@ _playerController = musicPlayer.activeController;
 ```dart
 Future<void> _releasePlayer() async {
     try {
-      // 1. Remove player Caches
+      // 1. Clear player caches
       IAppPlayerConfig.clearAllCaches();
       if (_playerController != null) {
         try {
@@ -254,6 +254,10 @@ void dispose() {
 - **Picture-in-Picture Mode** - Support for Android and iOS PiP
 - **Notification Integration** - Media notifications and lock screen controls
 
+## 📚 More Documentation Resources
+
+> 💡 **If this documentation is not comprehensive enough, please check the detailed comments in the source code** - We provide rich comments in the code, covering the usage, parameter descriptions, and examples of each API.
+
 ## 🚨 Important Notice
 
 This library is not responsible for issues caused by the video_player library, it only serves as a UI wrapper on top of it.
@@ -267,6 +271,20 @@ Please submit related issues to the Flutter team.
 This library strives to support at least the second-to-last version of Flutter (N-1 support).
 
 However, due to major changes in Flutter versions, compatibility cannot be fully guaranteed, and major or minor version updates will be released when necessary.
+
+## 🤝 Open Source Contribution
+
+> 💡 **This plugin is under active development, and community participation is welcome!**
+> 
+> 🔄 **Version Update Notice** - Due to the rapid iteration of the project, you may encounter incompatible changes in each version, and we will try to provide detailed explanations in the changelog.
+> 
+> 💪 **How to Contribute** - This plugin is developed and maintained for free by [TV Treasure App Store (www.itvapp.net)]. We warmly welcome your participation through the following ways:
+> - 🐛 **Submit Bug Reports** - Please provide timely feedback through GitHub Issues when you find issues
+> - ✨ **Feature Suggestions** - Propose your needs and improvement ideas  
+> - 🔧 **Code Contributions** - Directly submit Pull Requests to fix issues or add new features
+> - 📝 **Documentation Improvements** - Help improve and refine project documentation
+> 
+> 🌟 **All valuable contributions will be carefully reviewed. Let's build a better player together!**
 
 ## 📄 License
 
@@ -298,11 +316,12 @@ For the full license text, please see the [LICENSE](LICENSE) file.
 ## 🙏 Acknowledgments
 
 - Special thanks to the [Better Player / Chewie / Video Player] project for providing excellent open source code foundation.
-- This plugin is under development, and you may encounter incompatible changes in each version. This plugin is developed for free in spare time. If you need to add features or fix bugs, feel free to submit PRs (pull requests) at any time, all valuable contributions are welcome!
+- Thanks to all developers who have contributed code, feedback, and suggestions to the IAppPlayer project.
+- Thanks to the Flutter community and open source community for their support.
 
 ## 📞 Contact
 
-- 🌍 **Official Website**: [Official Website](https://www.itvapp.net)
+- 🌍 **Official Website**: [TV Treasure App Store](https://www.itvapp.net)
 - 🐛 **Issue Feedback**: [GitHub Issues](https://github.com/ITVAPP/IAppPlayer/issues)
 - 📧 **Email Contact**: service # itvapp.net (replace # with @)
 

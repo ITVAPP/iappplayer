@@ -1,6 +1,6 @@
 # 📚 IAppPlayer API Reference Documentation
 
-[![Home](https://img.shields.io/badge/🏠-TV%20App%20Store-blue?style=for-the-badge)](https://www.itvapp.net)
+[![Home](https://img.shields.io/badge/🏠-TV%20Treasure%20App%20Store-blue?style=for-the-badge)](https://www.itvapp.net)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/ITVAPP/IAppPlayer)
 [![中文](https://img.shields.io/badge/📄-中文-green?style=for-the-badge)](./API_REFERENCE_CN.md)
 [![Stars](https://img.shields.io/github/stars/ITVAPP/IAppPlayer?style=for-the-badge&logo=github&label=⭐%20Stars)](https://github.com/ITVAPP/IAppPlayer/stargazers)
@@ -10,6 +10,7 @@
 ## 📋 Table of Contents
 
 - [📚 IAppPlayer API Reference Documentation](#-iappplayer-api-reference-documentation)
+  - [📋 Table of Contents](#-table-of-contents)
   - [🎯 1. createPlayer Method Parameters](#-1-createplayer-method-parameters)
   - [🎮 2. PlayerResult Return Value](#-2-playerresult-return-value)
   - [🎪 3. IAppPlayerEvent Event Types](#-3-iappplayerevent-event-types)
@@ -83,9 +84,9 @@ The player automatically detects video format and live stream status based on UR
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `autoPlay` | `bool` | `true` | Auto-play enabled |
+| `autoPlay` | `bool` | `true` | Auto-play enabled. **Note**: This setting is ignored when switching videos in playlist mode, always auto-plays |
 | `loopVideos` | `bool` | `true` | Loop playlist |
-| `looping` | `bool?` | `null` | Loop single video (null auto-sets based on live stream: true for non-live, false for live) |
+| `looping` | `bool?` | `null` | Loop single video (null auto-sets based on live stream: true for non-live, false for live). **Note**: This parameter is forced to false in playlist mode |
 | `startAt` | `Duration?` | `null` | Start playback position |
 | `shuffleMode` | `bool?` | `null` | Enable shuffle mode |
 | `nextVideoDelay` | `Duration?` | `null` | Playlist video switch delay |
@@ -97,7 +98,7 @@ The player automatically detects video format and live stream status based on UR
 |:---:|:---:|:---:|:---|
 | `isTV` | `bool` | `false` | TV mode, disables notifications and logo downloads, won't create notification config |
 | `headers` | `Map<String, String>?` | `null` | HTTP request headers for authenticated video resources |
-| `preferredDecoderType` | `IAppPlayerDecoderType?` | `null` | Preferred decoder type (hardware/software) |
+| `preferredDecoderType` | `IAppPlayerDecoderType?` | `null` | Preferred decoder type (hardware/software/auto) |
 | `liveStream` | `bool?` | `null` | Is live stream (null auto-detects based on [URL format](#-url-format-auto-detection-rules)) |
 | `audioOnly` | `bool?` | `null` | Audio-only mode (convenience parameter, can also be set via controlsConfiguration) |
 
@@ -120,7 +121,7 @@ The player automatically detects video format and live stream status based on UR
 | `overlay` | `Widget?` | `null` | Overlay widget on video |
 | `aspectRatio` | `double?` | `null` | Video aspect ratio |
 | `fit` | `BoxFit?` | `null` | Video scaling mode |
-| `rotation` | `double?` | `null` | Video rotation angle |
+| `rotation` | `double?` | `null` | Video rotation angle (must be multiple of 90 and not exceed 360 degrees, otherwise uses default 0) |
 | `showPlaceholderUntilPlay` | `bool?` | `null` | Show placeholder until play |
 | `placeholderOnTop` | `bool?` | `null` | Placeholder on top layer |
 
@@ -157,7 +158,7 @@ The player automatically detects video format and live stream status based on UR
 | `deviceOrientationsOnFullScreen` | `List<DeviceOrientation>?` | `null` | Device orientations in fullscreen |
 | `deviceOrientationsAfterFullScreen` | `List<DeviceOrientation>?` | `null` | Device orientations after fullscreen |
 | `systemOverlaysAfterFullScreen` | `List<SystemUiOverlay>?` | `null` | System UI after fullscreen |
-| `autoDetectFullscreenDeviceOrientation` | `bool?` | `null` | Auto-detect fullscreen device orientation |
+| `autoDetectFullscreenDeviceOrientation` | `bool?` | `null` | Auto-detect fullscreen device orientation (automatically choose landscape or portrait based on video aspect ratio) |
 | `autoDetectFullscreenAspectRatio` | `bool?` | `null` | Auto-detect fullscreen aspect ratio |
 
 ### 🎵 Streaming Parameters
@@ -252,7 +253,7 @@ final activeController = result.activeController;  // Always returns current act
 | `play` | Start playing | - |
 | `pause` | Pause playback | - |
 | `seekTo` | Seek to position | `{duration: Duration}` |
-| `progress` | Playback progress update | `{progress: Duration, duration: Duration}` |
+| `progress` | Playback progress update (max once per 500ms) | `{progress: Duration, duration: Duration}` |
 | `finished` | Video playback finished | - |
 | `exception` | Playback error | `{exception: String}` |
 | `bufferingStart` | Start buffering | - |
@@ -314,6 +315,10 @@ eventListener: (IAppPlayerEvent event) {
       final shuffleMode = event.parameters?['shuffleMode'] as bool?;
       print('Shuffle mode: $shuffleMode');
       break;
+    case IAppPlayerEventType.changedAudioTrack:
+      final audioTrack = event.parameters?['audioTrack'] as IAppPlayerAsmsAudioTrack?;
+      print('Audio track switched: ${audioTrack?.label}');
+      break;
   }
 }
 ```
@@ -332,7 +337,7 @@ eventListener: (IAppPlayerEvent event) {
 | `pause()` | Pause | `controller.pause()` |
 | `seekTo(Duration moment)` | Seek to position | `controller.seekTo(Duration(seconds: 30))` |
 | `setVolume(double volume)` | Set volume (0.0 - 1.0) | `controller.setVolume(0.8)` |
-| `setSpeed(double speed)` | Set playback speed (0.0 - 2.0) | `controller.setSpeed(1.5)` |
+| `setSpeed(double speed)` | Set playback speed (>0 and ≤2.0) | `controller.setSpeed(1.5)` |
 
 #### Fullscreen Control
 
@@ -347,7 +352,7 @@ eventListener: (IAppPlayerEvent event) {
 | Method | Description |
 |:---:|:---|
 | `setupSubtitleSource(IAppPlayerSubtitlesSource)` | Switch subtitle source |
-| `setTrack(IAppPlayerAsmsTrack)` | Set video track (HLS multi-bitrate) |
+| `setTrack(IAppPlayerAsmsTrack)` | Set video track (HLS multi-bitrate). When track's height, width, and bitrate are all 0, it displays as "Auto" |
 | `setAudioTrack(IAppPlayerAsmsAudioTrack)` | Set audio track |
 
 #### Advanced Features
@@ -363,6 +368,7 @@ eventListener: (IAppPlayerEvent event) {
 | `clearCache()` | Clear cache |
 | `preCache(IAppPlayerDataSource)` | Pre-cache video |
 | `stopPreCache(IAppPlayerDataSource)` | Stop pre-caching |
+| `setBufferingDebounceTime(int)` | Set buffering state debounce time (milliseconds) |
 | `dispose()` | Release resources |
 
 ### 📊 Property Getters
@@ -391,7 +397,7 @@ eventListener: (IAppPlayerEvent event) {
 | `setupDataSource(int index)` | Play video at index | `playlistController.setupDataSource(2)` |
 | `toggleShuffleMode()` | Toggle shuffle mode | `playlistController.toggleShuffleMode()` |
 | `setupDataSourceList(List<IAppPlayerDataSource>)` | Set new playlist | - |
-| `dispose()` | Release resources | `playlistController.dispose()` |
+| `dispose()` | Release resources (force dispose internal player controller) | `playlistController.dispose()` |
 
 ### 📈 Playlist Property Getters
 
@@ -502,7 +508,7 @@ await IAppPlayerConfig.playSource(
 ```dart
 static IAppPlayerDataSource createDataSource({
   required String url,
-  required bool liveStream,
+  bool? liveStream,
   Map<String, String>? headers,
   String? title,              // Video title
   String? imageUrl,           // Video cover
@@ -605,7 +611,7 @@ static PlayerResult createPlaylistPlayer({
 
 | Constant | Value | Description |
 |:---:|:---:|:---|
-| `defaultNextVideoDelay` | `Duration(seconds: 1)` | Default playlist switch delay |
+| `defaultNextVideoDelay` | `Duration(seconds: 1)` | Default playlist switch delay in IAppPlayerConfig |
 
 ### 📌 Internal Constants
 
@@ -613,7 +619,7 @@ Default constant values used internally by the player:
 
 | Constant | Value | Description |
 |:---:|:---:|:---|
-| Pre-cache size | 20MB (20 * 1024 * 1024 bytes) | Default pre-cache size |
+| Pre-cache size | 10MB (10 * 1024 * 1024 bytes) | Default pre-cache size |
 | Max cache | 300MB (300 * 1024 * 1024 bytes) | Default max cache size |
 | Single file max cache | 50MB (50 * 1024 * 1024 bytes) | Single file max cache size |
 | Live min buffer | 15 seconds | Live stream minimum buffer time |
@@ -621,7 +627,7 @@ Default constant values used internally by the player:
 | VOD min buffer | 20 seconds | VOD stream minimum buffer time |
 | VOD max buffer | 30 seconds | VOD stream maximum buffer time |
 | Playback buffer | 3 seconds | Buffer needed to start playback |
-| Re-buffer playback | 6 seconds | Buffer needed after re-buffering |
+| Re-buffer playback | 5 seconds | Buffer needed after re-buffering |
 | URL cache capacity | 1000 entries | URL format detection cache max entries (LRU strategy) |
 | Default video title prefix | `Video ` | Playlist default title prefix |
 | Default subtitle name | `Subtitles` | Default subtitle name |
@@ -629,6 +635,12 @@ Default constant values used internally by the player:
 | Default image scale mode | BoxFit.cover | Background image default scale mode |
 | Default image quality | FilterQuality.medium | Local image default render quality |
 | Default rotation angle | 0 | Video default rotation angle |
+| Buffer debounce time | 500ms | Default debounce time for buffer state changes |
+| Playlist switch delay (IAppPlayerPlaylistConfiguration) | 3s | Default switch delay when using IAppPlayerPlaylistConfiguration |
+| Audio controls hide time | No hiding | Audio controls always remain visible |
+| Progress event throttle | 500ms | Minimum interval for Progress event |
+| Audio extended layout threshold | 200px | Show extended layout when height exceeds this |
+| Subtitle segment check interval | 1s | Minimum interval for ASMS subtitle segment position check |
 
 ---
 
@@ -638,6 +650,7 @@ Default constant values used internally by the player:
 
 | Type | Description | Use Case |
 |:---:|:---|:---|
+| `auto` | Auto-select decoder | System automatically decides best decoder |
 | `hardwareFirst` | Prefer hardware decoding, auto-switch to software on failure | Recommended, best performance |
 | `softwareFirst` | Prefer software decoding, auto-switch to hardware on failure | Specific device compatibility issues |
 
@@ -649,6 +662,9 @@ preferredDecoderType: IAppPlayerDecoderType.hardwareFirst,
 
 // Software decoding priority
 preferredDecoderType: IAppPlayerDecoderType.softwareFirst,
+
+// Auto selection
+preferredDecoderType: IAppPlayerDecoderType.auto,
 ```
 
 ---
@@ -661,9 +677,9 @@ preferredDecoderType: IAppPlayerDecoderType.softwareFirst,
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `autoPlay` | `bool` | `false` | Auto-play enabled |
+| `autoPlay` | `bool` | `false` | Auto-play enabled. **Note**: This setting is ignored when switching videos in playlist mode, always auto-plays |
 | `startAt` | `Duration?` | `null` | Video start position |
-| `looping` | `bool` | `false` | Loop single video. **Note**: This is the base default. When using `createPlayerConfig()`, it's dynamically set based on `liveStream` (true for non-live, false for live) |
+| `looping` | `bool` | `false` | Loop single video. **Note**: <br>1. This is the base default. When using `createPlayerConfig()`, it's dynamically set based on `liveStream` (true for non-live, false for live)<br>2. This parameter is forced to false in playlist mode |
 | `handleLifecycle` | `bool` | `true` | Auto-handle app lifecycle (pause in background, etc.) |
 | `autoDispose` | `bool` | `true` | Auto-dispose resources |
 | `showControlsOnInitialize` | `bool` | `true` | Show controls on initialization |
@@ -674,7 +690,7 @@ preferredDecoderType: IAppPlayerDecoderType.softwareFirst,
 |:---:|:---:|:---:|:---|
 | `aspectRatio` | `double?` | `null` | Video aspect ratio, null for adaptive |
 | `fit` | `BoxFit` | `BoxFit.fill` | Video scale mode |
-| `rotation` | `double` | `0` | Video rotation angle (0/90/180/270) |
+| `rotation` | `double` | `0` | Video rotation angle (must be multiple of 90 and not exceed 360 degrees) |
 | `expandToFill` | `bool` | `true` | Expand to fill all available space |
 
 #### BoxFit Scale Mode Description
@@ -704,7 +720,7 @@ preferredDecoderType: IAppPlayerDecoderType.softwareFirst,
 | `fullScreenByDefault` | `bool` | `false` | Default fullscreen playback |
 | `allowedScreenSleep` | `bool` | `true` | Allow screen sleep in fullscreen |
 | `fullScreenAspectRatio` | `double?` | `null` | Fullscreen aspect ratio |
-| `autoDetectFullscreenDeviceOrientation` | `bool` | `false` | Auto-detect fullscreen orientation |
+| `autoDetectFullscreenDeviceOrientation` | `bool` | `false` | Auto-detect fullscreen orientation (automatically choose landscape or portrait based on video aspect ratio) |
 | `autoDetectFullscreenAspectRatio` | `bool` | `false` | Auto-detect fullscreen aspect ratio |
 | `deviceOrientationsOnFullScreen` | `List<DeviceOrientation>` | `[landscapeLeft, landscapeRight]` | Allowed device orientations in fullscreen |
 | `deviceOrientationsAfterFullScreen` | `List<DeviceOrientation>` | `[landscapeLeft, landscapeRight, portraitUp]` | Device orientations after fullscreen |
@@ -737,26 +753,75 @@ class IAppPlayerTranslations {
   final String generalDefault;         // "Default" text
   final String generalRetry;           // "Retry" button text
   final String playlistLoadingNextVideo; // Loading next video hint
+  final String playlistUnavailable;    // Playlist unavailable hint
+  final String playlistTitle;          // Playlist title
+  final String videoItem;              // Video item format (contains {index} placeholder)
+  final String trackItem;              // Track item format (contains {index} placeholder)
   final String controlsLive;           // "Live" indicator text
-  final String controlsNextVideoIn;    // Next video countdown text
+  final String controlsNextIn;         // Next video countdown text
   final String overflowMenuPlaybackSpeed; // Playback speed menu text
   final String overflowMenuSubtitles;  // Subtitles menu text
   final String overflowMenuQuality;    // Quality menu text
   final String overflowMenuAudioTracks; // Audio tracks menu text
   final String qualityAuto;            // Auto quality text
 }
+```
 
-// Usage example
+### 🗣️ Supported Languages
+
+IAppPlayer supports preset translations for the following languages:
+
+| Language Code | Language Name | Usage Method |
+|:---:|:---|:---|
+| `zh` | Simplified Chinese | `IAppPlayerTranslations.chinese()` |
+| `zh-Hant` | Traditional Chinese | `IAppPlayerTranslations.traditionalChinese()` |
+| `en` | English | `IAppPlayerTranslations()` (default) |
+| `pl` | Polish | `IAppPlayerTranslations.polish()` |
+| `hi` | Hindi | `IAppPlayerTranslations.hindi()` |
+| `ar` | Arabic | `IAppPlayerTranslations.arabic()` |
+| `tr` | Turkish | `IAppPlayerTranslations.turkish()` |
+| `vi` | Vietnamese | `IAppPlayerTranslations.vietnamese()` |
+| `es` | Spanish | `IAppPlayerTranslations.spanish()` |
+| `pt` | Portuguese | `IAppPlayerTranslations.portuguese()` |
+| `bn` | Bengali | `IAppPlayerTranslations.bengali()` |
+| `ru` | Russian | `IAppPlayerTranslations.russian()` |
+| `ja` | Japanese | `IAppPlayerTranslations.japanese()` |
+| `fr` | French | `IAppPlayerTranslations.french()` |
+| `de` | German | `IAppPlayerTranslations.german()` |
+| `id` | Indonesian | `IAppPlayerTranslations.indonesian()` |
+| `ko` | Korean | `IAppPlayerTranslations.korean()` |
+| `it` | Italian | `IAppPlayerTranslations.italian()` |
+
+Usage examples:
+
+```dart
+// Use Simplified Chinese
+translations: [
+  IAppPlayerTranslations.chinese(),
+],
+
+// Use multiple languages (system automatically selects based on device language)
+translations: [
+  IAppPlayerTranslations.chinese(),
+  IAppPlayerTranslations.english(),
+  IAppPlayerTranslations.japanese(),
+],
+
+// Custom translation
 translations: [
   IAppPlayerTranslations(
     languageCode: 'en',
-    generalDefaultError: 'Video playback failed',
+    generalDefaultError: 'Cannot play video',
     generalNone: 'None',
     generalDefault: 'Default',
     generalRetry: 'Retry',
     playlistLoadingNextVideo: 'Loading next video',
+    playlistUnavailable: 'Playlist unavailable',
+    playlistTitle: 'Playlist',
+    videoItem: 'Video {index}',
+    trackItem: 'Track {index}',
     controlsLive: 'LIVE',
-    controlsNextVideoIn: 'Next video in',
+    controlsNextIn: 'Next video in',
     overflowMenuPlaybackSpeed: 'Playback Speed',
     overflowMenuSubtitles: 'Subtitles',
     overflowMenuQuality: 'Quality',
@@ -850,15 +915,14 @@ translations: [
 class IAppPlayerOverflowMenuItem {
   final String title;           // Menu item title
   final IconData icon;         // Menu item icon
-  final VoidCallback onTap;    // Tap callback
+  final Function() onClicked;  // Click callback (Note: property name is onClicked not onTap)
   final bool Function()? isEnabled;  // Optional: control enabled state
   
-  const IAppPlayerOverflowMenuItem({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-    this.isEnabled,
-  });
+  IAppPlayerOverflowMenuItem(
+    this.icon,
+    this.title,
+    this.onClicked,
+  );
 }
 ```
 
@@ -867,19 +931,18 @@ class IAppPlayerOverflowMenuItem {
 ```dart
 overflowMenuCustomItems: [
   IAppPlayerOverflowMenuItem(
-    title: 'Share',
-    icon: Icons.share,
-    onTap: () {
+    Icons.share,
+    'Share',
+    () {
       // Execute share logic
     },
   ),
   IAppPlayerOverflowMenuItem(
-    title: 'Download',
-    icon: Icons.download,
-    onTap: () {
+    Icons.download,
+    'Download',
+    () {
       // Execute download logic
     },
-    isEnabled: () => !isDownloading,  // Disable while downloading
   ),
 ],
 ```
@@ -888,12 +951,12 @@ overflowMenuCustomItems: [
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `controlsHideTime` | `Duration` | `Duration(milliseconds: 300)` | Controls auto-hide time |
+| `controlsHideTime` | `Duration` | `Duration(milliseconds: 1000)` | Controls auto-hide time (Note: audio controls do not auto-hide) |
 | `controlBarHeight` | `double` | `30.0` | Control bar height |
 | `forwardSkipTimeInMilliseconds` | `int` | `10000` | Forward skip time (milliseconds) |
 | `backwardSkipTimeInMilliseconds` | `int` | `10000` | Backward skip time (milliseconds) |
 | `loadingWidget` | `Widget?` | `null` | Custom loading widget |
-| `audioOnly` | `bool` | `false` | Audio-only mode (hide video, show audio controls). Can also be set as direct parameter in createPlayer |
+| `audioOnly` | `bool` | `false` | Audio-only mode (hide video, show audio controls). Audio controls show extended layout (including cover and title) when height exceeds 200px |
 | `handleAllGestures` | `bool` | `true` | Player doesn't intercept gestures, allowing events to pass through |
 | `customControlsBuilder` | `Function?` | `null` | Custom controls builder |
 | `playerTheme` | `IAppPlayerTheme?` | `null` | Player theme |
@@ -996,7 +1059,7 @@ controlsConfiguration: IAppPlayerControlsConfiguration(
 |:---:|:---|:---|
 | `network` | Network video | Online video playback |
 | `file` | Local file | Downloaded videos |
-| `memory` | Memory data | Encrypted videos or dynamically generated |
+| `memory` | Memory data | Encrypted videos or dynamically generated. **Note**: Memory data source creates temporary files, automatically cleaned up on dispose or data source switch |
 
 ### 📺 Video Format
 
@@ -1045,6 +1108,26 @@ ASMS refers to Adaptive Streaming Media Sources, including:
 - DASH multi-bitrate video tracks
 - Multi-language audio tracks
 - Embedded subtitle tracks
+
+#### IAppPlayerAsmsTrack Properties
+
+| Property | Type | Description |
+|:---:|:---:|:---|
+| `id` | `String?` | Track ID |
+| `width` | `int?` | Video width |
+| `height` | `int?` | Video height |
+| `bitrate` | `int?` | Bitrate |
+| `frameRate` | `int?` | Frame rate |
+| `codecs` | `String?` | Codec format |
+| `mimeType` | `String?` | MIME type |
+
+#### IAppPlayerAsmsAudioTrack Properties
+
+| Property | Type | Description |
+|:---:|:---:|:---|
+| `id` | `String?` | Audio track ID |
+| `label` | `String?` | Audio track label/name |
+| `language` | `String?` | Audio track language |
 
 ### 🌐 Network Configuration
 
@@ -1149,7 +1232,7 @@ Notification configuration object for controlling player notification bar displa
 | `licenseUrl` | `String?` | License URL | Universal |
 | `certificateUrl` | `String?` | Certificate URL | iOS (FairPlay) |
 | `headers` | `Map<String, String>?` | DRM request headers | Universal |
-| `clearKey` | `Map<String, String>?` | ClearKey configuration | Android |
+| `clearKey` | `String?` | ClearKey configuration (JSON string) | Android |
 
 #### DRM Type Description
 
@@ -1183,13 +1266,10 @@ drmConfiguration: IAppPlayerDrmConfiguration(
   },
 ),
 
-// ClearKey DRM (Android)
+// ClearKey DRM (Android) - Note clearKey is String type JSON
 drmConfiguration: IAppPlayerDrmConfiguration(
   drmType: IAppPlayerDrmType.clearkey,
-  clearKey: {
-    'kid': 'key_id_in_base64',
-    'k': 'key_value_in_base64',
-  },
+  clearKey: '{"keys":[{"kty":"oct","k":"GawgguFyGrWKav7AX4VKUg","kid":"nrQFDeRLSAKTLifXUIPiZg"}]}',
 ),
 ```
 
@@ -1351,6 +1431,7 @@ Add to AndroidManifest.xml:
 - Watch memory usage with multiple simultaneous videos
 - Call dispose() promptly to release resources
 - Consider pagination for large playlists
+- Memory data source creates temporary files, automatically cleaned up on dispose or data source switch
 
 #### Memory Usage Optimization Guidelines
 
@@ -1393,6 +1474,22 @@ Add to AndroidManifest.xml:
 - URLs in playlist cannot be empty
 - Empty URLs throw `ArgumentError` with specific index location
 - Recommend validating URLs before adding
+
+#### Buffer Debounce Mechanism
+- Buffer state changes have 500ms default debounce time
+- Can adjust debounce time via `setBufferingDebounceTime()` method
+- Debounce mechanism avoids frequent buffer state switches, improving user experience
+
+#### ASMS Subtitle Segment Smart Loading
+- HLS/DASH segmented subtitles use on-demand loading strategy
+- Pre-loads next 5 segment periods based on current playback position
+- Avoids loading all subtitle segments at once, saving memory and bandwidth
+- Subtitle segment position check has 1 second minimum interval to avoid frequent checks
+
+#### Playlist Resource Management
+- `IAppPlayerPlaylistController`'s `dispose` method force-releases internal player controller
+- Automatically pauses current video when switching playlists
+- Recommend calling `dispose` method when component is destroyed to release all resources
 
 ---
 
