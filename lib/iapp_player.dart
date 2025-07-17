@@ -1,3 +1,7 @@
+/*
+ * Copyright 2024 itvapp.net and iapp_player contributors
+ * Licensed under the Apache License, Version 2.0
+ */
 library iapp_player;
 
 export 'src/asms/iapp_player_asms_audio_track.dart';
