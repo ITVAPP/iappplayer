@@ -1,0 +1,62 @@
+name: Generate-pubspec.lock
+
+on:
+  workflow_dispatch:  # 仅支持手动触发
+
+permissions:
+  contents: write  # 授予写权限以推送更改
+
+jobs:
+  update-pubspec-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  
+        # 检出代码
+      
+      - uses: subosito/flutter-action@v2  
+        # 设置 Flutter 环境
+        with:
+          flutter-version: '3.32.0'
+          channel: 'stable'
+      
+      - name: Update pubspec.lock  
+        # 更新 pubspec.lock，基于现有 pubspec.yaml，添加详细调试信息
+        run: |
+          echo "Running flutter pub upgrade..."  
+          # 输出提示信息，表示正在运行 flutter pub upgrade
+          flutter pub upgrade > pub_get_log.txt 2>&1 || { echo "flutter pub upgrade failed"; cat pub_get_log.txt; exit 1; }  
+          # 执行升级命令，并将错误信息输出到日志文件
+          [ -f pubspec.lock ] || { echo "pubspec.lock not generated"; exit 1; }  
+          # 检查 pubspec.lock 是否生成，如果未生成则报错
+          echo "pubspec.lock generated successfully. Content preview:"  
+          # 输出提示信息，表示 pubspec.lock 生成成功
+          head -n 20 pubspec.lock  
+          # 输出前20行，便于检查内容
+      
+      - name: Stage and commit pubspec.lock  
+        # 将 pubspec.lock 添加到暂存区并提交
+        run: |
+          echo "Staging pubspec.lock..."  
+          # 输出提示信息，表示正在暂存 pubspec.lock 文件
+          git add pubspec.lock  
+          # 将 pubspec.lock 文件添加到暂存区
+          git status  
+          # 显示暂存区状态，便于确认是否成功暂存
+          echo "Configuring git identity..."  
+          # 配置用户身份
+          git config --local user.name "ITVAPP"  
+          # 设置用户名
+          git config --local user.email "actions@itvapp.net"  
+          # 设置邮箱
+          git commit -m "Update pubspec.lock from CI [${{ github.run_id }}]" || echo "Nothing to commit"  
+          # 提交更改，如果没有文件更改则输出提示
+      
+      - name: Push pubspec.lock  
+        # 使用 github-push-action 推送更改
+        uses: ad-m/github-push-action@master  
+        # 使用 GitHub 推送 Action 进行推送
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}  
+          # 使用 GitHub token 进行认证
+          branch: main  
+          # 目标分支
