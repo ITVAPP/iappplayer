@@ -1,4 +1,4 @@
-                                 Apache License
+Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
 
@@ -186,7 +186,12 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2020 Jakub Homlala and Better Player / Chewie / Video Player / www.itvapp.net contributors
+   Copyright 2025 itvapp.net and iapp_player contributors
+
+   This project contains code derived from or inspired by:
+   - Better Player: Copyright 2020 Jakub Homlala and Better Player contributors
+   - Chewie: Copyright Flutter Community and Chewie contributors  
+   - Video Player: Copyright Flutter and Video Player contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
