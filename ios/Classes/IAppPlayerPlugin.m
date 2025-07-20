@@ -9,7 +9,7 @@
 NSMutableDictionary* _dataSourceDict; // 数据源字典，存储播放器数据源配置
 NSMutableDictionary* _timeObserverIdDict; // 时间观察者ID字典，管理播放进度监听
 NSMutableDictionary* _artworkImageDict; // 封面图像字典，缓存通知封面
-NSMutableDictionary* _playerToTextureIdMap; // 播放器到纹理ID映射，优化查找性能
+NSMutableDictionary* _playerToTextureIdMap; // 播放器到纹理ID映射
 CacheManager* _cacheManager; // 缓存管理器，处理视频缓存
 int texturesCount = -1; // 纹理计数器，生成唯一纹理ID
 IAppPlayer* _notificationPlayer; // 通知播放器，管理远程控制通知
@@ -271,6 +271,22 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
         result(nil);
     } else if ([@"create" isEqualToString:call.method]) {
         IAppPlayer* player = [[IAppPlayer alloc] initWithFrame:CGRectZero];
+        
+        // 从参数中获取缓冲配置
+        NSDictionary* args = call.arguments;
+        if (args) {
+            NSNumber* minBufferMs = args[@"minBufferMs"];
+            NSNumber* maxBufferMs = args[@"maxBufferMs"];
+            NSNumber* bufferForPlaybackMs = args[@"bufferForPlaybackMs"];
+            NSNumber* bufferForPlaybackAfterRebufferMs = args[@"bufferForPlaybackAfterRebufferMs"];
+            
+            // 设置缓冲参数到播放器
+            [player configureBufferParameters:minBufferMs
+                                   maxBufferMs:maxBufferMs
+                           bufferForPlaybackMs:bufferForPlaybackMs
+              bufferForPlaybackAfterRebufferMs:bufferForPlaybackAfterRebufferMs];
+        }
+        
         [self onPlayerSetup:player result:result];
     } else {
         NSDictionary* argsMap = call.arguments;
