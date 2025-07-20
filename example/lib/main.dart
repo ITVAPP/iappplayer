@@ -13,9 +13,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'IAppPlayer Example',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        brightness: Brightness.dark,
+        primarySwatch: Colors.deepPurple,
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF0A0E21),
       ),
       home: const HomePage(),
     );
@@ -28,60 +31,354 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('IAppPlayer Examples'),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildExampleCard(
-            context,
-            title: '🎬 单视频播放',
-            subtitle: '播放单个网络视频',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SingleVideoExample()),
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF0A0E21),
+              const Color(0xFF1A1F3A),
+            ],
           ),
-          const SizedBox(height: 12),
-          _buildExampleCard(
-            context,
-            title: '📑 播放列表',
-            subtitle: '连续播放多个视频',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PlaylistExample()),
-            ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 自定义标题栏
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.play_circle_outline,
+                      size: 64,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'IApp Player',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '选择您的播放体验',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 选项卡片
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    _buildModernCard(
+                      context,
+                      icon: Icons.movie_outlined,
+                      title: '视频播放器',
+                      subtitle: '播放单个本地视频',
+                      gradient: [
+                        const Color(0xFF667eea),
+                        const Color(0xFF764ba2),
+                      ],
+                      onTap: () => _navigateWithAnimation(
+                        context,
+                        const SingleVideoExample(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildModernCard(
+                      context,
+                      icon: Icons.playlist_play,
+                      title: '视频列表',
+                      subtitle: '连续播放多个视频',
+                      gradient: [
+                        const Color(0xFFf093fb),
+                        const Color(0xFFf5576c),
+                      ],
+                      onTap: () => _navigateWithAnimation(
+                        context,
+                        const PlaylistExample(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildModernCard(
+                      context,
+                      icon: Icons.music_note_outlined,
+                      title: '音乐播放器',
+                      subtitle: '支持LRC歌词显示',
+                      gradient: [
+                        const Color(0xFF4facfe),
+                        const Color(0xFF00f2fe),
+                      ],
+                      onTap: () => _navigateWithAnimation(
+                        context,
+                        const MusicPlayerExample(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildModernCard(
+                      context,
+                      icon: Icons.queue_music,
+                      title: '音乐列表',
+                      subtitle: '连续播放多首歌曲',
+                      gradient: [
+                        const Color(0xFFfa709a),
+                        const Color(0xFFfee140),
+                      ],
+                      onTap: () => _navigateWithAnimation(
+                        context,
+                        const MusicPlaylistExample(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          _buildExampleCard(
-            context,
-            title: '🎵 音乐播放器',
-            subtitle: '音频播放器（支持LRC歌词）',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MusicPlayerExample()),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildExampleCard(
+  Widget _buildModernCard(
     BuildContext context, {
+    required IconData icon,
     required String title,
     required String subtitle,
+    required List<Color> gradient,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 2,
-      child: ListTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradient,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: gradient[0].withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white.withOpacity(0.8),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateWithAnimation(BuildContext context, Widget page) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOutCubic;
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+}
+
+// 资源缓存类 - 避免重复读取文件
+class AssetCache {
+  static final AssetCache _instance = AssetCache._internal();
+  factory AssetCache() => _instance;
+  AssetCache._internal();
+
+  final Map<String, String> _cache = {};
+
+  Future<String> loadString(String key) async {
+    if (_cache.containsKey(key)) {
+      return _cache[key]!;
+    }
+    final content = await rootBundle.loadString(key);
+    _cache[key] = content;
+    return content;
+  }
+
+  void clear() {
+    _cache.clear();
+  }
+}
+
+// 屏幕旋转处理Mixin - 提取重复的旋转处理逻辑
+mixin PlayerOrientationMixin<T extends StatefulWidget> on State<T>, WidgetsBindingObserver {
+  IAppPlayerController? get controller;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    _handleOrientationChange();
+  }
+
+  void _handleOrientationChange() {
+    if (controller == null || !mounted) return;
+    
+    // 延迟执行以确保 MediaQuery 可用
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
+      final orientation = MediaQuery.of(context).orientation;
+      if (orientation == Orientation.landscape) {
+        if (!controller!.isFullScreen) {
+          controller!.enterFullScreen();
+        }
+      } else {
+        if (controller!.isFullScreen) {
+          controller!.exitFullScreen();
+        }
+      }
+    });
+  }
+}
+
+// 现代化控制按钮组件
+class ModernControlButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+  final bool isPrimary;
+
+  const ModernControlButton({
+    Key? key,
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    this.isPrimary = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: isPrimary ? LinearGradient(
+          colors: [
+            const Color(0xFF667eea),
+            const Color(0xFF764ba2),
+          ],
+        ) : null,
+        color: isPrimary ? null : Colors.white.withOpacity(0.1),
+        boxShadow: isPrimary ? [
+          BoxShadow(
+            color: const Color(0xFF667eea).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ] : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -95,10 +392,14 @@ class SingleVideoExample extends StatefulWidget {
   State<SingleVideoExample> createState() => _SingleVideoExampleState();
 }
 
-class _SingleVideoExampleState extends State<SingleVideoExample> {
+class _SingleVideoExampleState extends State<SingleVideoExample> 
+    with WidgetsBindingObserver, PlayerOrientationMixin {
   IAppPlayerController? _controller;
   bool _isLoading = true;
-  String _eventLog = '';
+  final _assetCache = AssetCache();
+
+  @override
+  IAppPlayerController? get controller => _controller;
 
   @override
   void initState() {
@@ -107,21 +408,34 @@ class _SingleVideoExampleState extends State<SingleVideoExample> {
   }
 
   Future<void> _initializePlayer() async {
+    // 使用缓存读取字幕文件
+    final subtitleContent = await _assetCache.loadString('assets/subtitles/video1.srt');
+    
     final result = await IAppPlayerConfig.createPlayer(
-      url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      title: 'Big Buck Bunny',
+      url: 'asset://assets/videos/video1.mp4',
+      dataSourceType: IAppPlayerDataSourceType.file,
+      title: 'Superman (1941)',
+      imageUrl: 'https://www.itvapp.net/images/logo-1.png',
+      subtitleContent: subtitleContent,
       eventListener: (event) {
-        setState(() {
-          _eventLog = '事件: ${event.iappPlayerEventType}';
-        });
-        
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
           });
+          // 初始化后检查方向
+          _handleOrientationChange();
         }
       },
       preferredDecoderType: IAppPlayerDecoderType.hardwareFirst,
+      autoDetectFullscreenDeviceOrientation: true,
+      deviceOrientationsOnFullScreen: [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
+      deviceOrientationsAfterFullScreen: [
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ],
     );
 
     if (mounted) {
@@ -139,7 +453,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample> {
 
   Future<void> _releasePlayer() async {
     try {
-      IAppPlayerConfig.clearAllCaches();
+      // 移除全局缓存清理，避免影响其他页面
       if (_controller != null) {
         if (_controller!.isPlaying() ?? false) {
           await _controller!.pause();
@@ -158,49 +472,75 @@ class _SingleVideoExampleState extends State<SingleVideoExample> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('单视频播放'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('视频播放器'),
       ),
-      body: Column(
-        children: [
-          // 播放器区域
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Container(
-              color: Colors.black,
-              child: _controller != null
-                  ? IAppPlayer(controller: _controller!)
-                  : const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF1A1F3A),
+              const Color(0xFF0A0E21),
+            ],
           ),
-          // 控制按钮
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // 事件日志
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(_eventLog)),
-                    ],
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 播放器区域
+              Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Container(
+                      color: Colors.black,
+                      child: _controller != null
+                          ? IAppPlayer(controller: _controller!)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // 播放控制按钮
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              ),
+              const Spacer(),
+              // 控制按钮区域
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                ),
+                child: Column(
                   children: [
-                    ElevatedButton.icon(
+                    // 播放/暂停按钮
+                    ModernControlButton(
                       onPressed: _controller != null && !_isLoading
                           ? () {
                               if (_controller!.isPlaying() ?? false) {
@@ -210,53 +550,35 @@ class _SingleVideoExampleState extends State<SingleVideoExample> {
                               }
                             }
                           : null,
-                      icon: Icon(
-                        (_controller?.isPlaying() ?? false)
-                            ? Icons.pause
-                            : Icons.play_arrow,
-                      ),
-                      label: Text(
-                        (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
-                      ),
+                      icon: (_controller?.isPlaying() ?? false)
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
+                      isPrimary: true,
                     ),
-                    ElevatedButton.icon(
+                    const SizedBox(height: 16),
+                    // 全屏按钮
+                    ModernControlButton(
                       onPressed: _controller != null && !_isLoading
                           ? () {
-                              final currentPosition = _controller!
-                                      .videoPlayerController
-                                      ?.value
-                                      .position ??
-                                  Duration.zero;
-                              _controller!.seekTo(
-                                currentPosition - const Duration(seconds: 10),
-                              );
+                              if (_controller!.isFullScreen) {
+                                _controller!.exitFullScreen();
+                              } else {
+                                _controller!.enterFullScreen();
+                              }
                             }
                           : null,
-                      icon: const Icon(Icons.replay_10),
-                      label: const Text('后退10秒'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _controller != null && !_isLoading
-                          ? () {
-                              final currentPosition = _controller!
-                                      .videoPlayerController
-                                      ?.value
-                                      .position ??
-                                  Duration.zero;
-                              _controller!.seekTo(
-                                currentPosition + const Duration(seconds: 10),
-                              );
-                            }
-                          : null,
-                      icon: const Icon(Icons.forward_10),
-                      label: const Text('前进10秒'),
+                      icon: _controller?.isFullScreen ?? false
+                          ? Icons.fullscreen_exit_rounded
+                          : Icons.fullscreen_rounded,
+                      label: '全屏观看',
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -270,12 +592,17 @@ class PlaylistExample extends StatefulWidget {
   State<PlaylistExample> createState() => _PlaylistExampleState();
 }
 
-class _PlaylistExampleState extends State<PlaylistExample> {
+class _PlaylistExampleState extends State<PlaylistExample> 
+    with WidgetsBindingObserver, PlayerOrientationMixin {
   IAppPlayerController? _controller;
   IAppPlayerPlaylistController? _playlistController;
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
+  final _assetCache = AssetCache();
+
+  @override
+  IAppPlayerController? get controller => _controller;
 
   @override
   void initState() {
@@ -284,18 +611,32 @@ class _PlaylistExampleState extends State<PlaylistExample> {
   }
 
   Future<void> _initializePlayer() async {
+    // 使用缓存批量读取字幕文件
+    final subtitle1 = await _assetCache.loadString('assets/subtitles/video1.srt');
+    final subtitle2 = await _assetCache.loadString('assets/subtitles/video2.srt');
+    final subtitle3 = await _assetCache.loadString('assets/subtitles/video3.srt');
+    
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        'asset://assets/videos/video1.mp4',
+        'asset://assets/videos/video2.mp4',
+        'asset://assets/videos/video3.mp4',
       ],
-      titles: ['Big Buck Bunny', 'Elephants Dream', 'For Bigger Blazes'],
+      dataSourceType: IAppPlayerDataSourceType.file,
+      titles: ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'],
+      imageUrls: [
+        'https://www.itvapp.net/images/logo-1.png',
+        'https://www.itvapp.net/images/logo-1.png',
+        'https://www.itvapp.net/images/logo-1.png',
+      ],
+      subtitleContents: [subtitle1, subtitle2, subtitle3],
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
           });
+          // 初始化后检查方向
+          _handleOrientationChange();
         } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
           final index = event.parameters?['index'] as int?;
           if (index != null) {
@@ -314,6 +655,15 @@ class _PlaylistExampleState extends State<PlaylistExample> {
       },
       shuffleMode: false,
       loopVideos: true,
+      autoDetectFullscreenDeviceOrientation: true,
+      deviceOrientationsOnFullScreen: [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
+      deviceOrientationsAfterFullScreen: [
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ],
     );
 
     if (mounted) {
@@ -332,7 +682,7 @@ class _PlaylistExampleState extends State<PlaylistExample> {
 
   Future<void> _releasePlayer() async {
     try {
-      IAppPlayerConfig.clearAllCaches();
+      // 移除全局缓存清理
       _playlistController?.dispose();
       _controller = null;
       _playlistController = null;
@@ -346,101 +696,251 @@ class _PlaylistExampleState extends State<PlaylistExample> {
     final totalVideos = _playlistController?.dataSourceList.length ?? 0;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('播放列表'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('视频列表'),
       ),
-      body: Column(
-        children: [
-          // 播放器区域
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Container(
-              color: Colors.black,
-              child: _controller != null
-                  ? IAppPlayer(controller: _controller!)
-                  : const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF1A1F3A),
+              const Color(0xFF0A0E21),
+            ],
           ),
-          // 播放列表信息
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // 当前播放信息
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.playlist_play, color: Colors.blue),
-                      const SizedBox(width: 8),
-                      Text(
-                        '正在播放: ${_currentIndex + 1}/$totalVideos',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      Text(_shuffleMode ? '随机播放' : '顺序播放'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // 控制按钮
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _playlistController != null && !_isLoading
-                          ? () => _playlistController!.playPrevious()
-                          : null,
-                      icon: const Icon(Icons.skip_previous),
-                      label: const Text('上一个'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _controller != null && !_isLoading
-                          ? () {
-                              if (_controller!.isPlaying() ?? false) {
-                                _controller!.pause();
-                              } else {
-                                _controller!.play();
-                              }
-                            }
-                          : null,
-                      icon: Icon(
-                        (_controller?.isPlaying() ?? false)
-                            ? Icons.pause
-                            : Icons.play_arrow,
-                      ),
-                      label: Text(
-                        (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _playlistController != null && !_isLoading
-                          ? () => _playlistController!.playNext()
-                          : null,
-                      icon: const Icon(Icons.skip_next),
-                      label: const Text('下一个'),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 播放器区域
+              Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // 播放模式切换
-                OutlinedButton.icon(
-                  onPressed: _playlistController != null
-                      ? () => _playlistController!.toggleShuffleMode()
-                      : null,
-                  icon: Icon(_shuffleMode ? Icons.shuffle : Icons.repeat),
-                  label: Text(_shuffleMode ? '切换到顺序播放' : '切换到随机播放'),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Container(
+                      color: Colors.black,
+                      child: _controller != null
+                          ? IAppPlayer(controller: _controller!)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                    ),
+                  ),
                 ),
-              ],
+              ),
+              // 播放信息卡片
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF667eea),
+                      const Color(0xFF764ba2),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF667eea).withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.playlist_play_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '播放进度',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_currentIndex + 1} / $totalVideos',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _shuffleMode ? '随机' : '顺序',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // 控制按钮区域
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // 播放控制按钮行
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // 上一个
+                        _buildCircleButton(
+                          onPressed: _playlistController != null && !_isLoading
+                              ? () => _playlistController!.playPrevious()
+                              : null,
+                          icon: Icons.skip_previous_rounded,
+                        ),
+                        // 播放/暂停
+                        _buildCircleButton(
+                          onPressed: _controller != null && !_isLoading
+                              ? () {
+                                  if (_controller!.isPlaying() ?? false) {
+                                    _controller!.pause();
+                                  } else {
+                                    _controller!.play();
+                                  }
+                                }
+                              : null,
+                          icon: (_controller?.isPlaying() ?? false)
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          isPrimary: true,
+                        ),
+                        // 下一个
+                        _buildCircleButton(
+                          onPressed: _playlistController != null && !_isLoading
+                              ? () => _playlistController!.playNext()
+                              : null,
+                          icon: Icons.skip_next_rounded,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // 模式切换按钮
+                    ModernControlButton(
+                      onPressed: _playlistController != null
+                          ? () => _playlistController!.toggleShuffleMode()
+                          : null,
+                      icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                      label: _shuffleMode ? '切换到顺序播放' : '切换到随机播放',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircleButton({
+    required VoidCallback? onPressed,
+    required IconData icon,
+    bool isPrimary = false,
+  }) {
+    return Container(
+      width: isPrimary ? 80 : 60,
+      height: isPrimary ? 80 : 60,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: isPrimary ? LinearGradient(
+          colors: [
+            const Color(0xFF667eea),
+            const Color(0xFF764ba2),
+          ],
+        ) : null,
+        color: isPrimary ? null : Colors.white.withOpacity(0.1),
+        boxShadow: isPrimary ? [
+          BoxShadow(
+            color: const Color(0xFF667eea).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ] : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: isPrimary ? 36 : 28,
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -454,10 +954,14 @@ class MusicPlayerExample extends StatefulWidget {
   State<MusicPlayerExample> createState() => _MusicPlayerExampleState();
 }
 
-class _MusicPlayerExampleState extends State<MusicPlayerExample> {
+class _MusicPlayerExampleState extends State<MusicPlayerExample> 
+    with WidgetsBindingObserver, PlayerOrientationMixin {
   IAppPlayerController? _controller;
   bool _isLoading = true;
-  String _currentLyric = '';
+  final _assetCache = AssetCache();
+
+  @override
+  IAppPlayerController? get controller => _controller;
 
   @override
   void initState() {
@@ -466,27 +970,34 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample> {
   }
 
   Future<void> _initializePlayer() async {
+    // 使用缓存读取LRC歌词文件
+    final lrcContent = await _assetCache.loadString('assets/lyrics/song1.lrc');
+    
     final result = await IAppPlayerConfig.createPlayer(
-      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-      title: 'Sample Music',
+      url: 'asset://assets/music/song1.mp3',
+      dataSourceType: IAppPlayerDataSourceType.file,
+      title: 'Creative Design',
+      imageUrl: 'https://www.itvapp.net/images/logo-1.png',
       audioOnly: true,
-      subtitleContent: '''[00:00.00]示例音乐播放器
-[00:05.00]这是一个演示
-[00:10.00]支持LRC歌词格式
-[00:15.00]可以显示同步歌词
-[00:20.00]享受音乐吧！
-[00:25.00]♪ ♫ ♬ ♪ ♫ ♬
-[00:30.00]继续播放...
-[00:35.00]音乐让生活更美好
-[00:40.00]IAppPlayer 音乐播放器
-[00:45.00]感谢使用！''',
+      subtitleContent: lrcContent,
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
           });
+          // 初始化后检查方向
+          _handleOrientationChange();
         }
       },
+      autoDetectFullscreenDeviceOrientation: true,
+      deviceOrientationsOnFullScreen: [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
+      deviceOrientationsAfterFullScreen: [
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ],
     );
 
     if (mounted) {
@@ -504,7 +1015,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample> {
 
   Future<void> _releasePlayer() async {
     try {
-      IAppPlayerConfig.clearAllCaches();
+      // 移除全局缓存清理
       if (_controller != null) {
         if (_controller!.isPlaying() ?? false) {
           await _controller!.pause();
@@ -520,7 +1031,14 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('音乐播放器'),
       ),
       body: Container(
@@ -529,107 +1047,458 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.purple[200]!,
-              Colors.purple[50]!,
+              const Color(0xFF1A1F3A),
+              const Color(0xFF0A0E21),
             ],
           ),
         ),
-        child: Column(
-          children: [
-            const SizedBox(height: 40),
-            // 封面占位符
-            Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.purple[300],
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.music_note,
-                size: 100,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 40),
-            // 音乐播放器
-            Container(
-              height: 250,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _controller != null
-                  ? IAppPlayer(controller: _controller!)
-                  : const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              // 音乐封面区域
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 40),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4facfe).withOpacity(0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 20),
                     ),
-            ),
-            // 控制按钮
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _controller != null && !_isLoading
-                        ? () {
-                            final currentPosition = _controller!
-                                    .videoPlayerController
-                                    ?.value
-                                    .position ??
-                                Duration.zero;
-                            _controller!.seekTo(
-                              currentPosition - const Duration(seconds: 10),
-                            );
-                          }
-                        : null,
-                    icon: const Icon(Icons.replay_10),
-                    iconSize: 36,
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF4facfe),
+                            const Color(0xFF00f2fe),
+                          ],
+                        ),
+                      ),
+                      child: _controller != null
+                          ? IAppPlayer(controller: _controller!)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                    ),
                   ),
-                  const SizedBox(width: 20),
-                  FloatingActionButton(
-                    onPressed: _controller != null && !_isLoading
-                        ? () {
-                            if (_controller!.isPlaying() ?? false) {
-                              _controller!.pause();
-                            } else {
-                              _controller!.play();
+                ),
+              ),
+              const SizedBox(height: 40),
+              // 歌曲信息
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Creative Design',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Unknown Artist',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // 控制按钮区域
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // 播放/暂停按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_controller!.isPlaying() ?? false) {
+                                _controller!.pause();
+                              } else {
+                                _controller!.play();
+                              }
                             }
-                          }
-                        : null,
-                    child: Icon(
-                      (_controller?.isPlaying() ?? false)
-                          ? Icons.pause
-                          : Icons.play_arrow,
-                      size: 36,
+                          : null,
+                      icon: (_controller?.isPlaying() ?? false)
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
+                      isPrimary: true,
+                    ),
+                    const SizedBox(height: 16),
+                    // 全屏按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_controller!.isFullScreen) {
+                                _controller!.exitFullScreen();
+                              } else {
+                                _controller!.enterFullScreen();
+                              }
+                            }
+                          : null,
+                      icon: _controller?.isFullScreen ?? false
+                          ? Icons.fullscreen_exit_rounded
+                          : Icons.fullscreen_rounded,
+                      label: '全屏歌词',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 音乐播放列表示例
+class MusicPlaylistExample extends StatefulWidget {
+  const MusicPlaylistExample({Key? key}) : super(key: key);
+
+  @override
+  State<MusicPlaylistExample> createState() => _MusicPlaylistExampleState();
+}
+
+class _MusicPlaylistExampleState extends State<MusicPlaylistExample> 
+    with WidgetsBindingObserver, PlayerOrientationMixin {
+  IAppPlayerController? _controller;
+  IAppPlayerPlaylistController? _playlistController;
+  bool _isLoading = true;
+  int _currentIndex = 0;
+  bool _shuffleMode = false;
+  final _assetCache = AssetCache();
+
+  @override
+  IAppPlayerController? get controller => _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    // 使用缓存批量读取LRC歌词文件
+    final lyrics1 = await _assetCache.loadString('assets/lyrics/song1.lrc');
+    final lyrics2 = await _assetCache.loadString('assets/lyrics/song2.lrc');
+    final lyrics3 = await _assetCache.loadString('assets/lyrics/song3.lrc');
+    
+    final result = await IAppPlayerConfig.createPlayer(
+      urls: [
+        'asset://assets/music/song1.mp3',
+        'asset://assets/music/song2.mp3',
+        'asset://assets/music/song3.mp3',
+      ],
+      dataSourceType: IAppPlayerDataSourceType.file,
+      titles: ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'],
+      imageUrls: [
+        'https://www.itvapp.net/images/logo-1.png',
+        'https://www.itvapp.net/images/logo-1.png',
+        'https://www.itvapp.net/images/logo-1.png',
+      ],
+      subtitleContents: [lyrics1, lyrics2, lyrics3],
+      audioOnly: true,
+      eventListener: (event) {
+        if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
+          setState(() {
+            _isLoading = false;
+          });
+          // 初始化后检查方向
+          _handleOrientationChange();
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
+          final index = event.parameters?['index'] as int?;
+          if (index != null) {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistShuffle) {
+          final shuffleMode = event.parameters?['shuffleMode'] as bool?;
+          if (shuffleMode != null) {
+            setState(() {
+              _shuffleMode = shuffleMode;
+            });
+          }
+        }
+      },
+      shuffleMode: false,
+      loopVideos: true,
+      autoDetectFullscreenDeviceOrientation: true,
+      deviceOrientationsOnFullScreen: [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
+      deviceOrientationsAfterFullScreen: [
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ],
+    );
+
+    if (mounted) {
+      setState(() {
+        _controller = result.activeController;
+        _playlistController = result.playlistController;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _releasePlayer();
+    super.dispose();
+  }
+
+  Future<void> _releasePlayer() async {
+    try {
+      // 移除全局缓存清理
+      _playlistController?.dispose();
+      _controller = null;
+      _playlistController = null;
+    } catch (e) {
+      print('Player cleanup failed: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalSongs = _playlistController?.dataSourceList.length ?? 0;
+    final titles = ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'];
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('音乐列表'),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF1A1F3A),
+              const Color(0xFF0A0E21),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              // 音乐封面区域
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 60),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFfa709a).withOpacity(0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 20),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFFfa709a),
+                            const Color(0xFFfee140),
+                          ],
+                        ),
+                      ),
+                      child: _controller != null
+                          ? IAppPlayer(controller: _controller!)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
                     ),
                   ),
-                  const SizedBox(width: 20),
-                  IconButton(
-                    onPressed: _controller != null && !_isLoading
-                        ? () {
-                            final currentPosition = _controller!
-                                    .videoPlayerController
-                                    ?.value
-                                    .position ??
-                                Duration.zero;
-                            _controller!.seekTo(
-                              currentPosition + const Duration(seconds: 10),
-                            );
-                          }
-                        : null,
-                    icon: const Icon(Icons.forward_10),
-                    iconSize: 36,
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: 30),
+              // 当前歌曲信息
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  children: [
+                    Text(
+                      _currentIndex < titles.length ? titles[_currentIndex] : '',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFfa709a),
+                            const Color(0xFFfee140),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // 控制按钮区域
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // 播放控制按钮行
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // 上一首
+                        _buildCircleButton(
+                          onPressed: _playlistController != null && !_isLoading
+                              ? () => _playlistController!.playPrevious()
+                              : null,
+                          icon: Icons.skip_previous_rounded,
+                        ),
+                        // 播放/暂停
+                        _buildCircleButton(
+                          onPressed: _controller != null && !_isLoading
+                              ? () {
+                                  if (_controller!.isPlaying() ?? false) {
+                                    _controller!.pause();
+                                  } else {
+                                    _controller!.play();
+                                  }
+                                }
+                              : null,
+                          icon: (_controller?.isPlaying() ?? false)
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          isPrimary: true,
+                        ),
+                        // 下一首
+                        _buildCircleButton(
+                          onPressed: _playlistController != null && !_isLoading
+                              ? () => _playlistController!.playNext()
+                              : null,
+                          icon: Icons.skip_next_rounded,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // 模式切换按钮
+                    ModernControlButton(
+                      onPressed: _playlistController != null
+                          ? () => _playlistController!.toggleShuffleMode()
+                          : null,
+                      icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                      label: _shuffleMode ? '切换到顺序播放' : '切换到随机播放',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircleButton({
+    required VoidCallback? onPressed,
+    required IconData icon,
+    bool isPrimary = false,
+  }) {
+    return Container(
+      width: isPrimary ? 80 : 60,
+      height: isPrimary ? 80 : 60,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: isPrimary ? LinearGradient(
+          colors: [
+            const Color(0xFFfa709a),
+            const Color(0xFFfee140),
           ],
+        ) : null,
+        color: isPrimary ? null : Colors.white.withOpacity(0.1),
+        boxShadow: isPrimary ? [
+          BoxShadow(
+            color: const Color(0xFFfa709a).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ] : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: isPrimary ? 36 : 28,
+            ),
+          ),
         ),
       ),
     );
