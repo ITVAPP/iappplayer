@@ -66,18 +66,29 @@ jobs:
           echo "=== 检查Flutter Embedding配置 ==="
           cd example
           
-          # 在所有Android文件中搜索v1 embedding相关内容
-          echo "--- 搜索FlutterActivity导入 ---"
-          grep -r "import.*FlutterActivity" android/ 2>/dev/null || echo "未找到FlutterActivity导入"
+          # 详细检查AndroidManifest.xml中的embedding配置
+          echo "--- 检查AndroidManifest.xml中的flutterEmbedding ---"
+          find android/ -name "AndroidManifest.xml" -exec echo "文件: {}" \; -exec grep -n "flutterEmbedding" {} \; 2>/dev/null || echo "AndroidManifest.xml中未找到flutterEmbedding配置"
           
-          echo "--- 搜索GeneratedPluginRegistrant ---"
-          grep -r "GeneratedPluginRegistrant" android/ 2>/dev/null || echo "未找到GeneratedPluginRegistrant"
+          # 检查MainActivity中的v1 embedding特征
+          echo "--- 检查MainActivity中的v1 embedding导入 ---"
+          find android/ -name "MainActivity*" -exec echo "文件: {}" \; -exec grep -n "io.flutter.app.FlutterActivity" {} \; 2>/dev/null || echo "未找到v1 FlutterActivity导入"
           
-          echo "--- 搜索flutterEmbedding配置 ---"
-          grep -r "flutterEmbedding" android/ 2>/dev/null || echo "未找到flutterEmbedding配置"
+          echo "--- 检查MainActivity中的GeneratedPluginRegistrant ---"
+          find android/ -name "MainActivity*" -exec echo "文件: {}" \; -exec grep -n "GeneratedPluginRegistrant" {} \; 2>/dev/null || echo "未找到GeneratedPluginRegistrant"
           
-          echo "--- 搜索FlutterApplication ---"
-          grep -r "FlutterApplication" android/ 2>/dev/null || echo "未找到FlutterApplication"
+          echo "--- 检查MainActivity中的onCreate方法 ---"
+          find android/ -name "MainActivity*" -exec echo "文件: {}" \; -exec grep -A5 -B5 "onCreate" {} \; 2>/dev/null || echo "未找到onCreate方法"
+          
+          # 检查Application类
+          echo "--- 检查Application类中的v1 embedding ---"
+          find android/ -name "*Application*" -exec echo "文件: {}" \; -exec cat {} \; 2>/dev/null || echo "未找到Application类"
+          
+          # 搜索所有可能的v1 embedding关键词
+          echo "--- 搜索所有v1 embedding关键词 ---"
+          grep -r "io.flutter.app" android/ 2>/dev/null && echo "发现v1 embedding导入!" || echo "未发现v1 embedding导入"
+          grep -r "FlutterApplication" android/ 2>/dev/null && echo "发现FlutterApplication!" || echo "未发现FlutterApplication"
+          grep -r "registerWith" android/ 2>/dev/null && echo "发现registerWith调用!" || echo "未发现registerWith调用"
       
       # 8. 获取依赖
       - name: Get Dependencies
@@ -97,6 +108,8 @@ jobs:
       
       # 10. 尝试构建并捕获详细错误
       - name: Build APK with Detailed Error Capture
+        continue-on-error: true
+        id: build_step
         run: |
           echo "=== 开始构建APK ==="
           cd example
@@ -104,49 +117,58 @@ jobs:
           # 尝试构建并捕获所有输出
           flutter build apk --release --verbose 2>&1 | tee ../build_output.log
           
-          echo "=== 构建完成，检查结果 ==="
-          echo "构建退出码: $?"
+          BUILD_EXIT_CODE=$?
+          echo "=== 构建完成，退出码: $BUILD_EXIT_CODE ==="
           
-          # 显示构建日志的关键部分
-          echo "--- 构建日志摘要 ---"
-          grep -E "(Built|Error|Exception|Failed)" ../build_output.log || echo "未找到关键构建信息"
-          
-          # 查找APK文件位置
-          echo "=== 查找生成的APK文件 ==="
-          find . -name "*.apk" -type f 2>/dev/null || echo "未找到APK文件"
-          
-          # 检查build目录结构
-          echo "=== 检查build目录结构 ==="
-          if [ -d "build" ]; then
-            find build/ -type f -name "*.apk" 2>/dev/null || echo "build目录中无APK文件"
-            echo "--- build目录结构 ---"
-            find build/ -type d | head -20 || echo "无build目录结构"
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "=== 构建失败，分析Android v1 embedding错误 ==="
+            
+            echo "--- 搜索embedding相关错误 ---"
+            grep -i "embedding\|deprecat" ../build_output.log || echo "未找到embedding相关错误"
+            
+            echo "--- 显示错误堆栈 ---"
+            grep -A10 -B5 "Build failed" ../build_output.log || echo "未找到Build failed信息"
+            
+            # 如果是v1 embedding错误，立即检查问题文件
+            if grep -q "deleted Android v1 embedding" ../build_output.log; then
+              echo "=== 确认是Android v1 embedding错误，检查具体文件 ==="
+              
+              echo "--- 重新详细检查MainActivity ---"
+              for file in $(find android/ -name "MainActivity*" 2>/dev/null); do
+                echo "=== 问题文件可能是: $file ==="
+                echo "--- 文件完整内容: ---"
+                cat "$file"
+                echo "--- 检查v1特征: ---"
+                grep -n "io.flutter.app\|GeneratedPluginRegistrant\|registerWith" "$file" && echo "*** 发现v1 embedding特征! ***" || echo "此文件无v1特征"
+                echo ""
+              done
+              
+              echo "--- 检查AndroidManifest.xml ---"
+              for file in $(find android/ -name "AndroidManifest.xml" 2>/dev/null); do
+                echo "=== 检查: $file ==="
+                if ! grep -q "flutterEmbedding" "$file"; then
+                  echo "*** $file 缺少flutterEmbedding配置! ***"
+                  echo "--- 文件内容: ---"
+                  cat "$file"
+                fi
+              done
+            fi
+            
+            exit $BUILD_EXIT_CODE
           else
-            echo "build目录不存在"
-          fi
-          
-          # 检查Android输出目录
-          echo "=== 检查Android输出目录 ==="
-          if [ -d "android" ]; then
-            find android/ -name "*.apk" -type f 2>/dev/null || echo "android目录中无APK文件"
+            echo "构建成功"
           fi
       
-      # 11. 查找并上传APK
+      # 11. 查找并上传APK（仅在构建成功时）
       - name: Find and Upload APK
+        if: steps.build_step.outcome == 'success'
         run: |
           cd example
           echo "=== 查找所有APK文件 ==="
           find . -name "*.apk" -type f 2>/dev/null || echo "未找到任何APK文件"
-          
-          # 检查是否有APK文件
-          if [ $(find . -name "*.apk" -type f 2>/dev/null | wc -l) -eq 0 ]; then
-            echo "构建可能失败，显示构建日志:"
-            cat ../build_output.log
-            exit 1
-          fi
       
       - name: Upload APK Files
-        if: success()
+        if: steps.build_step.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: flutter-apks
