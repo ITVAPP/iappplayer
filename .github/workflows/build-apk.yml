@@ -104,36 +104,58 @@ jobs:
           # 尝试构建并捕获所有输出
           flutter build apk --release --verbose 2>&1 | tee ../build_output.log
           
-          # 如果构建失败，显示错误日志
-          if [ $? -ne 0 ]; then
-            echo "=== 构建失败，分析错误日志 ==="
-            echo "--- 完整构建日志 ---"
+          echo "=== 构建完成，检查结果 ==="
+          echo "构建退出码: $?"
+          
+          # 显示构建日志的关键部分
+          echo "--- 构建日志摘要 ---"
+          grep -E "(Built|Error|Exception|Failed)" ../build_output.log || echo "未找到关键构建信息"
+          
+          # 查找APK文件位置
+          echo "=== 查找生成的APK文件 ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "未找到APK文件"
+          
+          # 检查build目录结构
+          echo "=== 检查build目录结构 ==="
+          if [ -d "build" ]; then
+            find build/ -type f -name "*.apk" 2>/dev/null || echo "build目录中无APK文件"
+            echo "--- build目录结构 ---"
+            find build/ -type d | head -20 || echo "无build目录结构"
+          else
+            echo "build目录不存在"
+          fi
+          
+          # 检查Android输出目录
+          echo "=== 检查Android输出目录 ==="
+          if [ -d "android" ]; then
+            find android/ -name "*.apk" -type f 2>/dev/null || echo "android目录中无APK文件"
+          fi
+      
+      # 11. 查找并上传APK
+      - name: Find and Upload APK
+        run: |
+          cd example
+          echo "=== 查找所有APK文件 ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "未找到任何APK文件"
+          
+          # 检查是否有APK文件
+          if [ $(find . -name "*.apk" -type f 2>/dev/null | wc -l) -eq 0 ]; then
+            echo "构建可能失败，显示构建日志:"
             cat ../build_output.log
-            
-            echo "--- 搜索embedding相关错误 ---"
-            grep -i "embedding" ../build_output.log || echo "未找到embedding相关错误"
-            
-            echo "--- 搜索deprecat相关错误 ---"
-            grep -i "deprecat" ../build_output.log || echo "未找到deprecation相关错误"
-            
-            echo "--- 最后50行日志 ---"
-            tail -50 ../build_output.log
-            
             exit 1
           fi
       
-      # 11. 如果成功，上传APK
-      - name: Upload APK
+      - name: Upload APK Files
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: example/build/app/outputs/flutter-apk/app-release.apk
+          name: flutter-apks
+          path: example/**/*.apk
       
-      # 12. 如果失败，上传错误日志
-      - name: Upload Error Log
-        if: failure()
+      # 12. 总是上传构建日志
+      - name: Upload Build Log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-error-log
+          name: build-log
           path: build_output.log
