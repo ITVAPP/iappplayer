@@ -268,9 +268,10 @@ class AssetCache {
     return content;
   }
 
-  void clear() {
-    _cache.clear();
-  }
+  // clear方法保留以备将来使用
+  // void clear() {
+  //   _cache.clear();
+  // }
 }
 
 // 屏幕旋转处理Mixin - 提取重复的旋转处理逻辑
@@ -970,8 +971,24 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 使用缓存读取LRC歌词文件
-    final lrcContent = await _assetCache.loadString('assets/lyrics/song1.lrc');
+    // 直接在代码中定义LRC歌词内容
+    const lrcContent = '''[00:02.05]愿得一人心
+[00:08.64]词：胡小健 曲：罗俊霖
+[00:27.48]曾在我背包小小夹层里的那个人
+[00:34.23]陪伴我度过漫长岁月的那个人
+[00:41.01]我不能够说出她名字的那个人
+[00:47.76]在被我淡忘的那个人
+[00:54.47]有什么东西快要从胸口跳出
+[01:01.23]一直都紧紧的锁在心里头
+[01:07.93]你看进我的眼睛里面有什么
+[01:14.69]是不是找到失落的自己
+[01:21.44]愿得一人心
+[01:24.87]白首不相离
+[01:28.15]这简单的话语
+[01:31.58]需要巨大的勇气
+[01:34.95]没想过失去你
+[01:38.33]却是在骗自己
+[01:41.66]最后你深深藏在我的歌声里''';
     
     final result = await IAppPlayerConfig.createPlayer(
       url: 'asset://assets/music/song1.mp3',
