@@ -1,183 +1,123 @@
-name: Build APK with Error Detection
+name: Find Android v1 Embedding Problem Files
 on:
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
-  build:
+  debug:
     runs-on: ubuntu-latest
     
     steps:
-      # 1. 获取代码
       - uses: actions/checkout@v4
       
-      # 2. 安装 Java
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '11'
       
-      # 3. 安装 Flutter
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.5'
       
-      # 4. 检查项目结构和关键文件
-      - name: Check Android Project Structure
+      # 立即检查所有可能的问题文件
+      - name: Aggressive File Analysis
         run: |
-          echo "=== 检查项目结构 ==="
-          ls -la
-          ls -la example/ || echo "example目录不存在"
-          
-          echo "=== 检查Android目录结构 ==="
-          find example/android -type f -name "*.java" -o -name "*.kt" -o -name "AndroidManifest.xml" 2>/dev/null || echo "无Android文件"
-      
-      # 5. 检查MainActivity文件
-      - name: Check MainActivity Files
-        run: |
-          echo "=== 检查MainActivity文件 ==="
+          echo "=== 🔍 开始全面文件检查 ==="
           cd example
           
-          # 查找所有MainActivity文件
-          find android/ -name "MainActivity*" -type f 2>/dev/null || echo "未找到MainActivity文件"
+          echo "=== 📁 项目结构 ==="
+          find . -name "android" -type d
+          find . -path "*/android/app/src/main/java*" -type d 2>/dev/null || echo "无Java目录"
+          find . -name "*.java" -o -name "*.kt" | head -10
           
-          # 显示MainActivity内容
-          for file in $(find android/ -name "MainActivity*" -type f 2>/dev/null); do
-            echo "=== 文件: $file ==="
-            cat "$file"
-            echo ""
-          done
+          echo ""
+          echo "=== 📱 MainActivity文件详细分析 ==="
+          MAIN_ACTIVITIES=$(find . -name "*MainActivity*" -type f 2>/dev/null)
+          
+          if [ -z "$MAIN_ACTIVITIES" ]; then
+            echo "❌ 没有找到MainActivity文件"
+          else
+            for file in $MAIN_ACTIVITIES; do
+              echo ""
+              echo "🔎 分析文件: $file"
+              echo "--- 完整内容 ---"
+              cat "$file"
+              echo ""
+              echo "--- v1 Embedding检查 ---"
+              if grep -q "io.flutter.app.FlutterActivity" "$file"; then
+                echo "🚨 发现v1 FlutterActivity导入!"
+                grep -n "io.flutter.app.FlutterActivity" "$file"
+              fi
+              if grep -q "GeneratedPluginRegistrant" "$file"; then
+                echo "🚨 发现GeneratedPluginRegistrant使用!"
+                grep -n "GeneratedPluginRegistrant" "$file"
+              fi
+              if grep -q "registerWith" "$file"; then
+                echo "🚨 发现registerWith调用!"
+                grep -n "registerWith" "$file"
+              fi
+              echo "=================="
+            done
+          fi
+          
+          echo ""
+          echo "=== 📋 AndroidManifest.xml文件分析 ==="
+          MANIFESTS=$(find . -name "AndroidManifest.xml" -type f 2>/dev/null)
+          
+          if [ -z "$MANIFESTS" ]; then
+            echo "❌ 没有找到AndroidManifest.xml文件"
+          else
+            for file in $MANIFESTS; do
+              echo ""
+              echo "🔎 分析文件: $file"
+              echo "--- 完整内容 ---"
+              cat "$file"
+              echo ""
+              echo "--- Embedding配置检查 ---"
+              if grep -q "flutterEmbedding" "$file"; then
+                echo "✅ 发现flutterEmbedding配置"
+                grep -n "flutterEmbedding" "$file"
+              else
+                echo "🚨 缺少flutterEmbedding配置!"
+              fi
+              echo "=================="
+            done
+          fi
+          
+          echo ""
+          echo "=== 🔍 全项目v1关键词搜索 ==="
+          echo "--- 搜索 'io.flutter.app' ---"
+          grep -r "io.flutter.app" . 2>/dev/null && echo "🚨 发现v1导入!" || echo "✅ 未发现v1导入"
+          
+          echo "--- 搜索 'GeneratedPluginRegistrant.registerWith' ---"
+          grep -r "GeneratedPluginRegistrant.registerWith" . 2>/dev/null && echo "🚨 发现v1注册方式!" || echo "✅ 未发现v1注册方式"
+          
+          echo "--- 搜索 'FlutterApplication' ---"
+          grep -r "FlutterApplication" . 2>/dev/null && echo "🚨 发现FlutterApplication!" || echo "✅ 未发现FlutterApplication"
+          
+          echo ""
+          echo "=== 📊 结论 ==="
+          echo "如果上面显示了🚨标记，那就是需要修复的v1 embedding问题文件！"
       
-      # 6. 检查AndroidManifest.xml
-      - name: Check AndroidManifest.xml
-        run: |
-          echo "=== 检查AndroidManifest.xml ==="
-          cd example
-          
-          # 查找并显示AndroidManifest.xml
-          find android/ -name "AndroidManifest.xml" -type f 2>/dev/null | while read file; do
-            echo "=== 文件: $file ==="
-            cat "$file"
-            echo ""
-          done
-      
-      # 7. 检查Flutter Embedding配置
-      - name: Check Flutter Embedding Configuration
-        run: |
-          echo "=== 检查Flutter Embedding配置 ==="
-          cd example
-          
-          # 详细检查AndroidManifest.xml中的embedding配置
-          echo "--- 检查AndroidManifest.xml中的flutterEmbedding ---"
-          find android/ -name "AndroidManifest.xml" -exec echo "文件: {}" \; -exec grep -n "flutterEmbedding" {} \; 2>/dev/null || echo "AndroidManifest.xml中未找到flutterEmbedding配置"
-          
-          # 检查MainActivity中的v1 embedding特征
-          echo "--- 检查MainActivity中的v1 embedding导入 ---"
-          find android/ -name "MainActivity*" -exec echo "文件: {}" \; -exec grep -n "io.flutter.app.FlutterActivity" {} \; 2>/dev/null || echo "未找到v1 FlutterActivity导入"
-          
-          echo "--- 检查MainActivity中的GeneratedPluginRegistrant ---"
-          find android/ -name "MainActivity*" -exec echo "文件: {}" \; -exec grep -n "GeneratedPluginRegistrant" {} \; 2>/dev/null || echo "未找到GeneratedPluginRegistrant"
-          
-          echo "--- 检查MainActivity中的onCreate方法 ---"
-          find android/ -name "MainActivity*" -exec echo "文件: {}" \; -exec grep -A5 -B5 "onCreate" {} \; 2>/dev/null || echo "未找到onCreate方法"
-          
-          # 检查Application类
-          echo "--- 检查Application类中的v1 embedding ---"
-          find android/ -name "*Application*" -exec echo "文件: {}" \; -exec cat {} \; 2>/dev/null || echo "未找到Application类"
-          
-          # 搜索所有可能的v1 embedding关键词
-          echo "--- 搜索所有v1 embedding关键词 ---"
-          grep -r "io.flutter.app" android/ 2>/dev/null && echo "发现v1 embedding导入!" || echo "未发现v1 embedding导入"
-          grep -r "FlutterApplication" android/ 2>/dev/null && echo "发现FlutterApplication!" || echo "未发现FlutterApplication"
-          grep -r "registerWith" android/ 2>/dev/null && echo "发现registerWith调用!" || echo "未发现registerWith调用"
-      
-      # 8. 获取依赖
+      # 获取依赖
       - name: Get Dependencies
         run: |
-          echo "=== 获取主项目依赖 ==="
           flutter pub get
-          
-          echo "=== 获取example依赖 ==="
-          cd example
-          flutter pub get
+          cd example && flutter pub get
       
-      # 9. Flutter Doctor检查
-      - name: Flutter Doctor
-        run: |
-          echo "=== Flutter Doctor ==="
-          flutter doctor -v
-      
-      # 10. 尝试构建并捕获详细错误
-      - name: Build APK with Detailed Error Capture
+      # 尝试构建看具体错误
+      - name: Attempt Build
         continue-on-error: true
-        id: build_step
-        run: |
-          echo "=== 开始构建APK ==="
-          cd example
-          
-          # 尝试构建并捕获所有输出
-          flutter build apk --release --verbose 2>&1 | tee ../build_output.log
-          
-          BUILD_EXIT_CODE=$?
-          echo "=== 构建完成，退出码: $BUILD_EXIT_CODE ==="
-          
-          if [ $BUILD_EXIT_CODE -ne 0 ]; then
-            echo "=== 构建失败，分析Android v1 embedding错误 ==="
-            
-            echo "--- 搜索embedding相关错误 ---"
-            grep -i "embedding\|deprecat" ../build_output.log || echo "未找到embedding相关错误"
-            
-            echo "--- 显示错误堆栈 ---"
-            grep -A10 -B5 "Build failed" ../build_output.log || echo "未找到Build failed信息"
-            
-            # 如果是v1 embedding错误，立即检查问题文件
-            if grep -q "deleted Android v1 embedding" ../build_output.log; then
-              echo "=== 确认是Android v1 embedding错误，检查具体文件 ==="
-              
-              echo "--- 重新详细检查MainActivity ---"
-              for file in $(find android/ -name "MainActivity*" 2>/dev/null); do
-                echo "=== 问题文件可能是: $file ==="
-                echo "--- 文件完整内容: ---"
-                cat "$file"
-                echo "--- 检查v1特征: ---"
-                grep -n "io.flutter.app\|GeneratedPluginRegistrant\|registerWith" "$file" && echo "*** 发现v1 embedding特征! ***" || echo "此文件无v1特征"
-                echo ""
-              done
-              
-              echo "--- 检查AndroidManifest.xml ---"
-              for file in $(find android/ -name "AndroidManifest.xml" 2>/dev/null); do
-                echo "=== 检查: $file ==="
-                if ! grep -q "flutterEmbedding" "$file"; then
-                  echo "*** $file 缺少flutterEmbedding配置! ***"
-                  echo "--- 文件内容: ---"
-                  cat "$file"
-                fi
-              done
-            fi
-            
-            exit $BUILD_EXIT_CODE
-          else
-            echo "构建成功"
-          fi
-      
-      # 11. 查找并上传APK（仅在构建成功时）
-      - name: Find and Upload APK
-        if: steps.build_step.outcome == 'success'
         run: |
           cd example
-          echo "=== 查找所有APK文件 ==="
-          find . -name "*.apk" -type f 2>/dev/null || echo "未找到任何APK文件"
+          echo "=== 🚀 尝试构建（预期失败）==="
+          flutter build apk --release --verbose 2>&1 | tee ../build_log.txt
+          echo "构建退出码: $?"
       
-      - name: Upload APK Files
-        if: steps.build_step.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-apks
-          path: example/**/*.apk
-      
-      # 12. 总是上传构建日志
-      - name: Upload Build Log
+      # 上传所有日志
+      - name: Upload Analysis Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-log
-          path: build_output.log
+          name: embedding-analysis-results
+          path: |
+            build_log.txt
