@@ -1,6 +1,7 @@
-name: Build APK
+name: Build APK with Error Detection
 on:
   workflow_dispatch:  # 允许手动触发
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,25 +21,119 @@ jobs:
         with:
           flutter-version: '3.24.5'
       
-      # 4. 构建 APK
-      - name: Build APK
+      # 4. 检查项目结构和关键文件
+      - name: Check Android Project Structure
         run: |
-          # 获取主项目依赖
-          flutter pub get
+          echo "=== 检查项目结构 ==="
+          ls -la
+          ls -la example/ || echo "example目录不存在"
           
-          # 进入 example 目录
+          echo "=== 检查Android目录结构 ==="
+          find example/android -type f -name "*.java" -o -name "*.kt" -o -name "AndroidManifest.xml" 2>/dev/null || echo "无Android文件"
+      
+      # 5. 检查MainActivity文件
+      - name: Check MainActivity Files
+        run: |
+          echo "=== 检查MainActivity文件 ==="
           cd example
           
-          # 获取 example 依赖
+          # 查找所有MainActivity文件
+          find android/ -name "MainActivity*" -type f 2>/dev/null || echo "未找到MainActivity文件"
+          
+          # 显示MainActivity内容
+          for file in $(find android/ -name "MainActivity*" -type f 2>/dev/null); do
+            echo "=== 文件: $file ==="
+            cat "$file"
+            echo ""
+          done
+      
+      # 6. 检查AndroidManifest.xml
+      - name: Check AndroidManifest.xml
+        run: |
+          echo "=== 检查AndroidManifest.xml ==="
+          cd example
+          
+          # 查找并显示AndroidManifest.xml
+          find android/ -name "AndroidManifest.xml" -type f 2>/dev/null | while read file; do
+            echo "=== 文件: $file ==="
+            cat "$file"
+            echo ""
+          done
+      
+      # 7. 检查Flutter Embedding配置
+      - name: Check Flutter Embedding Configuration
+        run: |
+          echo "=== 检查Flutter Embedding配置 ==="
+          cd example
+          
+          # 在所有Android文件中搜索v1 embedding相关内容
+          echo "--- 搜索FlutterActivity导入 ---"
+          grep -r "import.*FlutterActivity" android/ 2>/dev/null || echo "未找到FlutterActivity导入"
+          
+          echo "--- 搜索GeneratedPluginRegistrant ---"
+          grep -r "GeneratedPluginRegistrant" android/ 2>/dev/null || echo "未找到GeneratedPluginRegistrant"
+          
+          echo "--- 搜索flutterEmbedding配置 ---"
+          grep -r "flutterEmbedding" android/ 2>/dev/null || echo "未找到flutterEmbedding配置"
+          
+          echo "--- 搜索FlutterApplication ---"
+          grep -r "FlutterApplication" android/ 2>/dev/null || echo "未找到FlutterApplication"
+      
+      # 8. 获取依赖
+      - name: Get Dependencies
+        run: |
+          echo "=== 获取主项目依赖 ==="
           flutter pub get
           
-          # 构建 release APK
-          flutter build apk --release --verbose
+          echo "=== 获取example依赖 ==="
+          cd example
+          flutter pub get
       
-      # 5. 上传 APK 供下载
+      # 9. Flutter Doctor检查
+      - name: Flutter Doctor
+        run: |
+          echo "=== Flutter Doctor ==="
+          flutter doctor -v
+      
+      # 10. 尝试构建并捕获详细错误
+      - name: Build APK with Detailed Error Capture
+        run: |
+          echo "=== 开始构建APK ==="
+          cd example
+          
+          # 尝试构建并捕获所有输出
+          flutter build apk --release --verbose 2>&1 | tee ../build_output.log
+          
+          # 如果构建失败，显示错误日志
+          if [ $? -ne 0 ]; then
+            echo "=== 构建失败，分析错误日志 ==="
+            echo "--- 完整构建日志 ---"
+            cat ../build_output.log
+            
+            echo "--- 搜索embedding相关错误 ---"
+            grep -i "embedding" ../build_output.log || echo "未找到embedding相关错误"
+            
+            echo "--- 搜索deprecat相关错误 ---"
+            grep -i "deprecat" ../build_output.log || echo "未找到deprecation相关错误"
+            
+            echo "--- 最后50行日志 ---"
+            tail -50 ../build_output.log
+            
+            exit 1
+          fi
+      
+      # 11. 如果成功，上传APK
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: example/build/app/outputs/flutter-apk/app-release.apk
+      
+      # 12. 如果失败，上传错误日志
+      - name: Upload Error Log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-error-log
+          path: build_output.log
