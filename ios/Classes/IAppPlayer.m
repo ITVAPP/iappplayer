@@ -13,10 +13,14 @@ static const int MAX_RETRY_COUNT = 2; // 最大重试次数
 static const int RETRY_DELAY_MS = 500; // 重试延迟（毫秒）
 static const int BUFFERING_UPDATE_THROTTLE_MS = 600; // 缓冲更新节流时间（毫秒）
 
-// 解码器优先级常量（与Android端对齐）
+// 解码器优先级常量
 static const int DECODER_AUTO = 0;
 static const int DECODER_HARDWARE_FIRST = 1;
 static const int DECODER_SOFTWARE_FIRST = 2;
+
+// 网络配置常量
+static const NSTimeInterval CONNECT_TIMEOUT_SEC = 3.0;  // 3秒连接超时
+static const NSTimeInterval READ_TIMEOUT_SEC = 15.0;    // 15秒读取超时
 
 #if TARGET_OS_IOS
 void (^__strong _Nonnull _restoreUserInterfaceForPIPStopCompletionHandler)(BOOL); // 画中画停止后界面恢复回调
@@ -32,6 +36,11 @@ AVPictureInPictureController *_pipController; // 画中画控制器
     NSString* _currentLicenseUrl; // 当前 DRM 许可 URL
     // 缓冲更新使用可变数组
     NSMutableArray<NSArray<NSNumber*>*>* _bufferRangesCache; // 缓冲范围缓存
+    // 缓冲参数存储
+    int _minBufferMs;
+    int _maxBufferMs;
+    int _bufferForPlaybackMs;
+    int _bufferForPlaybackAfterRebufferMs;
 }
 
 /// 初始化播放器，设置默认状态和行为
@@ -64,7 +73,25 @@ AVPictureInPictureController *_pipController; // 画中画控制器
     // 初始化解码器优先级（默认硬解优先）
     _preferredDecoderType = DECODER_HARDWARE_FIRST;
     
+    // 设置默认缓冲参数
+    _minBufferMs = 50000;  // 50秒
+    _maxBufferMs = 50000;  // 50秒
+    _bufferForPlaybackMs = 2500;  // 2.5秒
+    _bufferForPlaybackAfterRebufferMs = 5000;  // 5秒
+    
     return self;
+}
+
+/// 配置缓冲参数
+- (void)configureBufferParameters:(NSNumber*)minBufferMs
+                      maxBufferMs:(NSNumber*)maxBufferMs
+              bufferForPlaybackMs:(NSNumber*)bufferForPlaybackMs
+ bufferForPlaybackAfterRebufferMs:(NSNumber*)bufferForPlaybackAfterRebufferMs {
+    
+    _minBufferMs = (minBufferMs && [minBufferMs intValue] > 0) ? [minBufferMs intValue] : 30000;
+    _maxBufferMs = (maxBufferMs && [maxBufferMs intValue] > 0) ? [maxBufferMs intValue] : 30000;
+    _bufferForPlaybackMs = (bufferForPlaybackMs && [bufferForPlaybackMs intValue] > 0) ? [bufferForPlaybackMs intValue] : 3000;
+    _bufferForPlaybackAfterRebufferMs = (bufferForPlaybackAfterRebufferMs && [bufferForPlaybackAfterRebufferMs intValue] > 0) ? [bufferForPlaybackAfterRebufferMs intValue] : 5000;
 }
 
 /// 返回播放器视图
@@ -283,12 +310,41 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         
         item = [cacheManager getCachingPlayerItemForNormalPlayback:url cacheKey:cacheKey videoExtension:videoExtension headers:headers]; // 获取缓存播放项
     } else {
-        // 创建优化的AVURLAsset（对齐Android端的网络配置）
+        // 创建AVURLAsset
         NSMutableDictionary* options = [NSMutableDictionary dictionary];
         options[@"AVURLAssetHTTPHeaderFieldsKey"] = headers;
         // 优化网络性能
         options[AVURLAssetPreferPreciseDurationAndTimingKey] = @NO;
         options[AVURLAssetReferenceRestrictionsKey] = @(AVAssetReferenceRestrictionForbidNone);
+        
+        // 添加网络超时配置（iOS 13+）
+        if (@available(iOS 13.0, *)) {
+            // 设置HTTP最大连接数
+            options[AVURLAssetHTTPMaximumConnectionsPerHostKey] = @6;
+            
+            // 配置URLSession
+            NSURLSessionConfiguration* config = [NSURLSessionConfiguration defaultSessionConfiguration];
+            config.timeoutIntervalForRequest = READ_TIMEOUT_SEC;
+            config.timeoutIntervalForResource = READ_TIMEOUT_SEC * 2; // 资源总超时
+            config.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+            config.HTTPShouldSetCookies = YES;
+            config.HTTPCookieAcceptPolicy = NSHTTPCookieAcceptPolicyAlways;
+            
+            // 允许蜂窝网络
+            config.allowsCellularAccess = YES;
+            
+            // 优化传输
+            if (@available(iOS 13.0, *)) {
+                config.allowsConstrainedNetworkAccess = YES;
+                config.allowsExpensiveNetworkAccess = YES;
+            }
+            
+            NSURLSession* session = [NSURLSession sessionWithConfiguration:config];
+            options[AVURLAssetURLSessionKey] = session;
+        }
+        
+        // 允许跨协议重定向
+        options[AVURLAssetAllowsCellularAccessKey] = @YES;
         
         AVURLAsset* asset = [AVURLAsset URLAssetWithURL:url options:options]; // 创建网络资源
         if (certificateUrl && certificateUrl != [NSNull null] && [certificateUrl length] > 0) {
@@ -306,7 +362,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         _overriddenDuration = overriddenDuration; // 设置覆盖时长
     }
     
-    // 检测是否为HLS直播流并进行优化配置
+    // 检测是否为HLS直播流并进行配置
     NSString* urlString = url.absoluteString.lowercaseString;
     if ([urlString containsString:@".m3u8"] || [urlString containsString:@"application/vnd.apple.mpegurl"]) {
         [self configureHLSLivePlayback:item];
@@ -315,10 +371,10 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     return [self setDataSourcePlayerItem:item withKey:key]; // 设置播放项
 }
 
-/// 配置HLS直播优化（对齐Android端配置）
+/// 配置HLS直播优化
 - (void)configureHLSLivePlayback:(AVPlayerItem*)item {
     if (@available(iOS 13.0, *)) {
-        // 设置前向缓冲时长为8秒（与Android端一致）
+        // 设置前向缓冲时长为8秒
         item.preferredForwardBufferDuration = 8.0;
     }
     
@@ -333,6 +389,54 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (@available(iOS 10.0, *)) {
         _player.automaticallyWaitsToMinimizeStalling = NO;
     }
+    
+    // HLS专用网络配置
+    if (@available(iOS 14.0, *)) {
+        // 配置HLS变体选择策略
+        item.preferredPeakBitRateForExpensiveNetworks = 0; // 不限制
+        item.preferredMaximumResolutionForExpensiveNetworks = CGSizeZero; // 不限制
+    }
+    
+    if (@available(iOS 14.5, *)) {
+        item.startsOnFirstEligibleVariant = YES; // 快速启动
+    }
+}
+
+/// 应用缓冲参数到播放项
+- (void)applyBufferParametersToItem:(AVPlayerItem*)item {
+    if (@available(iOS 10.0, *)) {
+        // 设置缓冲时长（转换为秒）
+        item.preferredForwardBufferDuration = _maxBufferMs / 1000.0;
+        
+        // 配置播放器的自动等待行为
+        if (_bufferForPlaybackMs < 3000) {
+            // 快速启动模式
+            _player.automaticallyWaitsToMinimizeStalling = NO;
+        } else {
+            // 标准模式
+            _player.automaticallyWaitsToMinimizeStalling = YES;
+        }
+    }
+    
+    // 根据缓冲策略调整播放行为
+    if (@available(iOS 13.0, *)) {
+        // 设置变体切换策略
+        if (_bufferForPlaybackMs < 3000) {
+            // 快速启动：选择较低质量的变体
+            item.startsOnFirstEligibleVariant = YES;
+        }
+    }
+}
+
+/// 配置解码器优先级（简化版，避免过度设计）
+- (void)configureDecoderPriority:(AVPlayerItem*)item {
+    // iOS的AVFoundation会自动处理解码器回退，这里只做基本配置
+    if (@available(iOS 11.0, *)) {
+        if (_preferredDecoderType == DECODER_SOFTWARE_FIRST) {
+            // 软解优先时，减少缓冲以加快启动
+            item.preferredForwardBufferDuration = 2.0;
+        }
+    }
 }
 
 /// 设置播放项并初始化观察者
@@ -341,6 +445,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     _stalledCount = 0; // 重置卡顿计数
     _isStalledCheckStarted = false; // 重置卡顿检查状态
     _playerRate = 1; // 初始化播放速率
+    
+    // 应用缓冲参数
+    [self applyBufferParametersToItem:item];
+    
+    // 配置解码器优先级
+    [self configureDecoderPriority:item];
+    
     [_player replaceCurrentItemWithPlayerItem:item]; // 替换当前播放项
 
     AVAsset* asset = [item asset]; // 获取资源
@@ -411,12 +522,41 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     return NO; // 非网络错误
 }
 
-// 处理播放器错误（增强错误分类，对齐Android端）
+// 判断是否为直播流
+- (BOOL)isLiveStream {
+    // RTMP/RTSP流
+    NSString* scheme = _currentMediaURL.scheme.lowercaseString;
+    if ([scheme isEqualToString:@"rtmp"] ||
+        [scheme isEqualToString:@"rtmps"] ||
+        [scheme isEqualToString:@"rtmpe"] ||
+        [scheme isEqualToString:@"rtmpt"] ||
+        [scheme isEqualToString:@"rtmpte"] ||
+        [scheme isEqualToString:@"rtmpts"] ||
+        [scheme isEqualToString:@"rtsp"]) {
+        return YES;
+    }
+    
+    // HLS直播流判断
+    if ([_currentMediaURL.absoluteString.lowercaseString containsString:@"live"]) {
+        return YES;
+    }
+    
+    // 使用播放器判断
+    if (_player.currentItem) {
+        return CMTIME_IS_INDEFINITE(_player.currentItem.duration);
+    }
+    
+    return NO;
+}
+
+// 处理播放器错误
 - (void)handlePlayerError:(NSError*)error {
     if (_disposed) return; // 已释放则返回
     
-    // 记录播放状态
-    _wasPlayingBeforeError = _isPlaying; // 保存播放状态
+    // 记录播放状态（仅非直播流）
+    if (![self isLiveStream]) {
+        _wasPlayingBeforeError = _isPlaying; // 保存播放状态
+    }
     
     NSInteger code = error.code;
     
@@ -446,7 +586,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         return;
     }
     
-    // 直播流相关错误（对应Android的BEHIND_LIVE_WINDOW）
+    // 直播流相关错误
     if (code == AVErrorLiveStreamNotSeekable || 
         code == AVErrorNoLongerPlayable) {
         // 重新定位到当前直播位置
@@ -515,7 +655,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
                                                            videoExtension:_currentVideoExtension 
                                                                   headers:_currentHeaders]; // 获取缓存播放项
     } else {
-        // 使用优化的选项创建AVURLAsset
+        // 使用选项创建AVURLAsset
         NSMutableDictionary* options = [NSMutableDictionary dictionary];
         options[@"AVURLAssetHTTPHeaderFieldsKey"] = _currentHeaders;
         options[AVURLAssetPreferPreciseDurationAndTimingKey] = @NO;
@@ -562,8 +702,11 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 /// 开始卡顿检查并尝试恢复播放
 - (void)startStalledCheck {
+    // 使用配置的缓冲参数判断
+    float bufferTimeInSeconds = _bufferForPlaybackAfterRebufferMs / 1000.0;
+    
     if (_player.currentItem.playbackLikelyToKeepUp ||
-        [self availableDuration] - CMTimeGetSeconds(_player.currentItem.currentTime) > 10.0) {
+        [self availableDuration] - CMTimeGetSeconds(_player.currentItem.currentTime) > bufferTimeInSeconds) {
         [self play]; // 缓冲充足则播放
     } else {
         _stalledCount++; // 增加卡顿计数
@@ -610,7 +753,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     return 0; // 无范围返回0
 }
 
-// 发送缓冲更新（带节流）- 优化版本
+// 发送缓冲更新（带节流）
 - (void)sendBufferingUpdate {
     if (_disposed || !_key || !_eventSink) return; // 无效状态返回
     
@@ -781,7 +924,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
         _isInitialized = true; // 标记初始化
         
-        // 成功初始化后重置重试计数（与Android一致）
+        // 成功初始化后重置重试计数
         if (_retryCount > 0) {
             _retryCount = 0; // 重置重试
         }
