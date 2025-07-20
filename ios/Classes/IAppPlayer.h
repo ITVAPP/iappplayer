@@ -120,6 +120,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)disposeSansEventChannel; // 释放资源（不含事件通道）
 /// 释放播放器所有资源
 - (void)dispose; // 释放所有资源
+/// 配置缓冲参数
+- (void)configureBufferParameters:(NSNumber*)minBufferMs
+                      maxBufferMs:(NSNumber*)maxBufferMs
+              bufferForPlaybackMs:(NSNumber*)bufferForPlaybackMs
+ bufferForPlaybackAfterRebufferMs:(NSNumber*)bufferForPlaybackAfterRebufferMs; // 配置缓冲参数
 @end
 
 NS_ASSUME_NONNULL_END
