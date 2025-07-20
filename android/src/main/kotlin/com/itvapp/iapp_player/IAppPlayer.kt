@@ -1061,14 +1061,14 @@ internal class IAppPlayer(
     // 执行重试操作
     private fun performRetry() {
         if (isDisposed.get()) return
-        
+    
         try {
-            currentMediaSource?.let { mediaSource ->
+            currentMediaSource?.also { mediaSource ->
                 // 停止并重新加载媒体源
                 exoPlayer?.stop()
                 exoPlayer?.setMediaSource(mediaSource)
                 exoPlayer?.prepare()
-                
+            
                 // 根据流类型决定是否恢复播放状态
                 if (isLiveStream()) {
                     // 直播流：直接播放，不恢复位置
@@ -1083,7 +1083,7 @@ internal class IAppPlayer(
                 resetRetryState()
                 eventSink.error("VideoError", "重试失败: 媒体源不可用", "")
             }
-            
+        
         } catch (exception: Exception) {
             resetRetryState()
             eventSink.error("VideoError", "重试失败: $exception", "")
