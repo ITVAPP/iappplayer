@@ -20,9 +20,22 @@ jobs:
       
       - name: Build APK
         run: |
+          # 在根目录获取依赖
           flutter pub get
+          
+          # 进入 example 目录
           cd example
+          
+          # 在 example 目录获取依赖
           flutter pub get
+          
+          # 清理之前的构建
+          flutter clean
+          
+          # 再次获取依赖，确保 .dart_tool 目录正确生成
+          flutter pub get
+          
+          # 构建 APK
           flutter build apk --release
       
       - uses: actions/upload-artifact@v4
