@@ -1,0 +1,31 @@
+buildscript {
+    ext.kotlin_version = '1.9.23' // 添加 Kotlin 版本
+
+    repositories {
+        google() // 添加 Google 仓库
+        mavenCentral() // 添加 Maven Central 仓库
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.6.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" // 添加 Kotlin 插件依赖
+    }
+}
+
+allprojects {
+    repositories {
+        google() // 添加 Google 仓库
+        mavenCentral() // 添加 Maven Central 仓库
+        maven { url 'https://jitpack.io' } // 添加 JitPack 仓库支持 RTMP 依赖
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
