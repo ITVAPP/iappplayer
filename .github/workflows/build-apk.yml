@@ -1,123 +1,49 @@
-name: Find Android v1 Embedding Problem Files
+name: Build APK
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
-  debug:
+  build:
     runs-on: ubuntu-latest
     
     steps:
+      # 1. 获取代码
       - uses: actions/checkout@v4
       
+      # 2. 安装 Java 17
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '17'
       
+      # 3. 安装 Flutter
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.5'
       
-      # 立即检查所有可能的问题文件
-      - name: Aggressive File Analysis
-        run: |
-          echo "=== 🔍 开始全面文件检查 ==="
-          cd example
-          
-          echo "=== 📁 项目结构 ==="
-          find . -name "android" -type d
-          find . -path "*/android/app/src/main/java*" -type d 2>/dev/null || echo "无Java目录"
-          find . -name "*.java" -o -name "*.kt" | head -10
-          
-          echo ""
-          echo "=== 📱 MainActivity文件详细分析 ==="
-          MAIN_ACTIVITIES=$(find . -name "*MainActivity*" -type f 2>/dev/null)
-          
-          if [ -z "$MAIN_ACTIVITIES" ]; then
-            echo "❌ 没有找到MainActivity文件"
-          else
-            for file in $MAIN_ACTIVITIES; do
-              echo ""
-              echo "🔎 分析文件: $file"
-              echo "--- 完整内容 ---"
-              cat "$file"
-              echo ""
-              echo "--- v1 Embedding检查 ---"
-              if grep -q "io.flutter.app.FlutterActivity" "$file"; then
-                echo "🚨 发现v1 FlutterActivity导入!"
-                grep -n "io.flutter.app.FlutterActivity" "$file"
-              fi
-              if grep -q "GeneratedPluginRegistrant" "$file"; then
-                echo "🚨 发现GeneratedPluginRegistrant使用!"
-                grep -n "GeneratedPluginRegistrant" "$file"
-              fi
-              if grep -q "registerWith" "$file"; then
-                echo "🚨 发现registerWith调用!"
-                grep -n "registerWith" "$file"
-              fi
-              echo "=================="
-            done
-          fi
-          
-          echo ""
-          echo "=== 📋 AndroidManifest.xml文件分析 ==="
-          MANIFESTS=$(find . -name "AndroidManifest.xml" -type f 2>/dev/null)
-          
-          if [ -z "$MANIFESTS" ]; then
-            echo "❌ 没有找到AndroidManifest.xml文件"
-          else
-            for file in $MANIFESTS; do
-              echo ""
-              echo "🔎 分析文件: $file"
-              echo "--- 完整内容 ---"
-              cat "$file"
-              echo ""
-              echo "--- Embedding配置检查 ---"
-              if grep -q "flutterEmbedding" "$file"; then
-                echo "✅ 发现flutterEmbedding配置"
-                grep -n "flutterEmbedding" "$file"
-              else
-                echo "🚨 缺少flutterEmbedding配置!"
-              fi
-              echo "=================="
-            done
-          fi
-          
-          echo ""
-          echo "=== 🔍 全项目v1关键词搜索 ==="
-          echo "--- 搜索 'io.flutter.app' ---"
-          grep -r "io.flutter.app" . 2>/dev/null && echo "🚨 发现v1导入!" || echo "✅ 未发现v1导入"
-          
-          echo "--- 搜索 'GeneratedPluginRegistrant.registerWith' ---"
-          grep -r "GeneratedPluginRegistrant.registerWith" . 2>/dev/null && echo "🚨 发现v1注册方式!" || echo "✅ 未发现v1注册方式"
-          
-          echo "--- 搜索 'FlutterApplication' ---"
-          grep -r "FlutterApplication" . 2>/dev/null && echo "🚨 发现FlutterApplication!" || echo "✅ 未发现FlutterApplication"
-          
-          echo ""
-          echo "=== 📊 结论 ==="
-          echo "如果上面显示了🚨标记，那就是需要修复的v1 embedding问题文件！"
-      
-      # 获取依赖
-      - name: Get Dependencies
+      # 4. 获取依赖
+      - name: Get dependencies
         run: |
           flutter pub get
-          cd example && flutter pub get
+          cd example
+          flutter pub get
       
-      # 尝试构建看具体错误
-      - name: Attempt Build
-        continue-on-error: true
+      # 5. 构建 APK
+      - name: Build APK
+        id: build
         run: |
           cd example
-          echo "=== 🚀 尝试构建（预期失败）==="
-          flutter build apk --release --verbose 2>&1 | tee ../build_log.txt
-          echo "构建退出码: $?"
+          flutter build apk --release 2>&1 | tee build.log || {
+            echo "==================== 构建失败 ===================="
+            echo "错误详情："
+            tail -50 build.log
+            exit 1
+          }
       
-      # 上传所有日志
-      - name: Upload Analysis Results
-        if: always()
+      # 6. 上传 APK（仅在构建成功时）
+      - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: embedding-analysis-results
-          path: |
-            build_log.txt
+          name: app-release
+          path: example/build/app/outputs/flutter-apk/app-release.apk
