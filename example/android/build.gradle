@@ -17,7 +17,6 @@ allprojects {
     repositories {
         google() // 添加 Google 仓库
         mavenCentral() // 添加 Maven Central 仓库
-        maven { url 'https://jitpack.io' } // 添加 JitPack 仓库支持 RTMP 依赖
     }
 }
 
