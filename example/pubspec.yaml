@@ -29,5 +29,8 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/
+    - assets/videos/
+    - assets/subtitles/
+    - assets/music/
+    - assets/lyrics/
   uses-material-design: true
