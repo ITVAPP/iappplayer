@@ -45,17 +45,23 @@ class HomePage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // 自定义标题栏
+              // 自定义标题栏 - 减少间距
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.only(
+                  top: 16, // 减少顶部间距
+                  left: 24,
+                  right: 24,
+                  bottom: 16, // 减少底部间距
+                ),
                 child: Column(
                   children: [
-                    const Icon(
-                      Icons.play_circle_outline,
-                      size: 64,
-                      color: Colors.white,
+                    // 使用图片替代图标
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 64,
+                      height: 64,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8), // 减少间距
                     const Text(
                       'IApp Player',
                       style: TextStyle(
@@ -64,7 +70,7 @@ class HomePage extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4), // 减少间距
                     Text(
                       '选择您的播放体验',
                       style: TextStyle(
@@ -267,11 +273,6 @@ class AssetCache {
     _cache[key] = content;
     return content;
   }
-
-  // clear方法保留以备将来使用
-  // void clear() {
-  //   _cache.clear();
-  // }
 }
 
 // 屏幕旋转处理Mixin - 提取重复的旋转处理逻辑
@@ -412,8 +413,9 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     // 使用缓存读取字幕文件
     final subtitleContent = await _assetCache.loadString('assets/subtitles/video1.srt');
     
+    // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
-      url: 'asset://assets/videos/video1.mp4',
+      url: 'assets/videos/video1.mp4',
       dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Superman (1941)',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
@@ -617,11 +619,12 @@ class _PlaylistExampleState extends State<PlaylistExample>
     final subtitle2 = await _assetCache.loadString('assets/subtitles/video2.srt');
     final subtitle3 = await _assetCache.loadString('assets/subtitles/video3.srt');
     
+    // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
-        'asset://assets/videos/video1.mp4',
-        'asset://assets/videos/video2.mp4',
-        'asset://assets/videos/video3.mp4',
+        'assets/videos/video1.mp4',
+        'assets/videos/video2.mp4',
+        'assets/videos/video3.mp4',
       ],
       dataSourceType: IAppPlayerDataSourceType.file,
       titles: ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'],
@@ -990,8 +993,9 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
 [01:38.33]却是在骗自己
 [01:41.66]最后你深深藏在我的歌声里''';
     
+    // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
-      url: 'asset://assets/music/song1.mp3',
+      url: 'assets/music/song1.mp3',
       dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Creative Design',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
@@ -1072,7 +1076,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 20), // 减少顶部间距
               // 音乐封面区域
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 40),
@@ -1113,7 +1117,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 20), // 减少间距
               // 歌曲信息
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -1227,11 +1231,12 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     final lyrics2 = await _assetCache.loadString('assets/lyrics/song2.lrc');
     final lyrics3 = await _assetCache.loadString('assets/lyrics/song3.lrc');
     
+    // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
-        'asset://assets/music/song1.mp3',
-        'asset://assets/music/song2.mp3',
-        'asset://assets/music/song3.mp3',
+        'assets/music/song1.mp3',
+        'assets/music/song2.mp3',
+        'assets/music/song3.mp3',
       ],
       dataSourceType: IAppPlayerDataSourceType.file,
       titles: ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'],
@@ -1333,7 +1338,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 20), // 减少顶部间距
               // 音乐封面区域
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 60),
@@ -1374,7 +1379,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 15), // 减少间距
               // 当前歌曲信息
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
