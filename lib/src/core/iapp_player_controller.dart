@@ -409,9 +409,14 @@ class IAppPlayerController {
       if (subtitlesSource.asmsIsSegmented == true) {
         return;
       }
-      final subtitlesParsed =
-          await IAppPlayerSubtitlesFactory.parseSubtitles(subtitlesSource);
-      subtitlesLines.addAll(subtitlesParsed);
+      try {
+        // 字幕解析失败不影响播放
+        final subtitlesParsed =
+            await IAppPlayerSubtitlesFactory.parseSubtitles(subtitlesSource);
+        subtitlesLines.addAll(subtitlesParsed);
+      } catch (e) {
+        IAppPlayerUtils.log("字幕加载失败: $e");
+      }
     }
 
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.changedSubtitles));
