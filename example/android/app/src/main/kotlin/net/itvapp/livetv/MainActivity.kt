@@ -1,19 +1,9 @@
 package com.example.iapp_player_example
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
-import android.app.UiModeManager
-import android.content.res.Configuration
+import android.content.Intent
 import android.os.Build
-import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.iapp_player_example"
@@ -32,7 +22,7 @@ class MainActivity : FlutterActivity() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
-                val channelId = CHANNEL // 使用包名作为渠道 ID
+                val channelId = CHANNEL
                 // 动态获取桌面图标名称（android:label）
                 val appInfo = packageManager.getApplicationInfo(packageName, 0)
                 val channelName = packageManager.getApplicationLabel(appInfo).toString()
@@ -50,26 +40,6 @@ class MainActivity : FlutterActivity() {
             } catch (e: PackageManager.NameNotFoundException) {
                 // 增强错误处理
                 e.printStackTrace()
-            }
-        }
-    }
-    
-    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        super.configureFlutterEngine(flutterEngine)
-        
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "isTV" -> {
-                    // 将检测逻辑放到后台线程执行，避免阻塞UI
-                    Thread {
-                        val isTV = isTVDevice()
-                        // 确保在主线程回调结果
-                        handler.post { 
-                            result.success(isTV) 
-                        }
-                    }.start()
-                }
-                else -> result.notImplemented()
             }
         }
     }
