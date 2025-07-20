@@ -1,0 +1,44 @@
+name: Build APK
+
+on:
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. 获取代码
+      - uses: actions/checkout@v4
+      
+      # 2. 安装 Java
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+      
+      # 3. 安装 Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+      
+      # 4. 构建 APK
+      - name: Build APK
+        run: |
+          # 获取主项目依赖
+          flutter pub get
+          
+          # 进入 example 目录
+          cd example
+          
+          # 获取 example 依赖
+          flutter pub get
+          
+          # 构建 release APK
+          flutter build apk --release
+      
+      # 5. 上传 APK 供下载
+      - uses: actions/upload-artifact@v3
+        with:
+          name: app-release
+          path: example/build/app/outputs/flutter-apk/app-release.apk
