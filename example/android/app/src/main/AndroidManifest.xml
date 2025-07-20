@@ -1,31 +1,64 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.iapp_player_example">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 声明支持 Leanback（Android TV）的特性 -->
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+        
+    <!-- 声明支持触摸屏特性 -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
     
-    <!-- 网络权限 -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 网络权限：允许应用程序访问互联网，用于播放在线视频流和下载内容 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     
-   <application
+    <!-- 外部存储写入权限：允许应用程序向设备的外部存储（如SD卡）写入数据，用于缓存视频和保存用户设置 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    
+    <!-- 外部存储读取权限：允许应用程序从设备的外部存储读取数据，用于读取缓存的视频和用户设置 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    
+    <!-- 通知权限：允许应用程序发送通知（Android 13及以上版本需要） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
+    <!-- 定义应用程序的主要属性 -->
+    <application
         android:label="IAppPlayer Example"
+        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:allowBackup="true">
+        
+        <!-- 定义主活动（MainActivity）的属性 -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
+            android:taskAffinity=""
+            android:theme="@style/NormalTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+            android:windowSoftInputMode="adjustResize"
+            android:resizeableActivity="true"
+            android:screenOrientation="fullSensor">
+            
+            <!-- 定义此活动的意图过滤器，用于指定启动模式和分类 -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        
+        <!-- 多窗口支持配置 -->
+        <meta-data
+            android:name="android.allow_multiple_resumed_activities"
+            android:value="true" />
+            
+        <!-- 指定 Flutter 引擎版本 -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
