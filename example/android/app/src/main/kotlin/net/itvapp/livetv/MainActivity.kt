@@ -1,4 +1,4 @@
-package net.itvapp.livetv
+package com.example.iapp_player_example
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -16,18 +16,12 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "net.itvapp.livetv"
+    private val CHANNEL = "com.example.iapp_player_example"
     private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 优化窗口背景设置
         window.setBackgroundDrawableResource(android.R.color.transparent)
-        
-        // 优化刘海屏适配
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode = 
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-        }
         
         super.onCreate(savedInstanceState)
         
@@ -45,7 +39,7 @@ class MainActivity : FlutterActivity() {
                 
                 val importance = NotificationManager.IMPORTANCE_DEFAULT
                 val channel = NotificationChannel(channelId, channelName, importance).apply {
-                    description = "Notification for live TV playback"
+                    description = "Notification for iapp_player playback"
                     // 优化通知显示
                     enableLights(true)
                     enableVibration(false)
@@ -59,14 +53,14 @@ class MainActivity : FlutterActivity() {
             }
         }
     }
-
+    
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "isTV" -> {
-                    // 优化：将检测逻辑放到后台线程执行，避免阻塞UI
+                    // 将检测逻辑放到后台线程执行，避免阻塞UI
                     Thread {
                         val isTV = isTVDevice()
                         // 确保在主线程回调结果
@@ -78,22 +72,6 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
-    }
-
-    private fun isTVDevice(): Boolean {
-        val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
-        val isTelevision = uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
-        val isTVBox = Build.DEVICE.contains("box", ignoreCase = true) || Build.MODEL.contains("box", ignoreCase = true)
-        val isTVFingerprint = Build.FINGERPRINT.contains("tv", ignoreCase = true) || Build.FINGERPRINT.contains("box", ignoreCase = true)
-        val hasLeanbackFeature = packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-        
-        // 增强TV检测：检查大屏幕无触摸设备
-        val isLargeScreen = resources.configuration.screenLayout and 
-                Configuration.SCREENLAYOUT_SIZE_MASK >= Configuration.SCREENLAYOUT_SIZE_LARGE
-        val hasNoTouchscreen = !packageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
-        
-        return isTelevision || isTVBox || isTVFingerprint || hasLeanbackFeature || 
-               (isLargeScreen && hasNoTouchscreen)
     }
     
     override fun onDestroy() {
