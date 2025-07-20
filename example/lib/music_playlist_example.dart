@@ -33,7 +33,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     final lyrics2 = await _assetCache.loadString('assets/lyrics/song2.lrc');
     final lyrics3 = await _assetCache.loadString('assets/lyrics/song3.lrc');
     
-    // 修复：使用正确的本地资源路径
+    // 使用正确的本地资源路径 - 播放器现在支持asset路径
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
         'assets/music/song1.mp3',
