@@ -33,4 +33,5 @@ flutter:
     - assets/subtitles/
     - assets/music/
     - assets/lyrics/
+    - assets/images/
   uses-material-design: true
