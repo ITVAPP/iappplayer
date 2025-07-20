@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:collection/collection.dart' show IterableExtension;
+import 'package:path_provider/path_provider.dart';
 import 'package:iapp_player/iapp_player.dart';
 import 'package:iapp_player/src/configuration/iapp_player_controller_event.dart';
 import 'package:iapp_player/src/core/iapp_player_utils.dart';
@@ -7,9 +11,6 @@ import 'package:iapp_player/src/subtitles/iapp_player_subtitle.dart';
 import 'package:iapp_player/src/subtitles/iapp_player_subtitles_factory.dart';
 import 'package:iapp_player/src/video_player/video_player.dart';
 import 'package:iapp_player/src/video_player/video_player_platform_interface.dart';
-import 'package:collection/collection.dart' show IterableExtension;
-import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 
 // 视频播放控制器，管理播放状态、数据源、字幕和事件
 class IAppPlayerController {
@@ -497,6 +498,34 @@ class IAppPlayerController {
     }
   }
 
+  // 判断是否为Flutter asset路径
+  bool _isAssetPath(String path) {
+    return path.startsWith('assets/') || path.startsWith('asset://');
+  }
+
+  // 从asset创建临时文件
+  Future<File> _createFileFromAsset(String assetPath) async {
+    try {
+      // 移除可能的 asset:// 前缀
+      final cleanPath = assetPath.startsWith('asset://') 
+          ? assetPath.substring(8) 
+          : assetPath;
+      
+      // 从asset读取文件数据
+      final ByteData data = await rootBundle.load(cleanPath);
+      final List<int> bytes = data.buffer.asUint8List();
+      
+      // 获取文件扩展名
+      final String extension = cleanPath.split('.').last;
+      
+      // 创建临时文件
+      final tempFile = await _createFile(bytes, extension: extension);
+      return tempFile;
+    } catch (e) {
+      throw Exception('无法从asset加载文件: $assetPath, 错误: $e');
+    }
+  }
+
   // 设置数据源
   Future _setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
     switch (iappPlayerDataSource.type) {
@@ -535,26 +564,54 @@ class IAppPlayerController {
 
         break;
       case IAppPlayerDataSourceType.file:
-        final file = File(iappPlayerDataSource.url);
-        if (!file.existsSync()) {
+        // 检查是否为asset路径
+        if (_isAssetPath(iappPlayerDataSource.url)) {
+          // 处理Flutter asset路径
           IAppPlayerUtils.log(
-              "文件 ${file.path} 不存在，可能是使用了原生路径");
-        }
+              "检测到asset路径: ${iappPlayerDataSource.url}，将从asset加载");
+          
+          // 从asset创建临时文件
+          final tempFile = await _createFileFromAsset(iappPlayerDataSource.url);
+          _tempFiles.add(tempFile);
+          
+          // 使用临时文件播放
+          await videoPlayerController?.setFileDataSource(
+              tempFile,
+              showNotification: _iappPlayerDataSource
+                  ?.notificationConfiguration?.showNotification,
+              title: _iappPlayerDataSource?.notificationConfiguration?.title,
+              author: _iappPlayerDataSource?.notificationConfiguration?.author,
+              imageUrl:
+                  _iappPlayerDataSource?.notificationConfiguration?.imageUrl,
+              notificationChannelName: _iappPlayerDataSource
+                  ?.notificationConfiguration?.notificationChannelName,
+              overriddenDuration: _iappPlayerDataSource!.overriddenDuration,
+              activityName: _iappPlayerDataSource
+                  ?.notificationConfiguration?.activityName,
+              clearKey: _iappPlayerDataSource?.drmConfiguration?.clearKey);
+        } else {
+          // 处理普通文件系统路径
+          final file = File(iappPlayerDataSource.url);
+          if (!file.existsSync()) {
+            IAppPlayerUtils.log(
+                "文件 ${file.path} 不存在，可能是使用了原生路径");
+          }
 
-        await videoPlayerController?.setFileDataSource(
-            File(iappPlayerDataSource.url),
-            showNotification: _iappPlayerDataSource
-                ?.notificationConfiguration?.showNotification,
-            title: _iappPlayerDataSource?.notificationConfiguration?.title,
-            author: _iappPlayerDataSource?.notificationConfiguration?.author,
-            imageUrl:
-                _iappPlayerDataSource?.notificationConfiguration?.imageUrl,
-            notificationChannelName: _iappPlayerDataSource
-                ?.notificationConfiguration?.notificationChannelName,
-            overriddenDuration: _iappPlayerDataSource!.overriddenDuration,
-            activityName: _iappPlayerDataSource
-                ?.notificationConfiguration?.activityName,
-            clearKey: _iappPlayerDataSource?.drmConfiguration?.clearKey);
+          await videoPlayerController?.setFileDataSource(
+              file,
+              showNotification: _iappPlayerDataSource
+                  ?.notificationConfiguration?.showNotification,
+              title: _iappPlayerDataSource?.notificationConfiguration?.title,
+              author: _iappPlayerDataSource?.notificationConfiguration?.author,
+              imageUrl:
+                  _iappPlayerDataSource?.notificationConfiguration?.imageUrl,
+              notificationChannelName: _iappPlayerDataSource
+                  ?.notificationConfiguration?.notificationChannelName,
+              overriddenDuration: _iappPlayerDataSource!.overriddenDuration,
+              activityName: _iappPlayerDataSource
+                  ?.notificationConfiguration?.activityName,
+              clearKey: _iappPlayerDataSource?.drmConfiguration?.clearKey);
+        }
         break;
       case IAppPlayerDataSourceType.memory:
         final file = await _createFile(_iappPlayerDataSource!.bytes!,
