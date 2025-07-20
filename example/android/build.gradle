@@ -1,6 +1,8 @@
 buildscript {
-    ext.kotlin_version = '1.9.23' // 添加 Kotlin 版本
-
+    ext.kotlin_version = '1.9.23'
+    ext.gradleVersion = "4.1.0"
+    ext.multidexVersion = "2.0.1"
+    
     repositories {
         google() // 添加 Google 仓库
         mavenCentral() // 添加 Maven Central 仓库
