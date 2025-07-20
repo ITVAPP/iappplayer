@@ -28,22 +28,36 @@ jobs:
           cd example
           flutter pub get
       
-      # 5. 构建 APK
+      # 5. 构建 APK（失败也继续）
       - name: Build APK
         id: build
+        continue-on-error: true
         run: |
           cd example
-          flutter build apk --release 2>&1 | tee build.log || {
-            echo "==================== 构建失败 ===================="
-            echo "错误详情："
-            tail -50 build.log
-            exit 1
-          }
+          flutter build apk --release
       
-      # 6. 上传 APK（仅在构建成功时）
+      # 6. 检查构建结果
+      - name: Check build result
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "==================== 构建失败 ===================="
+          echo "请检查上面的错误信息"
+          exit 1
+      
+      # 7. 查找APK文件
+      - name: Find APK files
+        if: always()
+        run: |
+          echo "查找所有APK文件..."
+          find example -name "*.apk" -type f 2>/dev/null || echo "未找到APK文件"
+      
+      # 8. 上传 APK（如果存在）
       - name: Upload APK
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: example/build/app/outputs/flutter-apk/app-release.apk
+          path: |
+            example/build/app/outputs/flutter-apk/*.apk
+            example/build/app/outputs/apk/release/*.apk
+          if-no-files-found: warn
