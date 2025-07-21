@@ -416,7 +416,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
       url: 'assets/videos/video1.mp4',
-      // dataSourceType: IAppPlayerDataSourceType.file,
+      dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Superman (1941)',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
       subtitleContent: subtitleContent,
@@ -429,7 +429,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
           _handleOrientationChange();
         }
       },
-      preferredDecoderType: IAppPlayerDecoderType.hardwareFirst,
+      // preferredDecoderType: IAppPlayerDecoderType.hardwareFirst,
       autoDetectFullscreenDeviceOrientation: true,
       deviceOrientationsOnFullScreen: [
         DeviceOrientation.landscapeLeft,
