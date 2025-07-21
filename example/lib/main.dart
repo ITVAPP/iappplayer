@@ -1234,9 +1234,9 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
-        'assets/music/song1.mp3',
-        'assets/music/song2.mp3',
-        'assets/music/song3.mp3',
+        'http://m804.music.126.net/20250721092811/1f6afe43fa14bedfb52f96637d47acbd/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/60942712315/c65e/8c1a/a815/210492e49065671f04e5c3ba82fd77bd.mp3?vuutv=jX9LLOOzznGh2LlhXGVRq/rHsz587ka2vlctvtRQHa0SFJ4CEr2oQGAp25Itrs3jB3bRBOUQgzdyxFPSkOX1Udf4PQCUMGBnIdbfCUWOaN8=&authSecret=000001982a81931506630a3b184e0ccd',
+        'http://m704.music.126.net/20250721092932/750ab58c17428fbc071881c2f12a43ac/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/60971015254/a679/2eb4/b68e/ac48af8be2670dc220d1e26d94b5e3ac.mp3?vuutv=km+pZd2TGDd/xATPqOZAJvAebP33ny5KVaYdWxIHrFwiZY8Nsf2p/V8agOUfRkgyYotmh9dblJE0xfYYz09Mbyiv0s1JnWPvbmctrUd/lIo=&authSecret=000001982a82cecd0c6e0a3084e71618',
+        'http://m704.music.126.net/20250721092939/d7d2a534c432991aa0c49904541fbba6/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/61173539343/8a31/86db/b5e0/d9586dc54e235f5df8411a13bad5a61d.mp3?vuutv=sAgX7I9g6nz2+xUEfr8TquOz3SMyI3lWOXhnta0NZEOLiTbMf+dnFnYEqa/3FiERArsYasoDeKiYwRuRTWy04feoBXZzjV6ulkqhTjL0qi0=&authSecret=000001982a82e98b1c3a0a3084b10091',
       ],
       dataSourceType: IAppPlayerDataSourceType.file,
       titles: ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'],
