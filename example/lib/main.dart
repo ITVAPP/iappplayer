@@ -419,7 +419,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Superman (1941)',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
-      subtitleContent: subtitleContent,
+      // subtitleContent: subtitleContent,
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
