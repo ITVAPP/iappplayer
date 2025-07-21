@@ -416,10 +416,10 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
       url: 'assets/videos/video1.mp4',
-      dataSourceType: IAppPlayerDataSourceType.file,
+      // dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Superman (1941)',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
-      // subtitleContent: subtitleContent,
+      subtitleContent: subtitleContent,
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
