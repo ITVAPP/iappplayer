@@ -6,6 +6,55 @@ void main() {
   runApp(const MyApp());
 }
 
+// UI常量定义 - 集中管理所有硬编码数字
+class UIConstants {
+  // 间距常量
+  static const double spaceXS = 4.0;
+  static const double spaceSM = 8.0;
+  static const double spaceMD = 16.0;
+  static const double spaceLG = 24.0;
+  static const double spaceXL = 32.0;
+  static const double spaceXXL = 40.0;
+  static const double spaceXXXL = 60.0;
+  
+  // 圆角常量
+  static const double radiusSM = 12.0;
+  static const double radiusMD = 16.0;
+  static const double radiusLG = 20.0;
+  static const double radiusXL = 30.0;
+  
+  // 按钮尺寸
+  static const double buttonSizeNormal = 60.0;
+  static const double buttonSizeLarge = 80.0;
+  
+  // 图标尺寸
+  static const double iconXS = 16.0;
+  static const double iconSM = 20.0;
+  static const double iconMD = 24.0;
+  static const double iconLG = 28.0;
+  static const double iconXL = 32.0;
+  static const double iconXXL = 36.0;
+  static const double iconLogo = 64.0;
+  
+  // 字体大小
+  static const double fontSM = 14.0;
+  static const double fontMD = 16.0;
+  static const double fontLG = 18.0;
+  static const double fontXL = 20.0;
+  static const double fontXXL = 24.0;
+  static const double fontXXXL = 28.0;
+  static const double fontXXXXL = 32.0;
+  
+  // 阴影模糊半径
+  static const double shadowSM = 10.0;
+  static const double shadowMD = 20.0;
+  static const double shadowLG = 30.0;
+  
+  // 音乐播放器专用
+  static const double musicPlayerHeight = 180.0;
+  static const double musicCoverSize = 200.0; // 调整后的封面大小
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
@@ -47,34 +96,34 @@ class HomePage extends StatelessWidget {
             children: [
               // 自定义标题栏 - 减少间距
               Container(
-                padding: const EdgeInsets.only(
-                  top: 16, // 减少顶部间距
-                  left: 24,
-                  right: 24,
-                  bottom: 16, // 减少底部间距
+                padding: EdgeInsets.only(
+                  top: UIConstants.spaceMD, // 减少顶部间距
+                  left: UIConstants.spaceLG,
+                  right: UIConstants.spaceLG,
+                  bottom: UIConstants.spaceMD, // 减少底部间距
                 ),
                 child: Column(
                   children: [
                     // 使用图片替代图标
                     Image.asset(
                       'assets/images/logo.png',
-                      width: 64,
-                      height: 64,
+                      width: UIConstants.iconLogo,
+                      height: UIConstants.iconLogo,
                     ),
-                    const SizedBox(height: 8), // 减少间距
-                    const Text(
+                    SizedBox(height: UIConstants.spaceSM), // 减少间距
+                    Text(
                       'IApp Player',
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: UIConstants.fontXXXXL,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 4), // 减少间距
+                    SizedBox(height: UIConstants.spaceXS), // 减少间距
                     Text(
                       '选择您的播放体验',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: UIConstants.fontMD,
                         color: Colors.white.withOpacity(0.7),
                       ),
                     ),
@@ -84,7 +133,7 @@ class HomePage extends StatelessWidget {
               // 选项卡片
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(UIConstants.spaceLG - 4), // 20
                   children: [
                     _buildModernCard(
                       context,
@@ -100,7 +149,7 @@ class HomePage extends StatelessWidget {
                         const SingleVideoExample(),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spaceMD),
                     _buildModernCard(
                       context,
                       icon: Icons.playlist_play,
@@ -115,7 +164,7 @@ class HomePage extends StatelessWidget {
                         const PlaylistExample(),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spaceMD),
                     _buildModernCard(
                       context,
                       icon: Icons.music_note_outlined,
@@ -130,7 +179,7 @@ class HomePage extends StatelessWidget {
                         const MusicPlayerExample(),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spaceMD),
                     _buildModernCard(
                       context,
                       icon: Icons.queue_music,
@@ -167,11 +216,11 @@ class HomePage extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(UIConstants.radiusLG),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(UIConstants.spaceLG - 4), // 20
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(UIConstants.radiusLG),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -180,43 +229,43 @@ class HomePage extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: gradient[0].withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                blurRadius: UIConstants.shadowMD,
+                offset: Offset(0, UIConstants.shadowSM),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(UIConstants.spaceMD),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusMD),
                 ),
                 child: Icon(
                   icon,
-                  size: 32,
+                  size: UIConstants.iconXL,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: UIConstants.spaceLG - 4), // 20
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontSize: UIConstants.fontXL,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: UIConstants.spaceXS),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: UIConstants.fontSM,
                         color: Colors.white.withOpacity(0.8),
                       ),
                     ),
@@ -226,7 +275,7 @@ class HomePage extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 color: Colors.white.withOpacity(0.8),
-                size: 20,
+                size: UIConstants.iconSM,
               ),
             ],
           ),
@@ -254,24 +303,6 @@ class HomePage extends StatelessWidget {
         },
       ),
     );
-  }
-}
-
-// 资源缓存类 - 避免重复读取文件
-class AssetCache {
-  static final AssetCache _instance = AssetCache._internal();
-  factory AssetCache() => _instance;
-  AssetCache._internal();
-
-  final Map<String, String> _cache = {};
-
-  Future<String> loadString(String key) async {
-    if (_cache.containsKey(key)) {
-      return _cache[key]!;
-    }
-    final content = await rootBundle.loadString(key);
-    _cache[key] = content;
-    return content;
   }
 }
 
@@ -337,7 +368,7 @@ class ModernControlButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(UIConstants.radiusMD),
         gradient: isPrimary ? LinearGradient(
           colors: [
             const Color(0xFF667eea),
@@ -348,8 +379,8 @@ class ModernControlButton extends StatelessWidget {
         boxShadow: isPrimary ? [
           BoxShadow(
             color: const Color(0xFF667eea).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            blurRadius: UIConstants.shadowMD,
+            offset: Offset(0, UIConstants.shadowSM),
           ),
         ] : null,
       ),
@@ -357,22 +388,25 @@ class ModernControlButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(UIConstants.radiusMD),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: UIConstants.spaceLG,
+              vertical: UIConstants.spaceMD,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   icon,
                   color: Colors.white,
-                  size: 24,
+                  size: UIConstants.iconMD,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: UIConstants.spaceSM + 4), // 12
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: UIConstants.fontMD,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
@@ -398,7 +432,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     with WidgetsBindingObserver, PlayerOrientationMixin {
   IAppPlayerController? _controller;
   bool _isLoading = true;
-  final _assetCache = AssetCache();
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -410,8 +443,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 使用缓存读取字幕文件
-    // final subtitleContent = await _assetCache.loadString('assets/subtitles/video1.srt');
+    // 直接读取字幕文件，不使用缓存
+    // final subtitleContent = await rootBundle.loadString('assets/subtitles/video1.srt');
     
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
@@ -501,19 +534,19 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
             children: [
               // 播放器区域
               Container(
-                margin: const EdgeInsets.all(16),
+                margin: EdgeInsets.all(UIConstants.spaceMD),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+                      blurRadius: UIConstants.shadowMD,
+                      offset: Offset(0, UIConstants.shadowSM),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
                     child: Container(
@@ -533,11 +566,11 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
               const Spacer(),
               // 控制按钮区域
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(UIConstants.spaceLG),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(30),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(UIConstants.radiusXL),
                   ),
                 ),
                 child: Column(
@@ -559,7 +592,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                       label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
                       isPrimary: true,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spaceMD),
                     // 全屏按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
@@ -602,7 +635,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
-  final _assetCache = AssetCache();
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -614,10 +646,10 @@ class _PlaylistExampleState extends State<PlaylistExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 使用缓存批量读取字幕文件
-    final subtitle1 = await _assetCache.loadString('assets/subtitles/video1.srt');
-    final subtitle2 = await _assetCache.loadString('assets/subtitles/video2.srt');
-    final subtitle3 = await _assetCache.loadString('assets/subtitles/video3.srt');
+    // 直接读取字幕文件，不使用缓存
+    final subtitle1 = await rootBundle.loadString('assets/subtitles/video1.srt');
+    final subtitle2 = await rootBundle.loadString('assets/subtitles/video2.srt');
+    final subtitle3 = await rootBundle.loadString('assets/subtitles/video3.srt');
     
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
@@ -726,19 +758,19 @@ class _PlaylistExampleState extends State<PlaylistExample>
             children: [
               // 播放器区域
               Container(
-                margin: const EdgeInsets.all(16),
+                margin: EdgeInsets.all(UIConstants.spaceMD),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+                      blurRadius: UIConstants.shadowMD,
+                      offset: Offset(0, UIConstants.shadowSM),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
                     child: Container(
@@ -757,8 +789,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
               ),
               // 播放信息卡片
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(16),
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
+                padding: EdgeInsets.all(UIConstants.spaceMD),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -766,30 +798,30 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       const Color(0xFF764ba2),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusMD),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF667eea).withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+                      blurRadius: UIConstants.shadowMD,
+                      offset: Offset(0, UIConstants.shadowSM),
                     ),
                   ],
                 ),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(UIConstants.spaceSM + 4), // 12
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(UIConstants.radiusSM),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.playlist_play_rounded,
                         color: Colors.white,
-                        size: 24,
+                        size: UIConstants.iconMD,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: UIConstants.spaceMD),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -798,15 +830,15 @@ class _PlaylistExampleState extends State<PlaylistExample>
                             '播放进度',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSM,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: UIConstants.spaceXS),
                           Text(
                             '${_currentIndex + 1} / $totalVideos',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 20,
+                              fontSize: UIConstants.fontXL,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -814,24 +846,27 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: UIConstants.spaceMD,
+                        vertical: UIConstants.spaceSM,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
                             color: Colors.white,
-                            size: 16,
+                            size: UIConstants.iconXS,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: UIConstants.spaceXS),
                           Text(
                             _shuffleMode ? '随机' : '顺序',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: UIConstants.fontSM,
                             ),
                           ),
                         ],
@@ -843,11 +878,11 @@ class _PlaylistExampleState extends State<PlaylistExample>
               const Spacer(),
               // 控制按钮区域
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(UIConstants.spaceLG),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(30),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(UIConstants.radiusXL),
                   ),
                 ),
                 child: Column(
@@ -888,7 +923,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spaceLG - 4), // 20
                     // 模式切换按钮
                     ModernControlButton(
                       onPressed: _playlistController != null
@@ -913,8 +948,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
     bool isPrimary = false,
   }) {
     return Container(
-      width: isPrimary ? 80 : 60,
-      height: isPrimary ? 80 : 60,
+      width: isPrimary ? UIConstants.buttonSizeLarge : UIConstants.buttonSizeNormal,
+      height: isPrimary ? UIConstants.buttonSizeLarge : UIConstants.buttonSizeNormal,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: isPrimary ? LinearGradient(
@@ -927,8 +962,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
         boxShadow: isPrimary ? [
           BoxShadow(
             color: const Color(0xFF667eea).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            blurRadius: UIConstants.shadowMD,
+            offset: Offset(0, UIConstants.shadowSM),
           ),
         ] : null,
       ),
@@ -941,7 +976,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
             child: Icon(
               icon,
               color: Colors.white,
-              size: isPrimary ? 36 : 28,
+              size: isPrimary ? UIConstants.iconXXL : UIConstants.iconLG,
             ),
           ),
         ),
@@ -962,7 +997,6 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
     with WidgetsBindingObserver, PlayerOrientationMixin {
   IAppPlayerController? _controller;
   bool _isLoading = true;
-  final _assetCache = AssetCache();
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -1076,66 +1110,70 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 20), // 减少顶部间距
-              // 音乐封面区域
+              SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
+              // 音乐封面区域 - 使用logo.png
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 40),
+                width: UIConstants.musicCoverSize,
+                height: UIConstants.musicCoverSize,
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusXL),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF4facfe).withOpacity(0.3),
-                      blurRadius: 30,
-                      offset: const Offset(0, 20),
+                      blurRadius: UIConstants.shadowLG,
+                      offset: Offset(0, UIConstants.spaceLG - 4), // 20
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF4facfe),
-                            const Color(0xFF00f2fe),
-                          ],
-                        ),
-                      ),
-                      child: _controller != null
-                          ? IAppPlayer(controller: _controller!)
-                          : const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                    ),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusXL),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-              const SizedBox(height: 20), // 减少间距
+              SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少间距
+              // 播放器区域 - 固定高度180
+              Container(
+                height: UIConstants.musicPlayerHeight,
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                  color: Colors.black.withOpacity(0.3),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                  child: _controller != null
+                      ? IAppPlayer(controller: _controller!)
+                      : const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                ),
+              ),
+              SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少间距
               // 歌曲信息
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+                padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       'Creative Design',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: UIConstants.fontXXXL,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spaceSM),
                     Text(
                       'Unknown Artist',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: UIConstants.fontLG,
                         color: Colors.white.withOpacity(0.6),
                       ),
                     ),
@@ -1145,11 +1183,11 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
               const Spacer(),
               // 控制按钮区域
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(UIConstants.spaceLG),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(30),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(UIConstants.radiusXL),
                   ),
                 ),
                 child: Column(
@@ -1171,7 +1209,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                       label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
                       isPrimary: true,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: UIConstants.spaceMD),
                     // 全屏按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
@@ -1214,7 +1252,6 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
-  final _assetCache = AssetCache();
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -1226,10 +1263,10 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 使用缓存批量读取LRC歌词文件
-    final lyrics1 = await _assetCache.loadString('assets/lyrics/song1.lrc');
-    final lyrics2 = await _assetCache.loadString('assets/lyrics/song2.lrc');
-    final lyrics3 = await _assetCache.loadString('assets/lyrics/song3.lrc');
+    // 直接读取LRC歌词文件，不使用缓存
+    final lyrics1 = await rootBundle.loadString('assets/lyrics/song1.lrc');
+    final lyrics2 = await rootBundle.loadString('assets/lyrics/song2.lrc');
+    final lyrics3 = await rootBundle.loadString('assets/lyrics/song3.lrc');
     
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
@@ -1338,64 +1375,71 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 20), // 减少顶部间距
-              // 音乐封面区域
+              SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
+              // 音乐封面区域 - 使用logo.png
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 60),
+                width: UIConstants.musicCoverSize,
+                height: UIConstants.musicCoverSize,
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXXL),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusXL),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFFfa709a).withOpacity(0.3),
-                      blurRadius: 30,
-                      offset: const Offset(0, 20),
+                      blurRadius: UIConstants.shadowLG,
+                      offset: Offset(0, UIConstants.spaceLG - 4), // 20
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFFfa709a),
-                            const Color(0xFFfee140),
-                          ],
-                        ),
-                      ),
-                      child: _controller != null
-                          ? IAppPlayer(controller: _controller!)
-                          : const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                    ),
+                  borderRadius: BorderRadius.circular(UIConstants.radiusXL),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-              const SizedBox(height: 15), // 减少间距
+              SizedBox(height: UIConstants.spaceMD), // 16 - 调整间距
+              // 播放器区域 - 固定高度180
+              Container(
+                height: UIConstants.musicPlayerHeight,
+                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                  color: Colors.black.withOpacity(0.3),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                  child: _controller != null
+                      ? IAppPlayer(controller: _controller!)
+                      : const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                ),
+              ),
+              SizedBox(height: UIConstants.spaceMD - 1), // 15 - 减少间距
               // 当前歌曲信息
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+                padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
                 child: Column(
                   children: [
                     Text(
                       _currentIndex < titles.length ? titles[_currentIndex] : '',
-                      style: const TextStyle(
-                        fontSize: 24,
+                      style: TextStyle(
+                        fontSize: UIConstants.fontXXL,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: UIConstants.spaceSM),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: UIConstants.spaceMD,
+                        vertical: UIConstants.spaceSM,
+                      ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -1403,13 +1447,13 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                             const Color(0xFFfee140),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                       ),
                       child: Text(
                         '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: UIConstants.fontSM,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1420,11 +1464,11 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
               const Spacer(),
               // 控制按钮区域
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(UIConstants.spaceLG),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(30),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(UIConstants.radiusXL),
                   ),
                 ),
                 child: Column(
@@ -1465,7 +1509,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: UIConstants.spaceLG - 4), // 20
                     // 模式切换按钮
                     ModernControlButton(
                       onPressed: _playlistController != null
@@ -1490,8 +1534,8 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     bool isPrimary = false,
   }) {
     return Container(
-      width: isPrimary ? 80 : 60,
-      height: isPrimary ? 80 : 60,
+      width: isPrimary ? UIConstants.buttonSizeLarge : UIConstants.buttonSizeNormal,
+      height: isPrimary ? UIConstants.buttonSizeLarge : UIConstants.buttonSizeNormal,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: isPrimary ? LinearGradient(
@@ -1504,8 +1548,8 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
         boxShadow: isPrimary ? [
           BoxShadow(
             color: const Color(0xFFfa709a).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            blurRadius: UIConstants.shadowMD,
+            offset: Offset(0, UIConstants.shadowSM),
           ),
         ] : null,
       ),
@@ -1518,7 +1562,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
             child: Icon(
               icon,
               color: Colors.white,
-              size: isPrimary ? 36 : 28,
+              size: isPrimary ? UIConstants.iconXXL : UIConstants.iconLG,
             ),
           ),
         ),
