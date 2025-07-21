@@ -81,11 +81,12 @@ dev_dependencies:
 
 ```gradle
 android {
-    compileSdkVersion 33
+    namespace 'com.example.yourapp'
+    compileSdkVersion 35
     
     defaultConfig {
         minSdkVersion 21  // 重要：最低 API 21
-        targetSdkVersion 33
+        targetSdkVersion 34
     }
 }
 ```
