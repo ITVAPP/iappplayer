@@ -51,7 +51,7 @@
 - **Dart**: 2.17.0 or higher
 
 #### Platform Requirements
-- **Android**: API 21+ (Android 5.0+)
+- **Android**: API 21+ (Android 5.0+)、compileSdkVersion 35+
 - **iOS**: 11.0 or higher
 
 ### 📦 Installation Steps
@@ -82,11 +82,12 @@ Ensure minimum SDK version in `android/app/build.gradle`:
 
 ```gradle
 android {
-    compileSdkVersion 33
+    namespace 'com.example.yourapp'
+    compileSdkVersion 35
     
     defaultConfig {
         minSdkVersion 21  // Important: Minimum API 21
-        targetSdkVersion 33
+        targetSdkVersion 34
     }
 }
 ```
