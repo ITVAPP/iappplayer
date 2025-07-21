@@ -1146,54 +1146,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
       ),
     );
   }
-
-  Widget _buildDecoderOption(String label, DecoderState decoder, IconData icon) {
-    final isSelected = _currentDecoder == decoder;
-    
-    return GestureDetector(
-      onTap: () => _switchDecoder(decoder),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: UIConstants.spaceMD,
-          vertical: UIConstants.spaceSM,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected 
-              ? const Color(0xFF667eea).withOpacity(0.3)
-              : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
-          border: Border.all(
-            color: isSelected 
-                ? const Color(0xFF667eea)
-                : Colors.white.withOpacity(0.1),
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: isSelected 
-                  ? const Color(0xFF667eea) 
-                  : Colors.white.withOpacity(0.6),
-              size: UIConstants.iconMD,
-            ),
-            SizedBox(height: UIConstants.spaceXS),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: UIConstants.fontSM,
-                color: isSelected 
-                    ? const Color(0xFF667eea) 
-                    : Colors.white.withOpacity(0.6),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // 音乐播放器示例
