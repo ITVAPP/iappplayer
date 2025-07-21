@@ -411,7 +411,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
 
   Future<void> _initializePlayer() async {
     // 使用缓存读取字幕文件
-    final subtitleContent = await _assetCache.loadString('assets/subtitles/video1.srt');
+    // final subtitleContent = await _assetCache.loadString('assets/subtitles/video1.srt');
     
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
@@ -419,7 +419,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Superman (1941)',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
-      subtitleContent: subtitleContent,
+      // subtitleContent: subtitleContent,
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
