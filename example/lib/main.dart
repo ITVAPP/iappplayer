@@ -52,7 +52,7 @@ class UIConstants {
   
   // 音乐播放器专用
   static const double musicPlayerHeight = 180.0;
-  static const double musicCoverSize = 200.0; // 调整后的封面大小
+  static const double musicCoverSize = 100.0; // 封面大小减半
 }
 
 class MyApp extends StatelessWidget {
@@ -499,31 +499,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     }
   }
 
-  IAppPlayerDecoderType _getDecoderType() {
-    switch (_currentDecoder) {
-      case DecoderState.hardware:
-        return IAppPlayerDecoderType.hardwareFirst;
-      case DecoderState.software:
-        return IAppPlayerDecoderType.softwareFirst;
-      case DecoderState.auto:
-        return IAppPlayerDecoderType.auto;
-    }
-  }
-
-  // 切换解码器
-  void _switchDecoder(DecoderState newDecoder) async {
-    if (_currentDecoder == newDecoder) return;
-    
-    setState(() {
-      _currentDecoder = newDecoder;
-      _isLoading = true;
-    });
-    
-    // 重新初始化播放器
-    await _releasePlayer();
-    await _initializePlayer();
-  }
-
   @override
   void dispose() {
     _releasePlayer();
@@ -779,7 +754,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
-  DecoderState _currentDecoder = DecoderState.hardware;
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -842,7 +816,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
       },
       shuffleMode: false,
       loopVideos: true,
-      preferredDecoderType: _getDecoderType(),
       autoDetectFullscreenDeviceOrientation: true,
       deviceOrientationsOnFullScreen: [
         DeviceOrientation.landscapeLeft,
@@ -1062,47 +1035,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
                         ),
                       ),
                       SizedBox(height: UIConstants.spaceMD),
-                      // 解码器选择器
-                      Container(
-                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
-                        padding: EdgeInsets.all(UIConstants.spaceMD),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(UIConstants.radiusMD),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              '解码器选择',
-                              style: TextStyle(
-                                fontSize: UIConstants.fontMD,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
-                            ),
-                            SizedBox(height: UIConstants.spaceSM),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildDecoderOption(
-                                  '硬件解码',
-                                  DecoderState.hardware,
-                                  Icons.memory,
-                                ),
-                                _buildDecoderOption(
-                                  '软件解码',
-                                  DecoderState.software,
-                                  Icons.computer,
-                                ),
-                                _buildDecoderOption(
-                                  '自动选择',
-                                  DecoderState.auto,
-                                  Icons.auto_mode,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                   // 控制按钮区域
