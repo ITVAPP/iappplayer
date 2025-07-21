@@ -330,11 +330,44 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 构建封面区域
   Widget _buildCoverSection() {
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
+    final imageUrl = _iappPlayerController?.iappPlayerDataSource?.notificationConfiguration?.imageUrl;
+    
+    Widget? coverWidget;
+    
+    // 优先使用 placeholder，其次使用 imageUrl
+    if (placeholder != null) {
+      coverWidget = placeholder;
+    } else if (imageUrl != null && imageUrl.isNotEmpty) {
+      // 根据 URL 类型创建图片组件
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        coverWidget = Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.music_note,
+            size: _responsiveCoverSize * kDefaultMusicIconRatio,
+            color: _controlsConfiguration.iconsColor,
+            shadows: _iconShadows,
+          ),
+        );
+      } else {
+        coverWidget = Image.asset(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.music_note,
+            size: _responsiveCoverSize * kDefaultMusicIconRatio,
+            color: _controlsConfiguration.iconsColor,
+            shadows: _iconShadows,
+          ),
+        );
+      }
+    }
     
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (placeholder != null) 
+        if (coverWidget != null) 
           Container(
             width: _responsiveCoverSize,
             height: _responsiveCoverSize,
@@ -344,7 +377,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             ),
             child: ClipRRect(
               borderRadius: _coverBorderRadius,
-              child: placeholder,
+              child: coverWidget,
             ),
           )
         else
