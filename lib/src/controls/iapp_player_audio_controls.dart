@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:iapp_player/src/configuration/iapp_player_controls_configuration.dart';
 import 'package:iapp_player/src/controls/iapp_player_clickable_widget.dart';
 import 'package:iapp_player/src/controls/iapp_player_controls_state.dart';
@@ -9,7 +10,6 @@ import 'package:iapp_player/src/core/iapp_player_controller.dart';
 import 'package:iapp_player/src/core/iapp_player_utils.dart';
 import 'package:iapp_player/src/video_player/video_player.dart';
 import 'package:iapp_player/src/subtitles/iapp_player_subtitles_drawer.dart';
-import 'package:flutter/material.dart';
 
 // 音频播放控件
 class IAppPlayerAudioControls extends StatefulWidget {
@@ -107,6 +107,13 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kDiscBorderWidth = 2.0;
   static const double kPointerRotationAngle = -15.0;
   static const double kPointerPlayRotationAngle = 0.0;
+
+  // 唱臂相关常量
+  static const double kPointerArmLength = 60.0;
+  static const double kPointerBaseSize = 16.0;
+  static const double kPointerNeedleWidth = 4.0;
+  static const double kPointerShadowSpread = 2.0;
+  static const double kPointerArmOffset = 5.0;
 
   // 常量样式定义
   static const List<Shadow> _textShadows = [
@@ -393,54 +400,101 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 构建紧凑布局（仿HTML播放器）
   Widget _buildCompactLayout(BoxConstraints constraints) {
+    final imageUrl = _getImageUrl();
+    
     return Container(
       constraints: BoxConstraints(
         minHeight: kCompactModeMinHeight,
         maxHeight: kCompactModeMaxHeight,
       ),
-      decoration: BoxDecoration(
-        color: Colors.black87,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.8),
-            blurRadius: 20,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          // 主内容区域
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: kSpacingDouble),
-              child: Row(
-                children: [
-                  // 左侧唱片区域
-                  _buildCompactDisc(),
-                  _spacingDoubleWidthBox,
-                  // 右侧控件区域
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          // 背景模糊层
+          if (imageUrl != null)
+            Positioned.fill(
+              child: ClipRRect(
+                child: _buildCompactBlurredBackground(imageUrl),
+              ),
+            ),
+          // 主内容层
+          Container(
+            decoration: BoxDecoration(
+              color: imageUrl != null 
+                ? Colors.black.withOpacity(0.7) 
+                : Colors.black87,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.8),
+                  blurRadius: 20,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 主内容区域
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: kSpacingDouble),
+                    child: Row(
                       children: [
-                        // 歌曲信息
-                        _buildCompactSongInfo(),
-                        const SizedBox(height: kSpacingUnit),
-                        // 控制按钮
-                        _buildCompactControls(),
+                        // 左侧唱片区域
+                        _buildCompactDisc(),
+                        _spacingDoubleWidthBox,
+                        // 右侧控件区域
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // 歌曲信息
+                              _buildCompactSongInfo(),
+                              const SizedBox(height: kSpacingUnit),
+                              // 控制按钮
+                              _buildCompactControls(),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                // 进度条区域
+                _buildProgressSection(),
+              ],
             ),
           ),
-          // 进度条区域
-          _buildProgressSection(),
         ],
       ),
+    );
+  }
+
+  // 添加紧凑模式的背景模糊方法
+  Widget _buildCompactBlurredBackground(String imageUrl) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 背景图片
+        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))
+          Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(color: Colors.black87),
+          )
+        else
+          Image.asset(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(color: Colors.black87),
+          ),
+        // 模糊效果（降低模糊程度以提升性能）
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: Colors.transparent,
+          ),
+        ),
+      ],
     );
   }
 
@@ -470,11 +524,16 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               );
             },
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: AssetImage('assets/images/cd.png'), // 唱片纹理图
-                  fit: BoxFit.cover,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.grey[900]!,
+                    Colors.grey[800]!,
+                    Colors.grey[700]!,
+                    Colors.grey[800]!,
+                  ],
+                  stops: const [0.0, 0.3, 0.7, 1.0],
                 ),
               ),
               child: Center(
@@ -496,21 +555,21 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         ),
         // 指针
         Positioned(
-          right: -10,
-          top: 0,
+          right: -kPointerArmOffset,
+          top: kPointerArmOffset,
           child: AnimatedBuilder(
             animation: _pointerAnimation!,
             builder: (context, child) {
               return Transform.rotate(
                 angle: _pointerAnimation!.value * 3.14159 / 180,
-                alignment: Alignment.topRight,
-                child: Container(
-                  width: kCompactPointerWidth,
-                  height: kCompactDiscSize * 0.4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(4),
-                    boxShadow: _progressBarShadows,
+                alignment: const Alignment(0.5, -0.5), // 旋转锚点在顶部中心稍微偏上
+                child: CustomPaint(
+                  size: const Size(kPointerBaseSize, kPointerArmLength),
+                  painter: TonearmPainter(
+                    color: Colors.grey[700]!,
+                    shadows: _iconShadows,
+                    baseSize: kPointerBaseSize,
+                    needleWidth: kPointerNeedleWidth,
                   ),
                 ),
               );
@@ -1372,4 +1431,121 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   void cancelAndRestartTimer() {
     // 音频控件保持始终可见
   }
+}
+
+// 自定义唱臂绘制器
+class TonearmPainter extends CustomPainter {
+  final Color color;
+  final List<Shadow> shadows;
+  final double baseSize;
+  final double needleWidth;
+  
+  TonearmPainter({
+    this.color = Colors.grey,
+    this.shadows = const [],
+    this.baseSize = 16.0,
+    this.needleWidth = 4.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    
+    // 绘制阴影
+    for (final shadow in shadows) {
+      final shadowPaint = Paint()
+        ..color = shadow.color
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, shadow.blurRadius);
+      
+      // 绘制基座阴影
+      canvas.drawCircle(
+        Offset(size.width / 2 + shadow.offset.dx, baseSize / 2 + shadow.offset.dy),
+        baseSize / 2,
+        shadowPaint,
+      );
+      
+      // 绘制唱臂主体阴影
+      final shadowPath = Path()
+        ..moveTo(size.width / 2 - needleWidth / 2 + shadow.offset.dx, baseSize + shadow.offset.dy)
+        ..lineTo(size.width / 2 - needleWidth / 2 + shadow.offset.dx, size.height - 10 + shadow.offset.dy)
+        ..quadraticBezierTo(
+          size.width / 2 + shadow.offset.dx, 
+          size.height - 5 + shadow.offset.dy,
+          size.width / 2 + needleWidth / 2 + shadow.offset.dx, 
+          size.height - 10 + shadow.offset.dy,
+        )
+        ..lineTo(size.width / 2 + needleWidth / 2 + shadow.offset.dx, baseSize + shadow.offset.dy)
+        ..close();
+      
+      canvas.drawPath(shadowPath, shadowPaint);
+    }
+    
+    // 绘制基座（圆形）
+    canvas.drawCircle(
+      Offset(size.width / 2, baseSize / 2),
+      baseSize / 2,
+      paint,
+    );
+    
+    // 添加基座高光
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.3)
+      ..style = PaintingStyle.fill;
+    
+    canvas.drawCircle(
+      Offset(size.width / 2 - 2, baseSize / 2 - 2),
+      baseSize / 4,
+      highlightPaint,
+    );
+    
+    // 绘制唱臂主体
+    final armPath = Path()
+      ..moveTo(size.width / 2 - needleWidth / 2, baseSize)
+      ..lineTo(size.width / 2 - needleWidth / 2, size.height - 10)
+      ..quadraticBezierTo(
+        size.width / 2, 
+        size.height - 5,
+        size.width / 2 + needleWidth / 2, 
+        size.height - 10,
+      )
+      ..lineTo(size.width / 2 + needleWidth / 2, baseSize)
+      ..close();
+    
+    canvas.drawPath(armPath, paint);
+    
+    // 绘制唱臂细节线条
+    final detailPaint = Paint()
+      ..color = Colors.black.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+    
+    canvas.drawLine(
+      Offset(size.width / 2, baseSize),
+      Offset(size.width / 2, size.height - 8),
+      detailPaint,
+    );
+    
+    // 绘制唱针头
+    canvas.drawCircle(
+      Offset(size.width / 2, size.height - 5),
+      3,
+      paint..color = Colors.white,
+    );
+    
+    // 唱针头高光
+    canvas.drawCircle(
+      Offset(size.width / 2 - 0.5, size.height - 5.5),
+      1,
+      highlightPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant TonearmPainter oldDelegate) => 
+    oldDelegate.color != color || 
+    oldDelegate.shadows != shadows ||
+    oldDelegate.baseSize != baseSize ||
+    oldDelegate.needleWidth != needleWidth;
 }
