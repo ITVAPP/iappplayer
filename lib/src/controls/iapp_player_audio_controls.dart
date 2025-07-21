@@ -269,20 +269,59 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     }
 
     return Container(
-      color: Colors.transparent,
+      decoration: isExpandedMode ? null : _buildCompactBackground(),
       child: isExpandedMode 
         ? _buildExpandedLayout() 
         : _buildCompactLayout(),
     );
   }
 
+  // 构建紧凑模式背景
+  BoxDecoration? _buildCompactBackground() {
+    // 使用基于进度条颜色的渐变，保持主题一致性
+    final primaryColor = _controlsConfiguration.progressBarPlayedColor;
+    
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          primaryColor.withOpacity(0.15),
+          Colors.black.withOpacity(0.85),
+          Colors.black.withOpacity(0.95),
+        ],
+        stops: const [0.0, 0.6, 1.0],
+      ),
+    );
+  }
+
   // 构建紧凑布局
   Widget _buildCompactLayout() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
+    return Stack(
       children: [
-        _buildProgressSection(),
-        _buildControlsSection(),
+        // 背景装饰层
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.5),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // 内容层 - 保持原有布局，不添加额外标题避免高度溢出
+        Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            _buildProgressSection(),
+            _buildControlsSection(),
+          ],
+        ),
       ],
     );
   }
@@ -291,6 +330,22 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   Widget _buildExpandedLayout() {
     return Stack(
       children: [
+        // 背景层 - 使用渐变营造氛围
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.topCenter,
+                radius: 1.5,
+                colors: [
+                  _controlsConfiguration.progressBarPlayedColor.withOpacity(0.1),
+                  Colors.black.withOpacity(0.9),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // 内容层
         Column(
           children: [
             Expanded(
@@ -343,23 +398,13 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         coverWidget = Image.network(
           imageUrl,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Icon(
-            Icons.music_note,
-            size: _responsiveCoverSize * kDefaultMusicIconRatio,
-            color: _controlsConfiguration.iconsColor,
-            shadows: _iconShadows,
-          ),
+          errorBuilder: (context, error, stackTrace) => _buildDefaultMusicIcon(),
         );
       } else {
         coverWidget = Image.asset(
           imageUrl,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Icon(
-            Icons.music_note,
-            size: _responsiveCoverSize * kDefaultMusicIconRatio,
-            color: _controlsConfiguration.iconsColor,
-            shadows: _iconShadows,
-          ),
+          errorBuilder: (context, error, stackTrace) => _buildDefaultMusicIcon(),
         );
       }
     }
@@ -367,27 +412,79 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (coverWidget != null) 
-          Container(
-            width: _responsiveCoverSize,
-            height: _responsiveCoverSize,
-            decoration: const BoxDecoration(
-              borderRadius: _coverBorderRadius,
-              boxShadow: _progressBarShadows,
-            ),
-            child: ClipRRect(
-              borderRadius: _coverBorderRadius,
-              child: coverWidget,
-            ),
-          )
-        else
-          Icon(
-            Icons.music_note,
-            size: _responsiveCoverSize * kDefaultMusicIconRatio,
-            color: _controlsConfiguration.iconsColor,
-            shadows: _iconShadows,
+        // 封面容器，增加装饰效果
+        Container(
+          width: _responsiveCoverSize,
+          height: _responsiveCoverSize,
+          decoration: BoxDecoration(
+            borderRadius: _coverBorderRadius,
+            boxShadow: [
+              // 主阴影
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+              // 光晕效果
+              BoxShadow(
+                color: _controlsConfiguration.progressBarPlayedColor.withOpacity(0.2),
+                blurRadius: 40,
+                spreadRadius: 10,
+              ),
+            ],
           ),
+          child: Stack(
+            children: [
+              // 封面图片
+              ClipRRect(
+                borderRadius: _coverBorderRadius,
+                child: coverWidget ?? _buildDefaultMusicIcon(),
+              ),
+              // 添加微妙的渐变蒙版，增加层次感
+              if (coverWidget != null)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: _coverBorderRadius,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.1),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.1),
+                        ],
+                        stops: const [0.0, 0.5, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  // 构建默认音乐图标
+  Widget _buildDefaultMusicIcon() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            _controlsConfiguration.progressBarPlayedColor.withOpacity(0.8),
+            _controlsConfiguration.progressBarPlayedColor.withOpacity(0.6),
+          ],
+        ),
+      ),
+      child: Icon(
+        Icons.music_note,
+        size: _responsiveCoverSize * kDefaultMusicIconRatio,
+        color: Colors.white,
+        shadows: _iconShadows,
+      ),
     );
   }
 
@@ -472,6 +569,16 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final bool isLive = _iappPlayerController?.isLiveStream() ?? false;
 
     return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withOpacity(0.1),
+          ],
+        ),
+      ),
       padding: isLive ? _progressPaddingLive : _progressPadding,
       child: Row(
         children: [
@@ -482,6 +589,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                 fontSize: _responsiveTextSize - kTimeTextSizeDecrease,
                 color: _controlsConfiguration.textColor,
                 shadows: _textShadows,
+                fontWeight: FontWeight.w500,
               ),
             ),
             _timeSpacingBox,
@@ -504,6 +612,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                 fontSize: _responsiveTextSize - kTimeTextSizeDecrease,
                 color: _controlsConfiguration.textColor,
                 shadows: _textShadows,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -520,6 +629,16 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return Container(
       height: kAudioControlBarHeight,
       margin: const EdgeInsets.only(bottom: kSpacingHalf),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withOpacity(0.1),
+            Colors.black.withOpacity(0.2),
+          ],
+        ),
+      ),
       padding: _controlsPadding,
       child: Row(
         children: [
@@ -641,12 +760,17 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final bool isPlaying = _controller?.value.isPlaying ?? false;
 
     IconData iconData;
+    Color iconColor;
+    
     if (isFinished) {
       iconData = Icons.replay_circle_filled;
+      iconColor = _controlsConfiguration.iconsColor;
     } else if (isPlaying) {
       iconData = Icons.pause_circle_filled;
+      iconColor = _controlsConfiguration.iconsColor;
     } else {
       iconData = Icons.play_circle_filled;
+      iconColor = _controlsConfiguration.iconsColor;
     }
 
     return IAppPlayerClickableWidget(
@@ -654,10 +778,19 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       onTap: _onPlayPause,
       child: Container(
         padding: _iconButtonPadding,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              _controlsConfiguration.progressBarPlayedColor.withOpacity(0.2),
+              Colors.transparent,
+            ],
+          ),
+        ),
         child: _wrapIconWithStroke(
           Icon(
             iconData,
-            color: _controlsConfiguration.iconsColor,
+            color: iconColor,
             size: _responsivePlayPauseIconSize,
           ),
         ),
