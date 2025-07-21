@@ -49,9 +49,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kErrorIconSize = 42.0;
 
   // 图标阴影模糊半径
-  static const double kIconShadowBlurRadius = 3.0;
+  static const double kIconShadowBlurRadius = 2.0;
   // 文本阴影模糊半径
-  static const double kTextShadowBlurRadius = 2.0;
+  static const double kTextShadowBlurRadius = 1.0;
   // 阴影垂直偏移
   static const double kShadowOffsetY = 1.0;
   // 阴影水平偏移
@@ -93,7 +93,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 标题字体大小
   static const double kTitleFontSize = 16.0;
   // 封面圆角
-  static const double kCoverBorderRadius = 12.0;
+  static const double kCoverBorderRadius = 16.0;
   // 默认音乐图标比例
   static const double kDefaultMusicIconRatio = 0.6;
 
