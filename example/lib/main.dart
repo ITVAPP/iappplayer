@@ -499,6 +499,31 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     }
   }
 
+  IAppPlayerDecoderType _getDecoderType() {
+    switch (_currentDecoder) {
+      case DecoderState.hardware:
+        return IAppPlayerDecoderType.hardwareFirst;
+      case DecoderState.software:
+        return IAppPlayerDecoderType.softwareFirst;
+      case DecoderState.auto:
+        return IAppPlayerDecoderType.auto;
+    }
+  }
+
+  // 切换解码器
+  void _switchDecoder(DecoderState newDecoder) async {
+    if (_currentDecoder == newDecoder) return;
+    
+    setState(() {
+      _currentDecoder = newDecoder;
+      _isLoading = true;
+    });
+    
+    // 重新初始化播放器
+    await _releasePlayer();
+    await _initializePlayer();
+  }
+
   @override
   void dispose() {
     _releasePlayer();
@@ -833,31 +858,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
         _playlistController = result.playlistController;
       });
     }
-  }
-
-  IAppPlayerDecoderType _getDecoderType() {
-    switch (_currentDecoder) {
-      case DecoderState.hardware:
-        return IAppPlayerDecoderType.hardwareFirst;
-      case DecoderState.software:
-        return IAppPlayerDecoderType.softwareFirst;
-      case DecoderState.auto:
-        return IAppPlayerDecoderType.auto;
-    }
-  }
-
-  // 切换解码器
-  void _switchDecoder(DecoderState newDecoder) async {
-    if (_currentDecoder == newDecoder) return;
-    
-    setState(() {
-      _currentDecoder = newDecoder;
-      _isLoading = true;
-    });
-    
-    // 重新初始化播放器
-    await _releasePlayer();
-    await _initializePlayer();
   }
 
   @override
