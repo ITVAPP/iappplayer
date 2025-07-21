@@ -420,6 +420,23 @@ class ModernControlButton extends StatelessWidget {
   }
 }
 
+// 解码器类型状态管理
+enum DecoderState {
+  hardware,
+  software,
+  auto,
+}
+
+// 安全读取字幕内容的辅助函数
+Future<String?> _safeLoadSubtitle(String path) async {
+  try {
+    return await rootBundle.loadString(path);
+  } catch (e) {
+    print('字幕加载失败: $path, 错误: $e');
+    return null;
+  }
+}
+
 // 单视频播放示例
 class SingleVideoExample extends StatefulWidget {
   const SingleVideoExample({Key? key}) : super(key: key);
@@ -432,6 +449,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     with WidgetsBindingObserver, PlayerOrientationMixin {
   IAppPlayerController? _controller;
   bool _isLoading = true;
+  DecoderState _currentDecoder = DecoderState.hardware;
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -443,8 +461,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 直接读取字幕文件，不使用缓存
-    // final subtitleContent = await rootBundle.loadString('assets/subtitles/video1.srt');
+    // 安全读取字幕，即使失败也不影响播放
+    final subtitleContent = await _safeLoadSubtitle('assets/subtitles/video1.srt');
     
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
@@ -452,7 +470,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Superman (1941)',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
-      // subtitleContent: subtitleContent,
+      subtitleContent: subtitleContent, // 可能为null，但不影响播放
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
@@ -462,7 +480,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
           _handleOrientationChange();
         }
       },
-      // preferredDecoderType: IAppPlayerDecoderType.hardwareFirst,
+      preferredDecoderType: _getDecoderType(),
       autoDetectFullscreenDeviceOrientation: true,
       deviceOrientationsOnFullScreen: [
         DeviceOrientation.landscapeLeft,
@@ -479,6 +497,31 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
         _controller = result.activeController;
       });
     }
+  }
+
+  IAppPlayerDecoderType _getDecoderType() {
+    switch (_currentDecoder) {
+      case DecoderState.hardware:
+        return IAppPlayerDecoderType.hardwareFirst;
+      case DecoderState.software:
+        return IAppPlayerDecoderType.softwareFirst;
+      case DecoderState.auto:
+        return IAppPlayerDecoderType.auto;
+    }
+  }
+
+  // 切换解码器
+  void _switchDecoder(DecoderState newDecoder) async {
+    if (_currentDecoder == newDecoder) return;
+    
+    setState(() {
+      _currentDecoder = newDecoder;
+      _isLoading = true;
+    });
+    
+    // 重新初始化播放器
+    await _releasePlayer();
+    await _initializePlayer();
   }
 
   @override
@@ -530,90 +573,191 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // 播放器区域
-              Container(
-                margin: EdgeInsets.all(UIConstants.spaceMD),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: UIConstants.shadowMD,
-                      offset: Offset(0, UIConstants.shadowSM),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Container(
-                      color: Colors.black,
-                      child: _controller != null
-                          ? IAppPlayer(controller: _controller!)
-                          : const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+          // 使用 SingleChildScrollView 解决滚动问题
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    children: [
+                      // 播放器区域
+                      Container(
+                        margin: EdgeInsets.all(UIConstants.spaceMD),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: UIConstants.shadowMD,
+                              offset: Offset(0, UIConstants.shadowSM),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Container(
+                              color: Colors.black,
+                              child: _controller != null
+                                  ? IAppPlayer(controller: _controller!)
+                                  : const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // 解码器选择器
+                      Container(
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
+                        padding: EdgeInsets.all(UIConstants.spaceMD),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusMD),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              '解码器选择',
+                              style: TextStyle(
+                                fontSize: UIConstants.fontMD,
+                                color: Colors.white.withOpacity(0.8),
                               ),
                             ),
+                            SizedBox(height: UIConstants.spaceSM),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildDecoderOption(
+                                  '硬件解码',
+                                  DecoderState.hardware,
+                                  Icons.memory,
+                                ),
+                                _buildDecoderOption(
+                                  '软件解码',
+                                  DecoderState.software,
+                                  Icons.computer,
+                                ),
+                                _buildDecoderOption(
+                                  '自动选择',
+                                  DecoderState.auto,
+                                  Icons.auto_mode,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  // 控制按钮区域
+                  Container(
+                    padding: EdgeInsets.all(UIConstants.spaceLG),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(UIConstants.radiusXL),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // 播放/暂停按钮
+                        ModernControlButton(
+                          onPressed: _controller != null && !_isLoading
+                              ? () {
+                                  if (_controller!.isPlaying() ?? false) {
+                                    _controller!.pause();
+                                  } else {
+                                    _controller!.play();
+                                  }
+                                }
+                              : null,
+                          icon: (_controller?.isPlaying() ?? false)
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
+                          isPrimary: true,
+                        ),
+                        SizedBox(height: UIConstants.spaceMD),
+                        // 全屏按钮
+                        ModernControlButton(
+                          onPressed: _controller != null && !_isLoading
+                              ? () {
+                                  if (_controller!.isFullScreen) {
+                                    _controller!.exitFullScreen();
+                                  } else {
+                                    _controller!.enterFullScreen();
+                                  }
+                                }
+                              : null,
+                          icon: _controller?.isFullScreen ?? false
+                              ? Icons.fullscreen_exit_rounded
+                              : Icons.fullscreen_rounded,
+                          label: '全屏观看',
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                ],
               ),
-              const Spacer(),
-              // 控制按钮区域
-              Container(
-                padding: EdgeInsets.all(UIConstants.spaceLG),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(UIConstants.radiusXL),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // 播放/暂停按钮
-                    ModernControlButton(
-                      onPressed: _controller != null && !_isLoading
-                          ? () {
-                              if (_controller!.isPlaying() ?? false) {
-                                _controller!.pause();
-                              } else {
-                                _controller!.play();
-                              }
-                            }
-                          : null,
-                      icon: (_controller?.isPlaying() ?? false)
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
-                      isPrimary: true,
-                    ),
-                    SizedBox(height: UIConstants.spaceMD),
-                    // 全屏按钮
-                    ModernControlButton(
-                      onPressed: _controller != null && !_isLoading
-                          ? () {
-                              if (_controller!.isFullScreen) {
-                                _controller!.exitFullScreen();
-                              } else {
-                                _controller!.enterFullScreen();
-                              }
-                            }
-                          : null,
-                      icon: _controller?.isFullScreen ?? false
-                          ? Icons.fullscreen_exit_rounded
-                          : Icons.fullscreen_rounded,
-                      label: '全屏观看',
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDecoderOption(String label, DecoderState decoder, IconData icon) {
+    final isSelected = _currentDecoder == decoder;
+    
+    return GestureDetector(
+      onTap: () => _switchDecoder(decoder),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: UIConstants.spaceMD,
+          vertical: UIConstants.spaceSM,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? const Color(0xFF667eea).withOpacity(0.3)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
+          border: Border.all(
+            color: isSelected 
+                ? const Color(0xFF667eea)
+                : Colors.white.withOpacity(0.1),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected 
+                  ? const Color(0xFF667eea) 
+                  : Colors.white.withOpacity(0.6),
+              size: UIConstants.iconMD,
+            ),
+            SizedBox(height: UIConstants.spaceXS),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: UIConstants.fontSM,
+                color: isSelected 
+                    ? const Color(0xFF667eea) 
+                    : Colors.white.withOpacity(0.6),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -635,6 +779,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
+  DecoderState _currentDecoder = DecoderState.hardware;
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -646,10 +791,16 @@ class _PlaylistExampleState extends State<PlaylistExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 直接读取字幕文件，不使用缓存
-    final subtitle1 = await rootBundle.loadString('assets/subtitles/video1.srt');
-    final subtitle2 = await rootBundle.loadString('assets/subtitles/video2.srt');
-    final subtitle3 = await rootBundle.loadString('assets/subtitles/video3.srt');
+    // 安全读取字幕文件
+    final subtitle1 = await _safeLoadSubtitle('assets/subtitles/video1.srt');
+    final subtitle2 = await _safeLoadSubtitle('assets/subtitles/video2.srt');
+    final subtitle3 = await _safeLoadSubtitle('assets/subtitles/video3.srt');
+    
+    // 构建字幕内容列表，过滤掉null值
+    final subtitleContents = [subtitle1, subtitle2, subtitle3]
+        .where((content) => content != null)
+        .cast<String>()
+        .toList();
     
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
@@ -665,7 +816,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
         'https://www.itvapp.net/images/logo-1.png',
         'https://www.itvapp.net/images/logo-1.png',
       ],
-      subtitleContents: [subtitle1, subtitle2, subtitle3],
+      subtitleContents: subtitleContents.isNotEmpty ? subtitleContents : null,
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
@@ -691,6 +842,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
       },
       shuffleMode: false,
       loopVideos: true,
+      preferredDecoderType: _getDecoderType(),
       autoDetectFullscreenDeviceOrientation: true,
       deviceOrientationsOnFullScreen: [
         DeviceOrientation.landscapeLeft,
@@ -708,6 +860,31 @@ class _PlaylistExampleState extends State<PlaylistExample>
         _playlistController = result.playlistController;
       });
     }
+  }
+
+  IAppPlayerDecoderType _getDecoderType() {
+    switch (_currentDecoder) {
+      case DecoderState.hardware:
+        return IAppPlayerDecoderType.hardwareFirst;
+      case DecoderState.software:
+        return IAppPlayerDecoderType.softwareFirst;
+      case DecoderState.auto:
+        return IAppPlayerDecoderType.auto;
+    }
+  }
+
+  // 切换解码器
+  void _switchDecoder(DecoderState newDecoder) async {
+    if (_currentDecoder == newDecoder) return;
+    
+    setState(() {
+      _currentDecoder = newDecoder;
+      _isLoading = true;
+    });
+    
+    // 重新初始化播放器
+    await _releasePlayer();
+    await _initializePlayer();
   }
 
   @override
@@ -754,188 +931,242 @@ class _PlaylistExampleState extends State<PlaylistExample>
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // 播放器区域
-              Container(
-                margin: EdgeInsets.all(UIConstants.spaceMD),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: UIConstants.shadowMD,
-                      offset: Offset(0, UIConstants.shadowSM),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Container(
-                      color: Colors.black,
-                      child: _controller != null
-                          ? IAppPlayer(controller: _controller!)
-                          : const Center(
-                              child: CircularProgressIndicator(
+          // 使用 SingleChildScrollView 解决滚动问题
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    children: [
+                      // 播放器区域
+                      Container(
+                        margin: EdgeInsets.all(UIConstants.spaceMD),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: UIConstants.shadowMD,
+                              offset: Offset(0, UIConstants.shadowSM),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Container(
+                              color: Colors.black,
+                              child: _controller != null
+                                  ? IAppPlayer(controller: _controller!)
+                                  : const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // 播放信息卡片
+                      Container(
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
+                        padding: EdgeInsets.all(UIConstants.spaceMD),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF667eea),
+                              const Color(0xFF764ba2),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusMD),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF667eea).withOpacity(0.3),
+                              blurRadius: UIConstants.shadowMD,
+                              offset: Offset(0, UIConstants.shadowSM),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(UIConstants.spaceSM + 4), // 12
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(UIConstants.radiusSM),
+                              ),
+                              child: Icon(
+                                Icons.playlist_play_rounded,
                                 color: Colors.white,
-                                strokeWidth: 2,
+                                size: UIConstants.iconMD,
                               ),
                             ),
-                    ),
-                  ),
-                ),
-              ),
-              // 播放信息卡片
-              Container(
-                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
-                padding: EdgeInsets.all(UIConstants.spaceMD),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF667eea),
-                      const Color(0xFF764ba2),
+                            SizedBox(width: UIConstants.spaceMD),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '播放进度',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: UIConstants.fontSM,
+                                    ),
+                                  ),
+                                  SizedBox(height: UIConstants.spaceXS),
+                                  Text(
+                                    '${_currentIndex + 1} / $totalVideos',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: UIConstants.fontXL,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: UIConstants.spaceMD,
+                                vertical: UIConstants.spaceSM,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                                    color: Colors.white,
+                                    size: UIConstants.iconXS,
+                                  ),
+                                  SizedBox(width: UIConstants.spaceXS),
+                                  Text(
+                                    _shuffleMode ? '随机' : '顺序',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: UIConstants.fontSM,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: UIConstants.spaceMD),
+                      // 解码器选择器
+                      Container(
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
+                        padding: EdgeInsets.all(UIConstants.spaceMD),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusMD),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              '解码器选择',
+                              style: TextStyle(
+                                fontSize: UIConstants.fontMD,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
+                            ),
+                            SizedBox(height: UIConstants.spaceSM),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildDecoderOption(
+                                  '硬件解码',
+                                  DecoderState.hardware,
+                                  Icons.memory,
+                                ),
+                                _buildDecoderOption(
+                                  '软件解码',
+                                  DecoderState.software,
+                                  Icons.computer,
+                                ),
+                                _buildDecoderOption(
+                                  '自动选择',
+                                  DecoderState.auto,
+                                  Icons.auto_mode,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(UIConstants.radiusMD),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF667eea).withOpacity(0.3),
-                      blurRadius: UIConstants.shadowMD,
-                      offset: Offset(0, UIConstants.shadowSM),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(UIConstants.spaceSM + 4), // 12
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(UIConstants.radiusSM),
-                      ),
-                      child: Icon(
-                        Icons.playlist_play_rounded,
-                        color: Colors.white,
-                        size: UIConstants.iconMD,
+                  // 控制按钮区域
+                  Container(
+                    padding: EdgeInsets.all(UIConstants.spaceLG),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(UIConstants.radiusXL),
                       ),
                     ),
-                    SizedBox(width: UIConstants.spaceMD),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '播放进度',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: UIConstants.fontSM,
-                            ),
-                          ),
-                          SizedBox(height: UIConstants.spaceXS),
-                          Text(
-                            '${_currentIndex + 1} / $totalVideos',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: UIConstants.fontXL,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: UIConstants.spaceMD,
-                        vertical: UIConstants.spaceSM,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                            color: Colors.white,
-                            size: UIConstants.iconXS,
-                          ),
-                          SizedBox(width: UIConstants.spaceXS),
-                          Text(
-                            _shuffleMode ? '随机' : '顺序',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: UIConstants.fontSM,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              // 控制按钮区域
-              Container(
-                padding: EdgeInsets.all(UIConstants.spaceLG),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(UIConstants.radiusXL),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // 播放控制按钮行
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    child: Column(
                       children: [
-                        // 上一个
-                        _buildCircleButton(
-                          onPressed: _playlistController != null && !_isLoading
-                              ? () => _playlistController!.playPrevious()
-                              : null,
-                          icon: Icons.skip_previous_rounded,
+                        // 播放控制按钮行
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // 上一个
+                            _buildCircleButton(
+                              onPressed: _playlistController != null && !_isLoading
+                                  ? () => _playlistController!.playPrevious()
+                                  : null,
+                              icon: Icons.skip_previous_rounded,
+                            ),
+                            // 播放/暂停
+                            _buildCircleButton(
+                              onPressed: _controller != null && !_isLoading
+                                  ? () {
+                                      if (_controller!.isPlaying() ?? false) {
+                                        _controller!.pause();
+                                      } else {
+                                        _controller!.play();
+                                      }
+                                    }
+                                  : null,
+                              icon: (_controller?.isPlaying() ?? false)
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              isPrimary: true,
+                            ),
+                            // 下一个
+                            _buildCircleButton(
+                              onPressed: _playlistController != null && !_isLoading
+                                  ? () => _playlistController!.playNext()
+                                  : null,
+                              icon: Icons.skip_next_rounded,
+                            ),
+                          ],
                         ),
-                        // 播放/暂停
-                        _buildCircleButton(
-                          onPressed: _controller != null && !_isLoading
-                              ? () {
-                                  if (_controller!.isPlaying() ?? false) {
-                                    _controller!.pause();
-                                  } else {
-                                    _controller!.play();
-                                  }
-                                }
+                        SizedBox(height: UIConstants.spaceLG - 4), // 20
+                        // 模式切换按钮
+                        ModernControlButton(
+                          onPressed: _playlistController != null
+                              ? () => _playlistController!.toggleShuffleMode()
                               : null,
-                          icon: (_controller?.isPlaying() ?? false)
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          isPrimary: true,
-                        ),
-                        // 下一个
-                        _buildCircleButton(
-                          onPressed: _playlistController != null && !_isLoading
-                              ? () => _playlistController!.playNext()
-                              : null,
-                          icon: Icons.skip_next_rounded,
+                          icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                          label: _shuffleMode ? '切换到顺序播放' : '切换到随机播放',
                         ),
                       ],
                     ),
-                    SizedBox(height: UIConstants.spaceLG - 4), // 20
-                    // 模式切换按钮
-                    ModernControlButton(
-                      onPressed: _playlistController != null
-                          ? () => _playlistController!.toggleShuffleMode()
-                          : null,
-                      icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                      label: _shuffleMode ? '切换到顺序播放' : '切换到随机播放',
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -979,6 +1210,54 @@ class _PlaylistExampleState extends State<PlaylistExample>
               size: isPrimary ? UIConstants.iconXXL : UIConstants.iconLG,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDecoderOption(String label, DecoderState decoder, IconData icon) {
+    final isSelected = _currentDecoder == decoder;
+    
+    return GestureDetector(
+      onTap: () => _switchDecoder(decoder),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: UIConstants.spaceMD,
+          vertical: UIConstants.spaceSM,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? const Color(0xFF667eea).withOpacity(0.3)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
+          border: Border.all(
+            color: isSelected 
+                ? const Color(0xFF667eea)
+                : Colors.white.withOpacity(0.1),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected 
+                  ? const Color(0xFF667eea) 
+                  : Colors.white.withOpacity(0.6),
+              size: UIConstants.iconMD,
+            ),
+            SizedBox(height: UIConstants.spaceXS),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: UIConstants.fontSM,
+                color: isSelected 
+                    ? const Color(0xFF667eea) 
+                    : Colors.white.withOpacity(0.6),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1108,128 +1387,140 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
-              // 音乐封面区域 - 使用logo.png
-              Container(
-                width: UIConstants.musicCoverSize,
-                height: UIConstants.musicCoverSize,
-                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusXL),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF4facfe).withOpacity(0.3),
-                      blurRadius: UIConstants.shadowLG,
-                      offset: Offset(0, UIConstants.spaceLG - 4), // 20
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusXL),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
+          // 使用 SingleChildScrollView 解决滚动问题
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
               ),
-              SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少间距
-              // 播放器区域 - 固定高度180
-              Container(
-                height: UIConstants.musicPlayerHeight,
-                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                  color: Colors.black.withOpacity(0.3),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                  child: _controller != null
-                      ? IAppPlayer(controller: _controller!)
-                      : const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    children: [
+                      SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
+                      // 音乐封面区域 - 使用logo.png
+                      Container(
+                        width: UIConstants.musicCoverSize,
+                        height: UIConstants.musicCoverSize,
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusXL),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4facfe).withOpacity(0.3),
+                              blurRadius: UIConstants.shadowLG,
+                              offset: Offset(0, UIConstants.spaceLG - 4), // 20
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusXL),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
                           ),
                         ),
-                ),
-              ),
-              SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少间距
-              // 歌曲信息
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
-                child: Column(
-                  children: [
-                    Text(
-                      'Creative Design',
-                      style: TextStyle(
-                        fontSize: UIConstants.fontXXXL,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
                       ),
-                    ),
-                    SizedBox(height: UIConstants.spaceSM),
-                    Text(
-                      'Unknown Artist',
-                      style: TextStyle(
-                        fontSize: UIConstants.fontLG,
-                        color: Colors.white.withOpacity(0.6),
+                      SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少间距
+                      // 播放器区域 - 固定高度180
+                      Container(
+                        height: UIConstants.musicPlayerHeight,
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                          color: Colors.black.withOpacity(0.3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                          child: _controller != null
+                              ? IAppPlayer(controller: _controller!)
+                              : const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              // 控制按钮区域
-              Container(
-                padding: EdgeInsets.all(UIConstants.spaceLG),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(UIConstants.radiusXL),
+                      SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少间距
+                      // 歌曲信息
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Creative Design',
+                              style: TextStyle(
+                                fontSize: UIConstants.fontXXXL,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: UIConstants.spaceSM),
+                            Text(
+                              'Unknown Artist',
+                              style: TextStyle(
+                                fontSize: UIConstants.fontLG,
+                                color: Colors.white.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                child: Column(
-                  children: [
-                    // 播放/暂停按钮
-                    ModernControlButton(
-                      onPressed: _controller != null && !_isLoading
-                          ? () {
-                              if (_controller!.isPlaying() ?? false) {
-                                _controller!.pause();
-                              } else {
-                                _controller!.play();
-                              }
-                            }
-                          : null,
-                      icon: (_controller?.isPlaying() ?? false)
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
-                      isPrimary: true,
+                  // 控制按钮区域
+                  Container(
+                    padding: EdgeInsets.all(UIConstants.spaceLG),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(UIConstants.radiusXL),
+                      ),
                     ),
-                    SizedBox(height: UIConstants.spaceMD),
-                    // 全屏按钮
-                    ModernControlButton(
-                      onPressed: _controller != null && !_isLoading
-                          ? () {
-                              if (_controller!.isFullScreen) {
-                                _controller!.exitFullScreen();
-                              } else {
-                                _controller!.enterFullScreen();
-                              }
-                            }
-                          : null,
-                      icon: _controller?.isFullScreen ?? false
-                          ? Icons.fullscreen_exit_rounded
-                          : Icons.fullscreen_rounded,
-                      label: '全屏歌词',
+                    child: Column(
+                      children: [
+                        // 播放/暂停按钮
+                        ModernControlButton(
+                          onPressed: _controller != null && !_isLoading
+                              ? () {
+                                  if (_controller!.isPlaying() ?? false) {
+                                    _controller!.pause();
+                                  } else {
+                                    _controller!.play();
+                                  }
+                                }
+                              : null,
+                          icon: (_controller?.isPlaying() ?? false)
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
+                          isPrimary: true,
+                        ),
+                        SizedBox(height: UIConstants.spaceMD),
+                        // 全屏按钮
+                        ModernControlButton(
+                          onPressed: _controller != null && !_isLoading
+                              ? () {
+                                  if (_controller!.isFullScreen) {
+                                    _controller!.exitFullScreen();
+                                  } else {
+                                    _controller!.enterFullScreen();
+                                  }
+                                }
+                              : null,
+                          icon: _controller?.isFullScreen ?? false
+                              ? Icons.fullscreen_exit_rounded
+                              : Icons.fullscreen_rounded,
+                          label: '全屏歌词',
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1263,10 +1554,16 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 直接读取LRC歌词文件，不使用缓存
-    final lyrics1 = await rootBundle.loadString('assets/lyrics/song1.lrc');
-    final lyrics2 = await rootBundle.loadString('assets/lyrics/song2.lrc');
-    final lyrics3 = await rootBundle.loadString('assets/lyrics/song3.lrc');
+    // 安全读取LRC歌词文件
+    final lyrics1 = await _safeLoadSubtitle('assets/lyrics/song1.lrc');
+    final lyrics2 = await _safeLoadSubtitle('assets/lyrics/song2.lrc');
+    final lyrics3 = await _safeLoadSubtitle('assets/lyrics/song3.lrc');
+    
+    // 构建歌词内容列表，过滤掉null值
+    final subtitleContents = [lyrics1, lyrics2, lyrics3]
+        .where((content) => content != null)
+        .cast<String>()
+        .toList();
     
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
@@ -1282,7 +1579,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
         'https://www.itvapp.net/images/logo-1.png',
         'https://www.itvapp.net/images/logo-1.png',
       ],
-      subtitleContents: [lyrics1, lyrics2, lyrics3],
+      subtitleContents: subtitleContents.isNotEmpty ? subtitleContents : null,
       audioOnly: true,
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
@@ -1373,155 +1670,167 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
-              // 音乐封面区域 - 使用logo.png
-              Container(
-                width: UIConstants.musicCoverSize,
-                height: UIConstants.musicCoverSize,
-                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXXL),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusXL),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFfa709a).withOpacity(0.3),
-                      blurRadius: UIConstants.shadowLG,
-                      offset: Offset(0, UIConstants.spaceLG - 4), // 20
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusXL),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
+          // 使用 SingleChildScrollView 解决滚动问题
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
               ),
-              SizedBox(height: UIConstants.spaceMD), // 16 - 调整间距
-              // 播放器区域 - 固定高度180
-              Container(
-                height: UIConstants.musicPlayerHeight,
-                margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                  color: Colors.black.withOpacity(0.3),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                  child: _controller != null
-                      ? IAppPlayer(controller: _controller!)
-                      : const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                ),
-              ),
-              SizedBox(height: UIConstants.spaceMD - 1), // 15 - 减少间距
-              // 当前歌曲信息
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
-                child: Column(
-                  children: [
-                    Text(
-                      _currentIndex < titles.length ? titles[_currentIndex] : '',
-                      style: TextStyle(
-                        fontSize: UIConstants.fontXXL,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: UIConstants.spaceSM),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: UIConstants.spaceMD,
-                        vertical: UIConstants.spaceSM,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFFfa709a),
-                            const Color(0xFFfee140),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    children: [
+                      SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
+                      // 音乐封面区域 - 使用logo.png
+                      Container(
+                        width: UIConstants.musicCoverSize,
+                        height: UIConstants.musicCoverSize,
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXXL),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusXL),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFfa709a).withOpacity(0.3),
+                              blurRadius: UIConstants.shadowLG,
+                              offset: Offset(0, UIConstants.spaceLG - 4), // 20
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                      ),
-                      child: Text(
-                        '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: UIConstants.fontSM,
-                          fontWeight: FontWeight.w600,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusXL),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
+                      ),
+                      SizedBox(height: UIConstants.spaceMD), // 16 - 调整间距
+                      // 播放器区域 - 固定高度180
+                      Container(
+                        height: UIConstants.musicPlayerHeight,
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                          color: Colors.black.withOpacity(0.3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                          child: _controller != null
+                              ? IAppPlayer(controller: _controller!)
+                              : const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      SizedBox(height: UIConstants.spaceMD - 1), // 15 - 减少间距
+                      // 当前歌曲信息
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        child: Column(
+                          children: [
+                            Text(
+                              _currentIndex < titles.length ? titles[_currentIndex] : '',
+                              style: TextStyle(
+                                fontSize: UIConstants.fontXXL,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: UIConstants.spaceSM),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: UIConstants.spaceMD,
+                                vertical: UIConstants.spaceSM,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFFfa709a),
+                                    const Color(0xFFfee140),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                              ),
+                              child: Text(
+                                '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: UIConstants.fontSM,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  // 控制按钮区域
+                  Container(
+                    padding: EdgeInsets.all(UIConstants.spaceLG),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(UIConstants.radiusXL),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              // 控制按钮区域
-              Container(
-                padding: EdgeInsets.all(UIConstants.spaceLG),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(UIConstants.radiusXL),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // 播放控制按钮行
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    child: Column(
                       children: [
-                        // 上一首
-                        _buildCircleButton(
-                          onPressed: _playlistController != null && !_isLoading
-                              ? () => _playlistController!.playPrevious()
-                              : null,
-                          icon: Icons.skip_previous_rounded,
+                        // 播放控制按钮行
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // 上一首
+                            _buildCircleButton(
+                              onPressed: _playlistController != null && !_isLoading
+                                  ? () => _playlistController!.playPrevious()
+                                  : null,
+                              icon: Icons.skip_previous_rounded,
+                            ),
+                            // 播放/暂停
+                            _buildCircleButton(
+                              onPressed: _controller != null && !_isLoading
+                                  ? () {
+                                      if (_controller!.isPlaying() ?? false) {
+                                        _controller!.pause();
+                                      } else {
+                                        _controller!.play();
+                                      }
+                                    }
+                                  : null,
+                              icon: (_controller?.isPlaying() ?? false)
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              isPrimary: true,
+                            ),
+                            // 下一首
+                            _buildCircleButton(
+                              onPressed: _playlistController != null && !_isLoading
+                                  ? () => _playlistController!.playNext()
+                                  : null,
+                              icon: Icons.skip_next_rounded,
+                            ),
+                          ],
                         ),
-                        // 播放/暂停
-                        _buildCircleButton(
-                          onPressed: _controller != null && !_isLoading
-                              ? () {
-                                  if (_controller!.isPlaying() ?? false) {
-                                    _controller!.pause();
-                                  } else {
-                                    _controller!.play();
-                                  }
-                                }
+                        SizedBox(height: UIConstants.spaceLG - 4), // 20
+                        // 模式切换按钮
+                        ModernControlButton(
+                          onPressed: _playlistController != null
+                              ? () => _playlistController!.toggleShuffleMode()
                               : null,
-                          icon: (_controller?.isPlaying() ?? false)
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          isPrimary: true,
-                        ),
-                        // 下一首
-                        _buildCircleButton(
-                          onPressed: _playlistController != null && !_isLoading
-                              ? () => _playlistController!.playNext()
-                              : null,
-                          icon: Icons.skip_next_rounded,
+                          icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                          label: _shuffleMode ? '切换到顺序播放' : '切换到随机播放',
                         ),
                       ],
                     ),
-                    SizedBox(height: UIConstants.spaceLG - 4), // 20
-                    // 模式切换按钮
-                    ModernControlButton(
-                      onPressed: _playlistController != null
-                          ? () => _playlistController!.toggleShuffleMode()
-                          : null,
-                      icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                      label: _shuffleMode ? '切换到顺序播放' : '切换到随机播放',
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
