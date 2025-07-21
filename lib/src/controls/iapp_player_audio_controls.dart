@@ -93,7 +93,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 标题字体大小
   static const double kTitleFontSize = 16.0;
   // 封面圆角
-  static const double kCoverBorderRadius = 16.0;
+  static const double kCoverBorderRadius = 12.0;
   // 默认音乐图标比例
   static const double kDefaultMusicIconRatio = 0.6;
 
@@ -343,13 +343,23 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         coverWidget = Image.network(
           imageUrl,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildDefaultMusicIcon(),
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.music_note,
+            size: _responsiveCoverSize * kDefaultMusicIconRatio,
+            color: _controlsConfiguration.iconsColor,
+            shadows: _iconShadows,
+          ),
         );
       } else {
         coverWidget = Image.asset(
           imageUrl,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildDefaultMusicIcon(),
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.music_note,
+            size: _responsiveCoverSize * kDefaultMusicIconRatio,
+            color: _controlsConfiguration.iconsColor,
+            shadows: _iconShadows,
+          ),
         );
       }
     }
@@ -357,79 +367,27 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // 封面容器，增加装饰效果
-        Container(
-          width: _responsiveCoverSize,
-          height: _responsiveCoverSize,
-          decoration: BoxDecoration(
-            borderRadius: _coverBorderRadius,
-            boxShadow: [
-              // 主阴影
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-              // 光晕效果
-              BoxShadow(
-                color: _controlsConfiguration.progressBarPlayedColor.withOpacity(0.2),
-                blurRadius: 40,
-                spreadRadius: 10,
-              ),
-            ],
+        if (coverWidget != null) 
+          Container(
+            width: _responsiveCoverSize,
+            height: _responsiveCoverSize,
+            decoration: const BoxDecoration(
+              borderRadius: _coverBorderRadius,
+              boxShadow: _progressBarShadows,
+            ),
+            child: ClipRRect(
+              borderRadius: _coverBorderRadius,
+              child: coverWidget,
+            ),
+          )
+        else
+          Icon(
+            Icons.music_note,
+            size: _responsiveCoverSize * kDefaultMusicIconRatio,
+            color: _controlsConfiguration.iconsColor,
+            shadows: _iconShadows,
           ),
-          child: Stack(
-            children: [
-              // 封面图片
-              ClipRRect(
-                borderRadius: _coverBorderRadius,
-                child: coverWidget ?? _buildDefaultMusicIcon(),
-              ),
-              // 添加微妙的渐变蒙版，增加层次感
-              if (coverWidget != null)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: _coverBorderRadius,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white.withOpacity(0.1),
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.1),
-                        ],
-                        stops: const [0.0, 0.5, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
       ],
-    );
-  }
-
-  // 构建默认音乐图标
-  Widget _buildDefaultMusicIcon() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            _controlsConfiguration.progressBarPlayedColor.withOpacity(0.8),
-            _controlsConfiguration.progressBarPlayedColor.withOpacity(0.6),
-          ],
-        ),
-      ),
-      child: Icon(
-        Icons.music_note,
-        size: _responsiveCoverSize * kDefaultMusicIconRatio,
-        color: Colors.white,
-        shadows: _iconShadows,
-      ),
     );
   }
 
