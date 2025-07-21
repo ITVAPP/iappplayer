@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="net.itvapp.iapp_player_example">
     <application android:usesCleartextTraffic="true"
-        android:label="IApp Player Example"
+        android:label="IApp Player"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
