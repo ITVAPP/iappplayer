@@ -43,9 +43,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 音频控件条高度
   static const double kAudioControlBarHeight = 36.0;
   // 基础图标尺寸
-  static const double kIconSizeBase = 22.0;
+  static const double kIconSizeBase = 24.0; // 增大图标
   // 播放/暂停图标尺寸
-  static const double kPlayPauseIconSize = 26.0;
+  static const double kPlayPauseIconSize = 32.0; // 增大播放按钮
   // 基础文本尺寸
   static const double kTextSizeBase = 13.0;
   // 错误图标尺寸
@@ -107,22 +107,22 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kDiscBorderWidth = 2.0;
 
   // 唱片相关常量
-  static const double kDiscGrooveWidth = 2.0; // 唱片纹理宽度
-  static const double kDiscGrooveSpacing = 7.5; // 唱片纹理间距
+  static const double kDiscGrooveWidth = 3.0; // 增粗唱片纹理宽度
+  static const double kDiscGrooveSpacing = 12.0; // 增大唱片纹理间距
   static const double kDiscCenterRatio = 0.25; // 中心标签比例
   static const double kDiscInnerCircleRatio = 0.6; // 内圈封面比例
 
   // 扩展模式唱片尺寸
   static const double kExpandedDiscSize = 240.0; // 扩展模式唱片大小
 
-  // 指针相关常量（扩展模式）
+  // 指针相关常量（与HTML完全一致）
   static const double kNeedleWidth = 15.0; // 指针臂宽度
-  static const double kNeedleLength = 140.0; // 指针臂长度
+  static const double kNeedleLength = 350.0; // 指针臂长度（与HTML一致）
   static const double kNeedleHeadWidth = 25.0; // 指针头宽度
   static const double kNeedleHeadHeight = 40.0; // 指针头高度
   static const double kCounterWeightSize = 50.0; // 配重块大小
-  static const double kNeedleOffsetX = 80.0; // 指针水平偏移
-  static const double kNeedleOffsetY = 20.0; // 指针垂直偏移
+  static const double kNeedleOffsetX = 120.0; // 指针水平偏移（调整使唱片居中）
+  static const double kNeedleOffsetY = -80.0; // 指针垂直偏移（向上移动）
 
   // 动画相关常量
   static const Duration kRotationDuration = Duration(seconds: 5); // 旋转周期
@@ -346,20 +346,52 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     // 获取封面图片用于背景
     final imageUrl = _getImageUrl();
     
-    return Container(
-      color: Colors.transparent,
+    return ClipRRect(
       child: Stack(
         children: [
-          // 模糊背景层（仅在扩展模式且有图片时显示）
-          if (isExpandedMode && imageUrl != null)
-            Positioned.fill(
-              child: _buildBlurredBackground(imageUrl),
-            ),
+          // 毛玻璃背景层
+          Positioned.fill(
+            child: _buildGlassBackground(isExpandedMode, imageUrl),
+          ),
           // 主内容层
           isExpandedMode 
             ? _buildExpandedLayout() 
             : _buildCompactLayout(constraints),
         ],
+      ),
+    );
+  }
+
+  // 构建毛玻璃背景
+  Widget _buildGlassBackground(bool isExpandedMode, String? imageUrl) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.black.withOpacity(0.8),
+            Colors.black.withOpacity(0.9),
+            Colors.black.withOpacity(0.85),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white.withOpacity(0.1),
+                Colors.white.withOpacity(0.05),
+                Colors.black.withOpacity(0.2),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -423,16 +455,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         minHeight: kCompactModeMinHeight,
         maxHeight: kCompactModeMaxHeight,
       ),
-      decoration: BoxDecoration(
-        color: Colors.black87,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.8),
-            blurRadius: 20,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
       child: Stack(
         children: [
           Column(
@@ -473,7 +495,13 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             Positioned(
               top: kSpacingUnit,
               right: kSpacingUnit,
-              child: _buildPlaylistMenuButton(),
+              child: Row(
+                children: [
+                  _buildShuffleButton(), // 随机播放按钮在左
+                  const SizedBox(width: kSpacingHalf),
+                  _buildPlaylistMenuButton(), // 播放列表按钮在右
+                ],
+              ),
             ),
         ],
       ),
@@ -511,7 +539,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                   // 唱片纹理背景
                   CustomPaint(
                     size: const Size(kCompactDiscSize, kCompactDiscSize),
-                    painter: _DiscPainter(),
+                    painter: _CompactDiscPainter(), // 使用紧凑模式专用绘制器
                   ),
                   // 中心封面
                   Center(
@@ -629,14 +657,16 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (isPlaylist) ...[
-          _buildShuffleButton(),
-          const SizedBox(width: kSpacingUnit),
           _buildPreviousButton(),
+          const SizedBox(width: kSpacingUnit),
           _buildPlayPauseButton(),
+          const SizedBox(width: kSpacingUnit),
           _buildNextButton(),
         ] else ...[
           if (!isLive) _buildSkipBackButton(),
+          const SizedBox(width: kSpacingUnit),
           _buildPlayPauseButton(),
+          const SizedBox(width: kSpacingUnit),
           if (!isLive) _buildSkipForwardButton(),
         ],
       ],
@@ -650,7 +680,18 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         Column(
           children: [
             Expanded(
-              child: _buildDiscSection(), // 修改为唱片区域
+              child: Stack(
+                children: [
+                  // 唱片居中显示
+                  Center(child: _buildDiscSection()),
+                  // 指针独立定位，不占用唱片空间
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.2,
+                    right: MediaQuery.of(context).size.width * 0.3,
+                    child: _buildNeedle(),
+                  ),
+                ],
+              ),
             ),
             Column(
               mainAxisSize: MainAxisSize.min,
@@ -690,126 +731,104 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final title = _getCurrentTitle();
     final singer = _getCurrentSinger();
     
-    return Center(
-      child: SizedBox(
-        width: kExpandedDiscSize + kNeedleOffsetX,
-        height: kExpandedDiscSize,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // 唱片
-            Positioned(
-              left: 0,
-              top: 0,
-              child: Container(
-                width: kExpandedDiscSize,
-                height: kExpandedDiscSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: AnimatedBuilder(
-                  animation: _rotationAnimation!,
-                  builder: (context, child) {
-                    return Transform.rotate(
-                      angle: _rotationAnimation!.value * kFullRotation,
-                      child: child,
-                    );
-                  },
-                  child: ClipOval(
-                    child: Stack(
-                      children: [
-                        // 唱片纹理
-                        CustomPaint(
-                          size: const Size(kExpandedDiscSize, kExpandedDiscSize),
-                          painter: _DiscPainter(),
-                        ),
-                        // 中心白色标签
-                        Center(
-                          child: Container(
-                            width: kExpandedDiscSize * kDiscCenterRatio,
-                            height: kExpandedDiscSize * kDiscCenterRatio,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (placeholder != null || imageUrl != null)
-                                  Container(
-                                    width: kExpandedDiscSize * kDiscCenterRatio * 0.6,
-                                    height: kExpandedDiscSize * kDiscCenterRatio * 0.6,
-                                    child: ClipOval(
-                                      child: _buildDiscCover(
-                                        placeholder, 
-                                        imageUrl, 
-                                        kExpandedDiscSize * kDiscCenterRatio * 0.6
-                                      ),
-                                    ),
-                                  )
-                                else ...[
-                                  Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (singer != null)
-                                    Text(
-                                      singer,
-                                      style: const TextStyle(
-                                        fontSize: 8,
-                                        color: Colors.black54,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                ],
-                              ],
+    return Container(
+      width: kExpandedDiscSize,
+      height: kExpandedDiscSize,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: AnimatedBuilder(
+        animation: _rotationAnimation!,
+        builder: (context, child) {
+          return Transform.rotate(
+            angle: _rotationAnimation!.value * kFullRotation,
+            child: child,
+          );
+        },
+        child: ClipOval(
+          child: Stack(
+            children: [
+              // 唱片纹理
+              CustomPaint(
+                size: const Size(kExpandedDiscSize, kExpandedDiscSize),
+                painter: _DiscPainter(),
+              ),
+              // 中心白色标签
+              Center(
+                child: Container(
+                  width: kExpandedDiscSize * kDiscCenterRatio,
+                  height: kExpandedDiscSize * kDiscCenterRatio,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (placeholder != null || imageUrl != null)
+                        Container(
+                          width: kExpandedDiscSize * kDiscCenterRatio * 0.6,
+                          height: kExpandedDiscSize * kDiscCenterRatio * 0.6,
+                          child: ClipOval(
+                            child: _buildDiscCover(
+                              placeholder, 
+                              imageUrl, 
+                              kExpandedDiscSize * kDiscCenterRatio * 0.6
                             ),
                           ),
-                        ),
-                        // 中心孔
-                        Center(
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[800],
-                              shape: BoxShape.circle,
-                            ),
+                        )
+                      else ...[
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        if (singer != null)
+                          Text(
+                            singer,
+                            style: const TextStyle(
+                              fontSize: 8,
+                              color: Colors.black54,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ),
-            ),
-            // 指针
-            Positioned(
-              right: 0,
-              top: kNeedleOffsetY,
-              child: _buildNeedle(),
-            ),
-          ],
+              // 中心孔
+              Center(
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // 构建指针
+  // 构建指针（完全复刻HTML样式）
   Widget _buildNeedle() {
     return AnimatedBuilder(
       animation: _pointerAnimation!,
@@ -820,7 +839,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           child: Stack(
             alignment: Alignment.topCenter,
             children: [
-              // 配重块
+              // 配重块（完全复刻HTML样式）
               Container(
                 width: kCounterWeightSize,
                 height: kCounterWeightSize,
@@ -828,26 +847,36 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                   color: const Color(0xFFEDEDED),
                   shape: BoxShape.circle,
                   boxShadow: [
+                    // 第一层阴影
                     BoxShadow(
                       color: const Color(0xFFBBBBBB),
                       blurRadius: 10,
                       spreadRadius: 4,
+                      offset: const Offset(0.5, 0),
                     ),
+                    // 第二层阴影（外边框效果）
                     BoxShadow(
                       color: const Color(0xFFEDEDED),
                       blurRadius: 0,
                       spreadRadius: 8,
+                      offset: const Offset(0.5, 0),
                     ),
                   ],
                 ),
-              ),
-              // 配重块中心
-              Container(
-                width: kCounterWeightSize * 0.5,
-                height: kCounterWeightSize * 0.5,
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                  shape: BoxShape.circle,
+                child: Stack(
+                  children: [
+                    // 配重块中心黑色圆
+                    Center(
+                      child: Container(
+                        width: 25,
+                        height: kCounterWeightSize,
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               // 针臂
@@ -892,28 +921,25 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                       ),
                     ],
                   ),
-                  child: Stack(
-                    children: [
-                      // 针尖
-                      Positioned(
-                        bottom: 0,
-                        right: -5,
-                        child: Transform.rotate(
-                          angle: math.pi / 3,
-                          child: Container(
-                            width: 30,
-                            height: 5,
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerRight,
-                                end: Alignment.centerLeft,
-                                colors: [Color(0xFFBBBBBB), Color(0xFFEEEEEE)],
-                              ),
-                            ),
-                          ),
-                        ),
+                ),
+              ),
+              // 针尖（复刻HTML的:after伪元素）
+              Positioned(
+                top: kCounterWeightSize + kNeedleLength - 5,
+                left: kNeedleHeadWidth - 7,
+                child: Transform.rotate(
+                  angle: math.pi / 3, // 60度
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: 30,
+                    height: 5,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft,
+                        colors: [Color(0xFFBBBBBB), Color(0xFFEEEEEE)],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -1543,6 +1569,37 @@ class _DiscPainter extends CustomPainter {
       groovePaint.color = (r ~/ _IAppPlayerAudioControlsState.kDiscGrooveSpacing) % 2 == 0 
         ? const Color(0xFF090909) 
         : const Color(0xFF222222);
+      canvas.drawCircle(center, r, groovePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// 紧凑模式唱片纹理绘制器（优化线条）
+class _CompactDiscPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    
+    // 黑色背景
+    final backgroundPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, backgroundPaint);
+    
+    // 绘制更少但更粗的纹理圆环
+    final groovePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0; // 更粗的线条
+    
+    // 减少圆环数量，增大间距
+    for (double r = 15.0; r < radius; r += 15.0) {
+      groovePaint.color = (r ~/ 15.0) % 2 == 0 
+        ? const Color(0xFF090909) 
+        : const Color(0xFF333333); // 提高对比度
       canvas.drawCircle(center, r, groovePaint);
     }
   }
