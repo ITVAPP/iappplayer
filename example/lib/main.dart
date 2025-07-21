@@ -24,6 +24,7 @@ class UIConstants {
   static const double radiusXL = 30.0;
   
   // 按钮尺寸
+  static const double buttonSizeSmall = 48.0;  // 新增：小尺寸按钮
   static const double buttonSizeNormal = 60.0;
   static const double buttonSizeLarge = 80.0;
   
@@ -656,6 +657,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           ],
                         ),
                       ),
+                      SizedBox(height: UIConstants.spaceSM), // 修改：从没有间距改为spaceSM，与播放器和解码器之间的间距保持一致
                     ],
                   ),
                   // 控制按钮区域
@@ -790,18 +792,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 安全读取字幕文件
-    final subtitle1 = await _safeLoadSubtitle('assets/subtitles/video1.srt');
-    final subtitle2 = await _safeLoadSubtitle('assets/subtitles/video2.srt');
-    final subtitle3 = await _safeLoadSubtitle('assets/subtitles/video3.srt');
-    
-    // 构建字幕内容列表，过滤掉null值
-    final subtitleContents = [subtitle1, subtitle2, subtitle3]
-        .where((content) => content != null)
-        .cast<String>()
-        .toList();
-    
-    // 修复：使用正确的本地资源路径
+    // 修复：使用正确的本地资源路径，移除字幕相关代码
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
         'assets/videos/video1.mp4',
@@ -815,7 +806,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
         'https://www.itvapp.net/images/logo-1.png',
         'https://www.itvapp.net/images/logo-1.png',
       ],
-      subtitleContents: subtitleContents.isNotEmpty ? subtitleContents : null,
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
@@ -946,7 +936,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ),
                         ),
                       ),
-                      // 播放信息卡片
+                      // 播放信息卡片 - 添加模式切换功能
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
                         padding: EdgeInsets.all(UIConstants.spaceMD),
@@ -1004,37 +994,47 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                 ],
                               ),
                             ),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: UIConstants.spaceMD,
-                                vertical: UIConstants.spaceSM,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                            // 将模式切换改为可点击按钮
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _playlistController != null
+                                    ? () => _playlistController!.toggleShuffleMode()
+                                    : null,
                                 borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                                    color: Colors.white,
-                                    size: UIConstants.iconXS,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: UIConstants.spaceMD,
+                                    vertical: UIConstants.spaceSM,
                                   ),
-                                  SizedBox(width: UIConstants.spaceXS),
-                                  Text(
-                                    _shuffleMode ? '随机' : '顺序',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: UIConstants.fontSM,
-                                    ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                                   ),
-                                ],
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                                        color: Colors.white,
+                                        size: UIConstants.iconXS,
+                                      ),
+                                      SizedBox(width: UIConstants.spaceXS),
+                                      Text(
+                                        _shuffleMode ? '随机' : '顺序',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: UIConstants.fontSM,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceMD),
+                      SizedBox(height: UIConstants.spaceSM), // 修改：从spaceMD改为spaceSM，减少间距
                     ],
                   ),
                   // 控制按钮区域
@@ -1085,13 +1085,21 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ],
                         ),
                         SizedBox(height: UIConstants.spaceLG - 4), // 20
-                        // 模式切换按钮
+                        // 全屏播放按钮 - 原模式切换按钮改为全屏按钮
                         ModernControlButton(
-                          onPressed: _playlistController != null
-                              ? () => _playlistController!.toggleShuffleMode()
+                          onPressed: _controller != null && !_isLoading
+                              ? () {
+                                  if (_controller!.isFullScreen) {
+                                    _controller!.exitFullScreen();
+                                  } else {
+                                    _controller!.enterFullScreen();
+                                  }
+                                }
                               : null,
-                          icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                          label: _shuffleMode ? '切换到顺序播放' : '切换到随机播放',
+                          icon: _controller?.isFullScreen ?? false
+                              ? Icons.fullscreen_exit_rounded
+                              : Icons.fullscreen_rounded,
+                          label: '全屏观看',
                         ),
                       ],
                     ),
@@ -1611,44 +1619,16 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                         ),
                       ),
                       SizedBox(height: UIConstants.spaceMD - 1), // 15 - 减少间距
-                      // 当前歌曲信息
+                      // 当前歌曲信息 - 仅显示标题
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
-                        child: Column(
-                          children: [
-                            Text(
-                              _currentIndex < titles.length ? titles[_currentIndex] : '',
-                              style: TextStyle(
-                                fontSize: UIConstants.fontXXL,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            SizedBox(height: UIConstants.spaceSM),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: UIConstants.spaceMD,
-                                vertical: UIConstants.spaceSM,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    const Color(0xFFfa709a),
-                                    const Color(0xFFfee140),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                              ),
-                              child: Text(
-                                '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: UIConstants.fontSM,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          _currentIndex < titles.length ? titles[_currentIndex] : '',
+                          style: TextStyle(
+                            fontSize: UIConstants.fontXXL,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
@@ -1664,7 +1644,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                     ),
                     child: Column(
                       children: [
-                        // 播放控制按钮行
+                        // 播放控制按钮行 - 调小按钮尺寸
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -1701,13 +1681,30 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                           ],
                         ),
                         SizedBox(height: UIConstants.spaceLG - 4), // 20
-                        // 模式切换按钮
+                        // 模式切换按钮 - 显示播放进度信息
                         ModernControlButton(
                           onPressed: _playlistController != null
                               ? () => _playlistController!.toggleShuffleMode()
                               : null,
                           icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                          label: _shuffleMode ? '切换到顺序播放' : '切换到随机播放',
+                          label: '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
+                        ),
+                        SizedBox(height: UIConstants.spaceMD),
+                        // 全屏播放按钮
+                        ModernControlButton(
+                          onPressed: _controller != null && !_isLoading
+                              ? () {
+                                  if (_controller!.isFullScreen) {
+                                    _controller!.exitFullScreen();
+                                  } else {
+                                    _controller!.enterFullScreen();
+                                  }
+                                }
+                              : null,
+                          icon: _controller?.isFullScreen ?? false
+                              ? Icons.fullscreen_exit_rounded
+                              : Icons.fullscreen_rounded,
+                          label: '全屏歌词',
                         ),
                       ],
                     ),
@@ -1727,8 +1724,8 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     bool isPrimary = false,
   }) {
     return Container(
-      width: isPrimary ? UIConstants.buttonSizeLarge : UIConstants.buttonSizeNormal,
-      height: isPrimary ? UIConstants.buttonSizeLarge : UIConstants.buttonSizeNormal,
+      width: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall,
+      height: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: isPrimary ? LinearGradient(
@@ -1755,7 +1752,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
             child: Icon(
               icon,
               color: Colors.white,
-              size: isPrimary ? UIConstants.iconXXL : UIConstants.iconLG,
+              size: isPrimary ? UIConstants.iconLG : UIConstants.iconMD,
             ),
           ),
         ),
