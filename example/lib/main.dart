@@ -53,6 +53,7 @@ class UIConstants {
   
   // 音乐播放器专用
   static const double musicPlayerHeight = 180.0;
+  static const double musicPlayerSquareSize = 200.0; // 新增：单首音乐播放的正方形尺寸
   static const double musicCoverSize = 100.0; // 封面大小减半
 }
 
@@ -473,6 +474,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       title: 'Superman (1941)',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
       subtitleContent: subtitleContent, // 可能为null，但不影响播放
+      enableFullscreen: true, // 添加全屏功能
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
@@ -815,6 +817,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
         'https://www.itvapp.net/images/logo-1.png',
         'https://www.itvapp.net/images/logo-1.png',
       ],
+      enableFullscreen: true, // 添加全屏功能
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
@@ -868,6 +871,15 @@ class _PlaylistExampleState extends State<PlaylistExample>
         _playlistController = result.playlistController;
       });
     }
+  }
+
+  // 获取当前视频标题
+  String _getCurrentVideoTitle() {
+    final titles = ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'];
+    if (_currentIndex >= 0 && _currentIndex < titles.length) {
+      return titles[_currentIndex];
+    }
+    return '视频 ${_currentIndex + 1}';
   }
 
   @override
@@ -952,7 +964,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ),
                         ),
                       ),
-                      // 播放信息卡片 - 添加模式切换功能
+                      // 播放信息卡片 - 显示当前视频标题
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
                         padding: EdgeInsets.all(UIConstants.spaceMD),
@@ -992,7 +1004,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '播放进度',
+                                    '正在播放',
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.8),
                                       fontSize: UIConstants.fontSM,
@@ -1000,17 +1012,25 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                   ),
                                   SizedBox(height: UIConstants.spaceXS),
                                   Text(
-                                    '${_currentIndex + 1} / $totalVideos',
+                                    _getCurrentVideoTitle(), // 显示当前视频标题
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: UIConstants.fontXL,
+                                      fontSize: UIConstants.fontLG,
                                       fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: UIConstants.spaceXS),
+                                  Text(
+                                    '${_currentIndex + 1} / $totalVideos', // 显示播放进度
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: UIConstants.fontSM,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            // 将模式切换改为可点击按钮
+                            // 模式切换按钮
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
@@ -1043,6 +1063,27 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                         ),
                                       ),
                                     ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // 播放列表按钮
+                            SizedBox(width: UIConstants.spaceSM),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _showPlaylistMenu,
+                                borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                                child: Container(
+                                  padding: EdgeInsets.all(UIConstants.spaceSM),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(UIConstants.radiusLG),
+                                  ),
+                                  child: Icon(
+                                    Icons.queue_music_rounded,
+                                    color: Colors.white,
+                                    size: UIConstants.iconMD,
                                   ),
                                 ),
                               ),
@@ -1103,7 +1144,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       ],
                     ),
                     SizedBox(height: UIConstants.spaceLG - 4), // 20
-                    // 全屏播放按钮 - 原模式切换按钮改为全屏按钮
+                    // 全屏播放按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
                           ? () {
@@ -1124,6 +1165,111 @@ class _PlaylistExampleState extends State<PlaylistExample>
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // 显示播放列表菜单
+  void _showPlaylistMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        margin: EdgeInsets.only(
+          left: UIConstants.spaceMD,
+          right: UIConstants.spaceMD,
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1F3A).withOpacity(0.95),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(UIConstants.radiusLG),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 标题栏
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: UIConstants.spaceLG,
+                vertical: UIConstants.spaceMD,
+              ),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.playlist_play,
+                    color: Colors.white,
+                    size: UIConstants.iconMD,
+                  ),
+                  SizedBox(width: UIConstants.spaceSM),
+                  Text(
+                    '播放列表',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: UIConstants.fontLG,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Spacer(),
+                  IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            // 列表内容
+            Container(
+              height: 300,
+              child: ListView.builder(
+                padding: EdgeInsets.symmetric(vertical: UIConstants.spaceSM),
+                itemCount: 3,
+                itemBuilder: (context, index) {
+                  final titles = ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'];
+                  final isPlaying = index == _currentIndex;
+                  
+                  return ListTile(
+                    leading: Icon(
+                      isPlaying ? Icons.play_circle_filled : Icons.play_circle_outline,
+                      color: isPlaying ? const Color(0xFF667eea) : Colors.white.withOpacity(0.6),
+                    ),
+                    title: Text(
+                      titles[index],
+                      style: TextStyle(
+                        color: isPlaying ? const Color(0xFF667eea) : Colors.white,
+                        fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '视频 ${index + 1}',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: UIConstants.fontSM,
+                      ),
+                    ),
+                    onTap: () {
+                      _playlistController?.setupDataSource(index);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1223,6 +1369,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
       audioOnly: true,
       subtitleContent: lrcContent,
+      enableFullscreen: true, // 添加全屏功能
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
@@ -1314,38 +1461,28 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
-                      // 音乐封面区域 - 使用logo.png
+                      SizedBox(height: UIConstants.spaceLG), // 顶部间距
+                      // 播放器区域 - 正方形，带发光效果
                       Container(
-                        width: UIConstants.musicCoverSize,
-                        height: UIConstants.musicCoverSize,
-                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusXL),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF4facfe).withOpacity(0.3),
-                              blurRadius: UIConstants.shadowLG,
-                              offset: Offset(0, UIConstants.spaceLG - 4), // 20
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusXL),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少间距
-                      // 播放器区域 - 固定高度180
-                      Container(
-                        height: UIConstants.musicPlayerHeight,
+                        width: UIConstants.musicPlayerSquareSize,
+                        height: UIConstants.musicPlayerSquareSize,
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black,
+                          boxShadow: [
+                            // 发光效果
+                            BoxShadow(
+                              color: const Color(0xFF4facfe).withOpacity(0.5),
+                              blurRadius: UIConstants.shadowLG,
+                              spreadRadius: 5,
+                            ),
+                            BoxShadow(
+                              color: const Color(0xFF4facfe).withOpacity(0.3),
+                              blurRadius: UIConstants.shadowLG * 2,
+                              spreadRadius: 10,
+                            ),
+                          ],
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(UIConstants.radiusLG),
@@ -1359,7 +1496,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                                 ),
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少间距
+                      SizedBox(height: UIConstants.spaceLG),
                       // 歌曲信息
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
@@ -1499,6 +1636,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
       ],
       subtitleContents: subtitleContents.isNotEmpty ? subtitleContents : null,
       audioOnly: true,
+      enableFullscreen: true, // 添加全屏功能
       eventListener: (event) {
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
@@ -1606,38 +1744,27 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
-                      // 音乐封面区域 - 使用logo.png
-                      Container(
-                        width: UIConstants.musicCoverSize,
-                        height: UIConstants.musicCoverSize,
-                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXXL),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusXL),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFfa709a).withOpacity(0.3),
-                              blurRadius: UIConstants.shadowLG,
-                              offset: Offset(0, UIConstants.spaceLG - 4), // 20
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusXL),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: UIConstants.spaceMD), // 16 - 调整间距
-                      // 播放器区域 - 固定高度180
+                      SizedBox(height: UIConstants.spaceLG), // 顶部间距
+                      // 播放器区域 - 保持原尺寸，带发光效果
                       Container(
                         height: UIConstants.musicPlayerHeight,
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black,
+                          boxShadow: [
+                            // 发光效果
+                            BoxShadow(
+                              color: const Color(0xFFfa709a).withOpacity(0.5),
+                              blurRadius: UIConstants.shadowLG,
+                              spreadRadius: 5,
+                            ),
+                            BoxShadow(
+                              color: const Color(0xFFfa709a).withOpacity(0.3),
+                              blurRadius: UIConstants.shadowLG * 2,
+                              spreadRadius: 10,
+                            ),
+                          ],
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(UIConstants.radiusLG),
