@@ -52,9 +52,8 @@ class UIConstants {
   static const double shadowLG = 30.0;
   
   // 音乐播放器专用
-  static const double musicPlayerHeight = 180.0;
+  static const double musicPlayerHeight = 150.0;
   static const double musicPlayerSquareSize = 200.0; // 新增：单首音乐播放的正方形尺寸
-  static const double musicCoverSize = 100.0; // 封面大小减半
 }
 
 class MyApp extends StatelessWidget {
@@ -119,14 +118,6 @@ class HomePage extends StatelessWidget {
                         fontSize: UIConstants.fontXXXXL,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: UIConstants.spaceXS), // 减少间距
-                    Text(
-                      '选择您的播放体验',
-                      style: TextStyle(
-                        fontSize: UIConstants.fontMD,
-                        color: Colors.white.withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -1602,9 +1593,9 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     // 修复：使用正确的本地资源路径
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
-        'http://m804.music.126.net/20250721092811/1f6afe43fa14bedfb52f96637d47acbd/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/60942712315/c65e/8c1a/a815/210492e49065671f04e5c3ba82fd77bd.mp3?vuutv=jX9LLOOzznGh2LlhXGVRq/rHsz587ka2vlctvtRQHa0SFJ4CEr2oQGAp25Itrs3jB3bRBOUQgzdyxFPSkOX1Udf4PQCUMGBnIdbfCUWOaN8=&authSecret=000001982a81931506630a3b184e0ccd',
-        'http://m704.music.126.net/20250721092932/750ab58c17428fbc071881c2f12a43ac/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/60971015254/a679/2eb4/b68e/ac48af8be2670dc220d1e26d94b5e3ac.mp3?vuutv=km+pZd2TGDd/xATPqOZAJvAebP33ny5KVaYdWxIHrFwiZY8Nsf2p/V8agOUfRkgyYotmh9dblJE0xfYYz09Mbyiv0s1JnWPvbmctrUd/lIo=&authSecret=000001982a82cecd0c6e0a3084e71618',
-        'http://m704.music.126.net/20250721092939/d7d2a534c432991aa0c49904541fbba6/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/61173539343/8a31/86db/b5e0/d9586dc54e235f5df8411a13bad5a61d.mp3?vuutv=sAgX7I9g6nz2+xUEfr8TquOz3SMyI3lWOXhnta0NZEOLiTbMf+dnFnYEqa/3FiERArsYasoDeKiYwRuRTWy04feoBXZzjV6ulkqhTjL0qi0=&authSecret=000001982a82e98b1c3a0a3084b10091',
+        'assets/music/song1.mp3',
+        'assets/music/song2.mp3',
+        'assets/music/song3.mp3',
       ],
       dataSourceType: IAppPlayerDataSourceType.file,
       titles: ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'],
