@@ -114,8 +114,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kDiscBorderWidth = 2.0;
 
   // 唱片相关常量 - 修改以减少纹理，增大封面
-  static const double kDiscGrooveWidth = 4.0; // 线条宽度
-  static const double kDiscGrooveSpacing = 10.0; // 修改：增加间距
+  static const double kDiscGrooveWidth = 3.0; // 线条宽度
+  static const double kDiscGrooveSpacing = 11.0; // 修改：增加间距
   static const double kDiscCenterRatio = 0.25; // 中心标签比例
   static const double kDiscInnerCircleRatio = 0.75; // 修改：增大内圈封面比例
 
@@ -133,11 +133,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kCompactSongInfoSpacing = 4.0; // 歌曲信息间距
   static const double kCompactSectionSpacing = 12.0; // 各区域间距
   static const double kCompactProgressHeight = 6.0; // 进度条高度（增加高度）
-  static const double kCompactTopBarHeight = 24.0; // 顶部栏高度
-  static const double kCompactPlayButtonSize = 30.0; // 播放按钮尺寸
+  static const double kCompactTopBarHeight = 22.0; // 顶部栏高度
+  static const double kCompactPlayButtonSize = 28.0; // 播放按钮尺寸
   static const double kCompactControlButtonSize = 28.0; // 控制按钮尺寸
   static const double kCompactSmallIconSize = 20.0; // 小图标尺寸
-  static const double kCompactPlayPauseIconSize = 26.0; // 修改：紧凑模式播放按钮图标大小从27改为22
+  static const double kCompactPlayPauseIconSize = 22.0; // 紧凑模式播放按钮图标大小
 
   // 正方形模式相关常量
   static const double kSquareModePlayButtonSize = 60.0; // 正方形模式播放按钮尺寸
@@ -647,6 +647,16 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         Center(
           child: _buildSquareModePlayButton(),
         ),
+        // 字幕处理（不显示在UI上，但需要继续运行以供其他地方调用）
+        if (_controlsConfiguration.enableSubtitles)
+          Offstage(
+            offstage: true, // 隐藏UI，但组件继续运行
+            child: IAppPlayerSubtitlesDrawer(
+              iappPlayerController: _iappPlayerController!,
+              iappPlayerSubtitlesConfiguration: _iappPlayerController!.iappPlayerConfiguration.subtitlesConfiguration,
+              subtitles: _iappPlayerController!.subtitlesLines,
+            ),
+          ),
       ],
     );
   }
@@ -720,21 +730,35 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           ),
         ],
       ),
-      child: Row(
+      child: Stack(
         children: [
-          // 左侧封面区域 - 正方形
-          _buildCompactCoverSection(placeholder, imageUrl, coverSize, showGradient: true),
-          // 右侧控制区域
-          Expanded(
-            child: Container(
-              color: kCompactBackgroundColor,
-              padding: const EdgeInsets.symmetric(
-                horizontal: kSpacingDouble,
-                vertical: kSpacingUnit,
+          Row(
+            children: [
+              // 左侧封面区域 - 正方形
+              _buildCompactCoverSection(placeholder, imageUrl, coverSize, showGradient: true),
+              // 右侧控制区域
+              Expanded(
+                child: Container(
+                  color: kCompactBackgroundColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: kSpacingDouble,
+                    vertical: kSpacingUnit,
+                  ),
+                  child: _buildCompactControlsArea(isPlaylist),
+                ),
               ),
-              child: _buildCompactControlsArea(isPlaylist),
-            ),
+            ],
           ),
+          // 字幕处理（不显示在UI上，但需要继续运行以供其他地方调用）
+          if (_controlsConfiguration.enableSubtitles)
+            Offstage(
+              offstage: true, // 隐藏UI，但组件继续运行
+              child: IAppPlayerSubtitlesDrawer(
+                iappPlayerController: _iappPlayerController!,
+                iappPlayerSubtitlesConfiguration: _iappPlayerController!.iappPlayerConfiguration.subtitlesConfiguration,
+                subtitles: _iappPlayerController!.subtitlesLines,
+              ),
+            ),
         ],
       ),
     );
