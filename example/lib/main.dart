@@ -451,6 +451,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   IAppPlayerController? _controller;
   bool _isLoading = true;
   DecoderState _currentDecoder = DecoderState.hardware;
+  bool _isPlaying = false; // 添加播放状态跟踪
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -476,9 +477,20 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
+            _isPlaying = _controller?.isPlaying() ?? false;
           });
           // 初始化后检查方向
           _handleOrientationChange();
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
+          // 监听播放事件
+          setState(() {
+            _isPlaying = true;
+          });
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
+          // 监听暂停事件
+          setState(() {
+            _isPlaying = false;
+          });
         }
       },
       preferredDecoderType: _getDecoderType(),
@@ -574,16 +586,12 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
           ),
         ),
         child: SafeArea(
-          // 使用 SingleChildScrollView 解决滚动问题
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+          child: Column(
+            children: [
+              // 顶部内容区域
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
                     children: [
                       // 播放器区域
                       Container(
@@ -657,60 +665,60 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceMD), // 修改：统一间距为spaceMD
+                      SizedBox(height: UIConstants.spaceMD), // 统一间距
                     ],
                   ),
-                  // 控制按钮区域
-                  Container(
-                    padding: EdgeInsets.all(UIConstants.spaceLG),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(UIConstants.radiusXL),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        // 播放/暂停按钮
-                        ModernControlButton(
-                          onPressed: _controller != null && !_isLoading
-                              ? () {
-                                  if (_controller!.isPlaying() ?? false) {
-                                    _controller!.pause();
-                                  } else {
-                                    _controller!.play();
-                                  }
-                                }
-                              : null,
-                          icon: (_controller?.isPlaying() ?? false)
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          label: (_controller?.isPlaying() ?? false) ? '暂停播放' : '继续播放', // 修改：动态文字
-                          isPrimary: true,
-                        ),
-                        SizedBox(height: UIConstants.spaceMD),
-                        // 全屏按钮
-                        ModernControlButton(
-                          onPressed: _controller != null && !_isLoading
-                              ? () {
-                                  if (_controller!.isFullScreen) {
-                                    _controller!.exitFullScreen();
-                                  } else {
-                                    _controller!.enterFullScreen();
-                                  }
-                                }
-                              : null,
-                          icon: _controller?.isFullScreen ?? false
-                              ? Icons.fullscreen_exit_rounded
-                              : Icons.fullscreen_rounded,
-                          label: '全屏观看',
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              // 控制按钮区域 - 固定在底部
+              Container(
+                padding: EdgeInsets.all(UIConstants.spaceLG),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(UIConstants.radiusXL),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // 播放/暂停按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_isPlaying) {
+                                _controller!.pause();
+                              } else {
+                                _controller!.play();
+                              }
+                            }
+                          : null,
+                      icon: _isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      label: _isPlaying ? '暂停播放' : '继续播放',
+                      isPrimary: true,
+                    ),
+                    SizedBox(height: UIConstants.spaceMD),
+                    // 全屏按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_controller!.isFullScreen) {
+                                _controller!.exitFullScreen();
+                              } else {
+                                _controller!.enterFullScreen();
+                              }
+                            }
+                          : null,
+                      icon: _controller?.isFullScreen ?? false
+                          ? Icons.fullscreen_exit_rounded
+                          : Icons.fullscreen_rounded,
+                      label: '全屏观看',
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -781,6 +789,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
+  bool _isPlaying = false; // 添加播放状态跟踪
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -810,6 +819,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
+            _isPlaying = _controller?.isPlaying() ?? false;
           });
           // 初始化后检查方向
           _handleOrientationChange();
@@ -827,6 +837,16 @@ class _PlaylistExampleState extends State<PlaylistExample>
               _shuffleMode = shuffleMode;
             });
           }
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
+          // 监听播放事件
+          setState(() {
+            _isPlaying = true;
+          });
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
+          // 监听暂停事件
+          setState(() {
+            _isPlaying = false;
+          });
         }
       },
       shuffleMode: false,
@@ -894,16 +914,12 @@ class _PlaylistExampleState extends State<PlaylistExample>
           ),
         ),
         child: SafeArea(
-          // 使用 SingleChildScrollView 解决滚动问题
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+          child: Column(
+            children: [
+              // 顶部内容区域
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
                     children: [
                       // 播放器区域
                       Container(
@@ -1034,79 +1050,79 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceMD), // 修改：统一间距为spaceMD
+                      SizedBox(height: UIConstants.spaceMD), // 统一间距
                     ],
                   ),
-                  // 控制按钮区域
-                  Container(
-                    padding: EdgeInsets.all(UIConstants.spaceLG),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(UIConstants.radiusXL),
-                      ),
-                    ),
-                    child: Column(
+                ),
+              ),
+              // 控制按钮区域 - 固定在底部
+              Container(
+                padding: EdgeInsets.all(UIConstants.spaceLG),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(UIConstants.radiusXL),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // 播放控制按钮行
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // 播放控制按钮行
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // 上一个
-                            _buildCircleButton(
-                              onPressed: _playlistController != null && !_isLoading
-                                  ? () => _playlistController!.playPrevious()
-                                  : null,
-                              icon: Icons.skip_previous_rounded,
-                            ),
-                            // 播放/暂停
-                            _buildCircleButton(
-                              onPressed: _controller != null && !_isLoading
-                                  ? () {
-                                      if (_controller!.isPlaying() ?? false) {
-                                        _controller!.pause();
-                                      } else {
-                                        _controller!.play();
-                                      }
-                                    }
-                                  : null,
-                              icon: (_controller?.isPlaying() ?? false)
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded, // 修改：确保暂停时显示播放图标
-                              isPrimary: true,
-                            ),
-                            // 下一个
-                            _buildCircleButton(
-                              onPressed: _playlistController != null && !_isLoading
-                                  ? () => _playlistController!.playNext()
-                                  : null,
-                              icon: Icons.skip_next_rounded,
-                            ),
-                          ],
+                        // 上一个
+                        _buildCircleButton(
+                          onPressed: _playlistController != null && !_isLoading
+                              ? () => _playlistController!.playPrevious()
+                              : null,
+                          icon: Icons.skip_previous_rounded,
                         ),
-                        SizedBox(height: UIConstants.spaceLG - 4), // 20
-                        // 全屏播放按钮 - 原模式切换按钮改为全屏按钮
-                        ModernControlButton(
+                        // 播放/暂停
+                        _buildCircleButton(
                           onPressed: _controller != null && !_isLoading
                               ? () {
-                                  if (_controller!.isFullScreen) {
-                                    _controller!.exitFullScreen();
+                                  if (_isPlaying) {
+                                    _controller!.pause();
                                   } else {
-                                    _controller!.enterFullScreen();
+                                    _controller!.play();
                                   }
                                 }
                               : null,
-                          icon: _controller?.isFullScreen ?? false
-                              ? Icons.fullscreen_exit_rounded
-                              : Icons.fullscreen_rounded,
-                          label: '全屏观看',
+                          icon: _isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          isPrimary: true,
+                        ),
+                        // 下一个
+                        _buildCircleButton(
+                          onPressed: _playlistController != null && !_isLoading
+                              ? () => _playlistController!.playNext()
+                              : null,
+                          icon: Icons.skip_next_rounded,
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    SizedBox(height: UIConstants.spaceLG - 4), // 20
+                    // 全屏播放按钮 - 原模式切换按钮改为全屏按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_controller!.isFullScreen) {
+                                _controller!.exitFullScreen();
+                              } else {
+                                _controller!.enterFullScreen();
+                              }
+                            }
+                          : null,
+                      icon: _controller?.isFullScreen ?? false
+                          ? Icons.fullscreen_exit_rounded
+                          : Icons.fullscreen_rounded,
+                      label: '全屏观看',
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -1168,6 +1184,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
     with WidgetsBindingObserver, PlayerOrientationMixin {
   IAppPlayerController? _controller;
   bool _isLoading = true;
+  bool _isPlaying = false; // 添加播放状态跟踪
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -1210,9 +1227,20 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
+            _isPlaying = _controller?.isPlaying() ?? false;
           });
           // 初始化后检查方向
           _handleOrientationChange();
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
+          // 监听播放事件
+          setState(() {
+            _isPlaying = true;
+          });
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
+          // 监听暂停事件
+          setState(() {
+            _isPlaying = false;
+          });
         }
       },
       autoDetectFullscreenDeviceOrientation: true,
@@ -1279,16 +1307,12 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
           ),
         ),
         child: SafeArea(
-          // 使用 SingleChildScrollView 解决滚动问题
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+          child: Column(
+            children: [
+              // 顶部内容区域
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
                     children: [
                       SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
                       // 音乐封面区域 - 使用logo.png
@@ -1360,59 +1384,60 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                           ],
                         ),
                       ),
+                      SizedBox(height: UIConstants.spaceMD), // 增加底部间距
                     ],
                   ),
-                  // 控制按钮区域
-                  Container(
-                    padding: EdgeInsets.all(UIConstants.spaceLG),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(UIConstants.radiusXL),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        // 播放/暂停按钮
-                        ModernControlButton(
-                          onPressed: _controller != null && !_isLoading
-                              ? () {
-                                  if (_controller!.isPlaying() ?? false) {
-                                    _controller!.pause();
-                                  } else {
-                                    _controller!.play();
-                                  }
-                                }
-                              : null,
-                          icon: (_controller?.isPlaying() ?? false)
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          label: (_controller?.isPlaying() ?? false) ? '暂停播放' : '继续播放', // 修改：动态文字
-                          isPrimary: true,
-                        ),
-                        SizedBox(height: UIConstants.spaceMD),
-                        // 全屏按钮
-                        ModernControlButton(
-                          onPressed: _controller != null && !_isLoading
-                              ? () {
-                                  if (_controller!.isFullScreen) {
-                                    _controller!.exitFullScreen();
-                                  } else {
-                                    _controller!.enterFullScreen();
-                                  }
-                                }
-                              : null,
-                          icon: _controller?.isFullScreen ?? false
-                              ? Icons.fullscreen_exit_rounded
-                              : Icons.fullscreen_rounded,
-                          label: '全屏播放', // 修改：文字改为全屏播放
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              // 控制按钮区域 - 固定在底部
+              Container(
+                padding: EdgeInsets.all(UIConstants.spaceLG),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(UIConstants.radiusXL),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // 播放/暂停按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_isPlaying) {
+                                _controller!.pause();
+                              } else {
+                                _controller!.play();
+                              }
+                            }
+                          : null,
+                      icon: _isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      label: _isPlaying ? '暂停播放' : '继续播放',
+                      isPrimary: true,
+                    ),
+                    SizedBox(height: UIConstants.spaceMD),
+                    // 全屏按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_controller!.isFullScreen) {
+                                _controller!.exitFullScreen();
+                              } else {
+                                _controller!.enterFullScreen();
+                              }
+                            }
+                          : null,
+                      icon: _controller?.isFullScreen ?? false
+                          ? Icons.fullscreen_exit_rounded
+                          : Icons.fullscreen_rounded,
+                      label: '全屏播放',
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1435,6 +1460,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
+  bool _isPlaying = false; // 添加播放状态跟踪
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -1477,6 +1503,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
+            _isPlaying = _controller?.isPlaying() ?? false;
           });
           // 初始化后检查方向
           _handleOrientationChange();
@@ -1494,6 +1521,16 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
               _shuffleMode = shuffleMode;
             });
           }
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
+          // 监听播放事件
+          setState(() {
+            _isPlaying = true;
+          });
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
+          // 监听暂停事件
+          setState(() {
+            _isPlaying = false;
+          });
         }
       },
       shuffleMode: false,
@@ -1562,16 +1599,12 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
           ),
         ),
         child: SafeArea(
-          // 使用 SingleChildScrollView 解决滚动问题
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+          child: Column(
+            children: [
+              // 顶部内容区域
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
                     children: [
                       SizedBox(height: UIConstants.spaceLG - 4), // 20 - 减少顶部间距
                       // 音乐封面区域 - 使用logo.png
@@ -1631,87 +1664,88 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                           ),
                         ),
                       ),
+                      SizedBox(height: UIConstants.spaceMD), // 增加底部间距
                     ],
                   ),
-                  // 控制按钮区域
-                  Container(
-                    padding: EdgeInsets.all(UIConstants.spaceLG),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(UIConstants.radiusXL),
-                      ),
-                    ),
-                    child: Column(
+                ),
+              ),
+              // 控制按钮区域 - 固定在底部
+              Container(
+                padding: EdgeInsets.all(UIConstants.spaceLG),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(UIConstants.radiusXL),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // 播放控制按钮行 - 调小按钮尺寸
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // 播放控制按钮行 - 调小按钮尺寸
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // 上一首
-                            _buildCircleButton(
-                              onPressed: _playlistController != null && !_isLoading
-                                  ? () => _playlistController!.playPrevious()
-                                  : null,
-                              icon: Icons.skip_previous_rounded,
-                            ),
-                            // 播放/暂停
-                            _buildCircleButton(
-                              onPressed: _controller != null && !_isLoading
-                                  ? () {
-                                      if (_controller!.isPlaying() ?? false) {
-                                        _controller!.pause();
-                                      } else {
-                                        _controller!.play();
-                                      }
-                                    }
-                                  : null,
-                              icon: (_controller?.isPlaying() ?? false)
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded, // 修改：确保暂停时显示播放图标
-                              isPrimary: true,
-                            ),
-                            // 下一首
-                            _buildCircleButton(
-                              onPressed: _playlistController != null && !_isLoading
-                                  ? () => _playlistController!.playNext()
-                                  : null,
-                              icon: Icons.skip_next_rounded,
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: UIConstants.spaceLG - 4), // 20
-                        // 模式切换按钮 - 显示播放进度信息
-                        ModernControlButton(
-                          onPressed: _playlistController != null
-                              ? () => _playlistController!.toggleShuffleMode()
+                        // 上一首
+                        _buildCircleButton(
+                          onPressed: _playlistController != null && !_isLoading
+                              ? () => _playlistController!.playPrevious()
                               : null,
-                          icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                          label: '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
+                          icon: Icons.skip_previous_rounded,
                         ),
-                        SizedBox(height: UIConstants.spaceMD),
-                        // 全屏播放按钮
-                        ModernControlButton(
+                        // 播放/暂停
+                        _buildCircleButton(
                           onPressed: _controller != null && !_isLoading
                               ? () {
-                                  if (_controller!.isFullScreen) {
-                                    _controller!.exitFullScreen();
+                                  if (_isPlaying) {
+                                    _controller!.pause();
                                   } else {
-                                    _controller!.enterFullScreen();
+                                    _controller!.play();
                                   }
                                 }
                               : null,
-                          icon: _controller?.isFullScreen ?? false
-                              ? Icons.fullscreen_exit_rounded
-                              : Icons.fullscreen_rounded,
-                          label: '全屏播放', // 修改：文字改为全屏播放
+                          icon: _isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          isPrimary: true,
+                        ),
+                        // 下一首
+                        _buildCircleButton(
+                          onPressed: _playlistController != null && !_isLoading
+                              ? () => _playlistController!.playNext()
+                              : null,
+                          icon: Icons.skip_next_rounded,
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    SizedBox(height: UIConstants.spaceLG - 4), // 20
+                    // 模式切换按钮 - 显示播放进度信息
+                    ModernControlButton(
+                      onPressed: _playlistController != null
+                          ? () => _playlistController!.toggleShuffleMode()
+                          : null,
+                      icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                      label: '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
+                    ),
+                    SizedBox(height: UIConstants.spaceMD),
+                    // 全屏播放按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_controller!.isFullScreen) {
+                                _controller!.exitFullScreen();
+                              } else {
+                                _controller!.enterFullScreen();
+                              }
+                            }
+                          : null,
+                      icon: _controller?.isFullScreen ?? false
+                          ? Icons.fullscreen_exit_rounded
+                          : Icons.fullscreen_rounded,
+                      label: '全屏播放',
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
