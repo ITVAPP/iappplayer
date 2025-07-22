@@ -94,25 +94,8 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     BoxShadow(blurRadius: 3.0, color: Colors.black45, offset: Offset(0.0, 1.0)),
   ];
 
-  // 缓存的静态Widget
-  static const Widget _loadingOverlay = ColoredBox(
-    color: Color(0x4D000000), // Colors.black.withOpacity(0.3)
-    child: Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        strokeWidth: 2.0,
-      ),
-    ),
-  );
-
   // 缓存的空白Widget
   static const Widget _emptyWidget = SizedBox();
-  
-  // 缓存的透明容器
-  static const Widget _transparentHitArea = ColoredBox(
-    color: Colors.transparent,
-    child: SizedBox.expand(),
-  );
 
   // 最新播放值
   VideoPlayerValue? _latestValue;
@@ -737,7 +720,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   // 构建点击区域
   Widget _buildHitArea() {
     if (!iappPlayerController!.controlsEnabled) return _emptyWidget;
-    return _transparentHitArea;
+    return Container(color: Colors.transparent, width: double.infinity, height: double.infinity);
   }
 
   // 构建下一视频提示
@@ -911,6 +894,14 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     if (_controlsConfiguration.loadingWidget != null) {
       return Container(color: _controlsConfiguration.controlBarColor, child: _controlsConfiguration.loadingWidget);
     }
-    return _loadingOverlay;
+    return Container(
+      color: Colors.black.withOpacity(0.3),
+      child: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(_controlsConfiguration.loadingColor ?? Colors.white),
+          strokeWidth: 2.0,
+        ),
+      ),
+    );
   }
 }
