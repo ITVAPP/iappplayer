@@ -994,21 +994,21 @@ class IAppPlayerConfig {
     final finalControlsConfig = audioOnly != null 
         ? (controlsConfiguration?.copyWith(audioOnly: audioOnly) ?? 
            IAppPlayerControlsConfiguration(
-             handleAllGestures: handleAllGestures ?? false,
+             handleAllGestures: handleAllGestures ?? true,
              audioOnly: audioOnly,
              enableSubtitles: enableSubtitles ?? true,
              enableQualities: enableQualities ?? false,
              enableAudioTracks: enableAudioTracks ?? false,
-             enableFullscreen: enableFullscreen ?? false,
+             enableFullscreen: enableFullscreen ?? true,
              enableOverflowMenu: enableOverflowMenu ?? false,
            ))
         : (controlsConfiguration ?? IAppPlayerControlsConfiguration(
-             handleAllGestures: handleAllGestures ?? false,
+             handleAllGestures: handleAllGestures ?? true,
              audioOnly: false,
              enableSubtitles: enableSubtitles ?? true,
              enableQualities: enableQualities ?? false,
              enableAudioTracks: enableAudioTracks ?? false,
-             enableFullscreen: enableFullscreen ?? false,
+             enableFullscreen: enableFullscreen ?? true,
              enableOverflowMenu: enableOverflowMenu ?? false,
            ));
 
