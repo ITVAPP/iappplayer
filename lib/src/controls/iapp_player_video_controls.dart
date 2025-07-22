@@ -11,11 +11,11 @@ import 'package:iapp_player/src/video_player/video_player.dart';
 import 'package:iapp_player/src/subtitles/iapp_player_subtitles_drawer.dart';
 import 'package:flutter/material.dart';
 
-// 视频播放器控件
+// 定义视频播放器控件
 class IAppPlayerVideoControls extends StatefulWidget {
-  // 控件可见性变化回调
+  // 通知控件可见性变化
   final Function(bool visbility) onControlsVisibilityChanged;
-  // 控件配置
+  // 配置控件参数
   final IAppPlayerControlsConfiguration controlsConfiguration;
 
   const IAppPlayerVideoControls({
@@ -28,53 +28,62 @@ class IAppPlayerVideoControls extends StatefulWidget {
   State<StatefulWidget> createState() => _IAppPlayerVideoControlsState();
 }
 
-// Timer管理器 - 统一管理所有Timer
+// 管理所有定时器
 class _TimerManager {
   Timer? _hideTimer;
   Timer? _initTimer;
   Timer? _showAfterExpandCollapseTimer;
   Timer? _doubleTapTimer;
 
+  // 取消隐藏定时器
   void cancelHideTimer() {
     _hideTimer?.cancel();
     _hideTimer = null;
   }
 
+  // 取消初始化定时器
   void cancelInitTimer() {
     _initTimer?.cancel();
     _initTimer = null;
   }
 
+  // 取消全屏切换后显示定时器
   void cancelShowAfterExpandCollapseTimer() {
     _showAfterExpandCollapseTimer?.cancel();
     _showAfterExpandCollapseTimer = null;
   }
 
+  // 取消双击检测定时器
   void cancelDoubleTapTimer() {
     _doubleTapTimer?.cancel();
     _doubleTapTimer = null;
   }
 
+  // 设置隐藏定时器
   void setHideTimer(Timer timer) {
     cancelHideTimer();
     _hideTimer = timer;
   }
 
+  // 设置初始化定时器
   void setInitTimer(Timer timer) {
     cancelInitTimer();
     _initTimer = timer;
   }
 
+  // 设置全屏切换后显示定时器
   void setShowAfterExpandCollapseTimer(Timer timer) {
     cancelShowAfterExpandCollapseTimer();
     _showAfterExpandCollapseTimer = timer;
   }
 
+  // 设置双击检测定时器
   void setDoubleTapTimer(Timer timer) {
     cancelDoubleTapTimer();
     _doubleTapTimer = timer;
   }
 
+  // 清理所有定时器
   void dispose() {
     cancelHideTimer();
     cancelInitTimer();
@@ -84,109 +93,116 @@ class _TimerManager {
 }
 
 class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVideoControls> {
-  // 基础间距单位
+  // 定义基础间距单位
   static const double kSpacingUnit = 8.0;
-  // 半间距
+  // 定义半间距单位
   static const double kSpacingHalf = 4.0;
-  // 双倍间距
+  // 定义双倍间距单位
   static const double kSpacingDouble = 16.0;
-  // 三倍间距
+  // 定义三倍间距单位
   static const double kSpacingTriple = 24.0;
-  // 底部控制栏内边距
+  // 定义底部控制栏内边距
   static const double kBottomBarPadding = 5.0;
-  // 进度条高度
+  // 定义进度条高度
   static const double kProgressBarHeight = 12.0;
-  // 基础图标尺寸
+  // 定义基础图标尺寸
   static const double kIconSizeBase = 24.0;
-  // 基础文本尺寸
+  // 定义基础文本尺寸
   static const double kTextSizeBase = 13.0;
-  // 错误图标尺寸
+  // 定义错误图标尺寸
   static const double kErrorIconSize = 42.0;
-  // 模态框圆角
+  // 定义模态框圆角
   static const double kModalBorderRadius = 18.0;
-  // 模态框头部高度
+  // 定义模态框头部高度
   static const double kModalHeaderHeight = 48.0;
-  // 播放列表项高度
+  // 定义播放列表项高度
   static const double kModalItemHeight = 30.0;
-  // 模态框标题字体大小
+  // 定义模态框标题字体大小
   static const double kModalTitleFontSize = 18.0;
-  // 播放列表项字体大小
+  // 定义播放列表项字体大小
   static const double kModalItemFontSize = 16.0;
-  // 播放指示器图标大小
+  // 定义播放指示器图标大小
   static const double kPlayIndicatorIconSize = 20.0;
-  // 模态框背景透明度
+  // 定义模态框背景透明度
   static const double kModalBackgroundOpacity = 0.95;
-  // 播放列表项悬停透明度
+  // 定义播放列表项悬停透明度
   static const double kModalItemHoverOpacity = 0.08;
-  // 播放指示器宽度
+  // 定义播放指示器宽度
   static const double kPlayIndicatorWidth = 48.0;
-  // 默认音量
+  // 定义默认音量
   static const double kDefaultVolume = 0.5;
-  // 静音音量
+  // 定义静音音量
   static const double kMutedVolume = 0.0;
-  // 播放列表最大高度比例
+  // 定义播放列表最大高度比例
   static const double kPlaylistMaxHeightRatio = 0.6;
-  // 下一视频提示底部间距
+  // 定义下一视频提示底部间距
   static const double kNextVideoBottomSpacing = 20.0;
-  // 下一视频提示圆角
+  // 定义下一视频提示圆角
   static const double kNextVideoBorderRadius = 8.0;
-  // 下一视频提示内边距
+  // 定义下一视频提示内边距
   static const double kNextVideoPadding = 12.0;
-  // 时间与进度条水平间距
+  // 定义时间与进度条水平间距
   static const double kTimeProgressSpacing = 8.0;
-  // 时间文本尺寸减量
+  // 定义时间文本尺寸减量
   static const double kTimeTextSizeDecrease = 1.0;
-  // 双击检测相关常量
+  // 定义双击检测超时时间
   static const Duration kDoubleTapTimeout = Duration(milliseconds: 300);
-  // 图标阴影
+  // 定义图标阴影
   static const List<Shadow> _iconShadows = [
     Shadow(blurRadius: 3.0, color: Colors.black45, offset: Offset(0.0, 1.0)),
   ];
-  // 文本阴影
+  // 定义文本阴影
   static const List<Shadow> _textShadows = [
     Shadow(blurRadius: 2.0, color: Colors.black54, offset: Offset(0.0, 1.0)),
   ];
-  // 进度条阴影
+  // 定义进度条阴影
   static const List<BoxShadow> _progressBarShadows = [
     BoxShadow(blurRadius: 3.0, color: Colors.black45, offset: Offset(0.0, 1.0)),
   ];
 
-  // 最新播放值
+  // 存储最新播放值
   VideoPlayerValue? _latestValue;
-  // 最新音量
+  // 存储最新音量
   double? _latestVolume;
-  // Timer管理器
+  // 管理定时器实例
   final _timerManager = _TimerManager();
-  // 是否正在加载
+  // 标记是否正在加载
   bool _wasLoading = false;
-  // 视频播放控制器
+  // 存储视频播放控制器
   VideoPlayerController? _controller;
-  // 播放器控制器
+  // 存储播放器控制器
   IAppPlayerController? _iappPlayerController;
-  // 控件可见性流订阅
+  // 存储控件可见性流订阅
   StreamSubscription? _controlsVisibilityStreamSubscription;
-  // 响应式尺寸缓存
+  // 缓存响应式尺寸因子
   double? _cachedScaleFactor;
+  // 缓存屏幕尺寸
   Size? _cachedScreenSize;
-  // 响应式图标尺寸
+  // 存储响应式图标尺寸
   late double _responsiveIconSize;
-  // 响应式文本尺寸
+  // 存储响应式文本尺寸
   late double _responsiveTextSize;
-  // 响应式错误图标尺寸
+  // 存储响应式错误图标尺寸
   late double _responsiveErrorIconSize;
-  // 响应式控制栏高度
+  // 存储响应式控制栏高度
   late double _responsiveControlBarHeight;
-  // 双击检测相关变量
+  // 存储上次点击时间
   DateTime? _lastTapTime;
-  // PIP支持状态缓存
+  // 缓存画中画支持状态
   bool? _isPipSupported;
+  // 存储画中画支持状态Future
   Future<bool>? _pipSupportedFuture;
-  // 上一次的播放状态值，用于优化setState
+  // 缓存播放状态
   bool? _lastIsPlaying;
+  // 缓存播放位置
   Duration? _lastPosition;
+  // 缓存视频时长
   Duration? _lastDuration;
+  // 缓存错误状态
   bool? _lastHasError;
+  // 缓存缓冲状态
   bool? _lastIsBuffering;
+  // 缓存音量
   double? _lastVolume;
 
   // 获取控件配置
@@ -227,7 +243,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 在依赖变化时更新响应式尺寸
+    // 更新响应式尺寸
     _updateResponsiveSizes(context);
     
     final _oldController = _iappPlayerController;
@@ -245,7 +261,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     return buildLTRDirectionality(_buildMainWidget());
   }
 
-  // 构建主控件
+  // 构建主控件界面
   Widget _buildMainWidget() {
     final currentLoading = isLoading(_latestValue);
     if (currentLoading != _wasLoading) {
@@ -264,7 +280,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         _buildHitArea(),
         Positioned(top: 0, left: 0, right: 0, child: _buildTopBar()),
         Positioned(bottom: 0, left: 0, right: 0, child: _buildBottomBar()),
-        // 字幕显示，动态调整位置
+        // 显示字幕并动态调整位置
         if (_controlsConfiguration.enableSubtitles)
           AnimatedPositioned(
             duration: _controlsConfiguration.controlsHideTime,
@@ -295,16 +311,15 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         onPointerUp: (_) {
           final now = DateTime.now();
           if (_lastTapTime != null && now.difference(_lastTapTime!) < kDoubleTapTimeout) {
-            // 双击检测成功
+            // 处理双击事件
             _timerManager.cancelDoubleTapTimer();
             _lastTapTime = null;
             onDoubleTapHandler();
           } else {
-            // 第一次点击或超时
+            // 处理单击或超时
             _lastTapTime = now;
             _timerManager.cancelDoubleTapTimer();
             _timerManager.setDoubleTapTimer(Timer(kDoubleTapTimeout, () {
-              // 超时后执行单击操作
               _lastTapTime = null;
               onTapHandler();
             }));
@@ -331,14 +346,14 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     super.dispose();
   }
 
-  // 清理资源
+  // 清理控制器资源
   void _dispose() {
     _controller?.removeListener(_updateState);
     _timerManager.dispose();
     _controlsVisibilityStreamSubscription?.cancel();
   }
 
-  // 构建错误提示
+  // 构建错误提示界面
   Widget _buildErrorWidget() {
     final errorBuilder = _iappPlayerController!.iappPlayerConfiguration.errorBuilder;
     if (errorBuilder != null) {
@@ -376,7 +391,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     );
   }
 
-  // 构建控制按钮
+  // 构建可点击的控制按钮
   Widget _buildControlButton({
     required VoidCallback onTap,
     required IconData icon,
@@ -416,7 +431,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         : const SizedBox();
   }
 
-  // 显示播放列表菜单
+  // 显示播放列表模态框
   void _showPlaylistMenu() {
     _timerManager.cancelHideTimer();
     showModalBottomSheet(
@@ -575,13 +590,13 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
 
   // 构建画中画按钮包装器
   Widget _buildPipButtonWrapperWidget() {
-    // 初始化PIP支持状态Future（只执行一次）
+    // 初始化画中画支持状态
     _pipSupportedFuture ??= iappPlayerController!.isPictureInPictureSupported();
     
     return FutureBuilder<bool>(
       future: _pipSupportedFuture,
       builder: (context, snapshot) {
-        // 缓存结果避免重复判断
+        // 缓存画中画支持状态
         if (snapshot.hasData && _isPipSupported == null) {
           _isPipSupported = snapshot.data;
         }
@@ -609,7 +624,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            // 进度条区域（包含时间显示）
+            // 构建进度条和时间显示区域
             Container(
               padding: const EdgeInsets.symmetric(horizontal: kSpacingDouble),
               child: Row(
@@ -702,7 +717,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     );
   }
 
-  // 播放上一个/下一个的逻辑
+  // 播放上一个或下一个视频
   void _playWithTimer(bool isPrevious) {
     final playlistController = _iappPlayerController!.playlistController;
     if (playlistController != null) {
@@ -715,7 +730,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     }
   }
 
-  // 构建直播标识
+  // 构建直播状态标识
   Widget _buildLiveWidget() {
     return Text(
       _iappPlayerController!.translations.controlsLive,
@@ -723,7 +738,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     );
   }
 
-  // 构建点击区域
+  // 构建可点击区域
   Widget _buildHitArea() {
     if (!iappPlayerController!.controlsEnabled) return const SizedBox();
     return Container(color: Colors.transparent, width: double.infinity, height: double.infinity);
@@ -795,7 +810,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     changePlayerControlsNotVisible(false);
   }
 
-  // 初始化控制器
+  // 初始化播放控制器
   Future<void> _initialize() async {
     _controller!.addListener(_updateState);
     _updateState();
@@ -811,7 +826,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     });
   }
 
-  // 切换全屏状态
+  // 切换全屏模式
   void _onExpandCollapse() {
     changePlayerControlsNotVisible(true);
     _iappPlayerController!.toggleFullScreen();
@@ -820,7 +835,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     }));
   }
 
-  // 播放/暂停切换
+  // 处理播放/暂停逻辑
   void _onPlayPause() {
     bool isFinished = false;
     if (_latestValue?.position != null && _latestValue?.duration != null) {
@@ -841,19 +856,19 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     }
   }
 
-  // 启动隐藏定时器
+  // 启动控件隐藏定时器
   void _startHideTimer() {
     if (_iappPlayerController!.controlsAlwaysVisible) return;
     _timerManager.setHideTimer(Timer(const Duration(milliseconds: 5000), () => changePlayerControlsNotVisible(true)));
   }
 
-  // 更新播放状态 - 优化setState调用
+  // 更新播放状态
   void _updateState() {
     if (!mounted) return;
     final newValue = _controller!.value;
     final shouldUpdate = !controlsNotVisible || isVideoFinished(newValue) || _wasLoading || isLoading(newValue);
     if (shouldUpdate) {
-      // 更精细的状态比较，只在真正需要时才调用setState
+      // 比较状态以减少不必要的setState
       final needsUpdate = _lastIsPlaying != newValue.isPlaying ||
           _lastPosition != newValue.position ||
           _lastDuration != newValue.duration ||
@@ -862,7 +877,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
           _lastVolume != newValue.volume;
       
       if (needsUpdate) {
-        // 更新缓存的状态值
+        // 更新状态缓存
         _lastIsPlaying = newValue.isPlaying;
         _lastPosition = newValue.position;
         _lastDuration = newValue.duration;
@@ -880,7 +895,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     }
   }
 
-  // 构建进度条
+  // 构建视频进度条
   Widget _buildProgressBar() {
     return IAppPlayerProgressBar(
       _controller,
@@ -896,7 +911,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     );
   }
 
-  // 控件隐藏回调
+  // 处理控件隐藏事件
   void _onPlayerHide() {
     _iappPlayerController!.toggleControlsVisibility(!controlsNotVisible);
     widget.onControlsVisibilityChanged(!controlsNotVisible);
