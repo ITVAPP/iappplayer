@@ -77,6 +77,12 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   static const double kNextVideoBorderRadius = 8.0;
   // 下一视频提示内边距
   static const double kNextVideoPadding = 12.0;
+  // 时间与进度条水平间距
+  static const double kTimeProgressSpacing = 8.0;
+  // 时间文本尺寸减量
+  static const double kTimeTextSizeDecrease = 1.0;
+  // 双击检测相关常量
+  static const Duration kDoubleTapTimeout = Duration(milliseconds: 300);
   // 图标阴影
   static const List<Shadow> _iconShadows = [
     Shadow(blurRadius: 3.0, color: Colors.black45, offset: Offset(0.0, 1.0)),
@@ -117,6 +123,9 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   late double _responsiveErrorIconSize;
   // 响应式控制栏高度
   late double _responsiveControlBarHeight;
+  // 双击检测相关变量
+  DateTime? _lastTapTime;
+  Timer? _doubleTapTimer;
 
   // 获取控件配置
   IAppPlayerControlsConfiguration get _controlsConfiguration => widget.controlsConfiguration;
@@ -214,19 +223,38 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
       gestureDetector?.onTap?.call();
       controlsNotVisible ? cancelAndRestartTimer() : changePlayerControlsNotVisible(true);
     };
+    final onDoubleTapHandler = () {
+      gestureDetector?.onDoubleTap?.call();
+      _onExpandCollapse();
+    };
     if (!_controlsConfiguration.handleAllGestures) {
       return Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerUp: (_) => onTapHandler(),
+        onPointerUp: (_) {
+          final now = DateTime.now();
+          if (_lastTapTime != null && now.difference(_lastTapTime!) < kDoubleTapTimeout) {
+            // 双击检测成功
+            _doubleTapTimer?.cancel();
+            _doubleTapTimer = null;
+            _lastTapTime = null;
+            onDoubleTapHandler();
+          } else {
+            // 第一次点击或超时
+            _lastTapTime = now;
+            _doubleTapTimer?.cancel();
+            _doubleTapTimer = Timer(kDoubleTapTimeout, () {
+              // 超时后执行单击操作
+              _lastTapTime = null;
+              onTapHandler();
+            });
+          }
+        },
         child: content,
       );
     } else {
       return GestureDetector(
         onTap: onTapHandler,
-        onDoubleTap: () {
-          gestureDetector?.onDoubleTap?.call();
-          cancelAndRestartTimer();
-        },
+        onDoubleTap: onDoubleTapHandler,
         onLongPress: () {
           gestureDetector?.onLongPress?.call();
         },
@@ -238,6 +266,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   @override
   void dispose() {
     _dispose();
+    _doubleTapTimer?.cancel();
     super.dispose();
   }
 
@@ -522,12 +551,45 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            // 进度条
+            // 进度条区域（包含时间显示）
             Container(
-              height: kProgressBarHeight,
               padding: EdgeInsets.symmetric(horizontal: kSpacingDouble),
-              decoration: const BoxDecoration(boxShadow: _progressBarShadows),
-              child: _controlsConfiguration.enableProgressBar ? _buildProgressBar() : const SizedBox(),
+              child: Row(
+                children: [
+                  if (_controlsConfiguration.enableProgressText && !isLive) ...[
+                    Text(
+                      IAppPlayerUtils.formatDuration(_latestValue?.position ?? Duration.zero),
+                      style: TextStyle(
+                        fontSize: _responsiveTextSize - kTimeTextSizeDecrease,
+                        color: _controlsConfiguration.textColor,
+                        shadows: _textShadows,
+                      ),
+                    ),
+                    SizedBox(width: kTimeProgressSpacing),
+                  ],
+                  if (_controlsConfiguration.enableProgressBar)
+                    Expanded(
+                      child: Container(
+                        height: kProgressBarHeight,
+                        decoration: const BoxDecoration(boxShadow: _progressBarShadows),
+                        child: _buildProgressBar(),
+                      ),
+                    )
+                  else if (_controlsConfiguration.enableProgressText && !isLive)
+                    const Expanded(child: SizedBox()),
+                  if (_controlsConfiguration.enableProgressText && !isLive) ...[
+                    SizedBox(width: kTimeProgressSpacing),
+                    Text(
+                      IAppPlayerUtils.formatDuration(_latestValue?.duration ?? Duration.zero),
+                      style: TextStyle(
+                        fontSize: _responsiveTextSize - kTimeTextSizeDecrease,
+                        color: _controlsConfiguration.textColor,
+                        shadows: _textShadows,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
             Container(
               height: _responsiveControlBarHeight,
@@ -561,10 +623,8 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: kSpacingHalf),
                       child: isLive
-                          ? _buildLiveWidget()
-                          : _controlsConfiguration.enableProgressText
-                              ? _buildPosition()
-                              : const SizedBox(),
+                          ? Center(child: _buildLiveWidget())
+                          : const SizedBox(),
                     ),
                   ),
                   if (isPlaylist) _buildControlButton(onTap: _showPlaylistMenu, icon: Icons.queue_music),
@@ -667,16 +727,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
       key: const Key("iapp_player_material_controls_play_pause_button"),
       onTap: _onPlayPause,
       icon: isFinished ? Icons.replay : controller.value.isPlaying ? _controlsConfiguration.pauseIcon : _controlsConfiguration.playIcon,
-    );
-  }
-
-  // 构建时间显示
-  Widget _buildPosition() {
-    final position = _latestValue != null ? _latestValue!.position : Duration.zero;
-    final duration = _latestValue != null && _latestValue!.duration != null ? _latestValue!.duration! : Duration.zero;
-    return Text(
-      '${IAppPlayerUtils.formatDuration(position)} / ${IAppPlayerUtils.formatDuration(duration)}',
-      style: TextStyle(fontSize: _responsiveTextSize, color: _controlsConfiguration.textColor, shadows: _textShadows),
     );
   }
 
