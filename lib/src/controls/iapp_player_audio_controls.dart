@@ -14,9 +14,9 @@ import 'package:flutter/material.dart';
 
 // 播放器显示模式
 enum PlayerDisplayMode {
-  expanded,   // 扩展模式：高度 > 200px 且非正方形
+  expanded,   // 扩展模式：高度 ≥ 200px 且非正方形
   square,     // 正方形模式：宽高比接近 1:1
-  compact,    // 紧凑模式：高度 ≤ 200px 且非正方形
+  compact,    // 紧凑模式：高度 < 200px 且非正方形
 }
 
 // 音频播放控件
@@ -128,6 +128,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 紧凑模式新样式常量
   static const Color kCompactBackgroundColor = Colors.black; // 背景色
+  static const double kCompactControlsMinWidth = 120.0; // 控制区域最小宽度
   static const double kGradientWidth = 60.0; // 渐变宽度
   static const double kCompactSongInfoSpacing = 4.0; // 歌曲信息间距
   static const double kCompactSectionSpacing = 12.0; // 各区域间距
@@ -312,19 +313,19 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final double aspectRatio = constraints.maxWidth / constraints.maxHeight;
     final bool isSquareRatio = (aspectRatio - 1.0).abs() < 0.1; // 允许10%的误差
     
-    // 正方形模式
+    // 正方形模式：宽高比接近1:1
     if (isSquareRatio) {
       return PlayerDisplayMode.square;
     }
     
-    // 扩展模式：高度超过阈值且非正方形
+    // 紧凑模式：高度 < 200px 且非正方形
     if (constraints.maxHeight != double.infinity && 
-        constraints.maxHeight > kExpandedModeThreshold) {
-      return PlayerDisplayMode.expanded;
+        constraints.maxHeight < kExpandedModeThreshold) {
+      return PlayerDisplayMode.compact;
     }
     
-    // 其他情况都是紧凑模式
-    return PlayerDisplayMode.compact;
+    // 扩展模式：高度 ≥ 200px 且非正方形
+    return PlayerDisplayMode.expanded;
   }
 
   @override
@@ -356,6 +357,679 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           
           return _buildMainWidget(constraints);
         },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _dispose();
+    _rotationController?.dispose();
+    super.dispose();
+  }
+
+  // 清理控制器监听
+  void _dispose() {
+    _controller?.removeListener(_updateState);
+  }
+
+  @override
+  void didChangeDependencies() {
+    final _oldController = _iappPlayerController;
+    _iappPlayerController = IAppPlayerController.of(context);
+    _controller = _iappPlayerController!.videoPlayerController;
+    _latestValue = _controller!.value;
+
+    if (_oldController != _iappPlayerController) {
+      _dispose();
+      _initialize();
+    }
+
+    // 只在必要时重新计算尺寸
+    final currentScreenSize = MediaQuery.of(context).size;
+    if (_cachedScreenSize != currentScreenSize) {
+      _precalculateResponsiveSizes(context);
+    }
+
+    super.didChangeDependencies();
+  }
+
+  // 构建主控件布局
+  Widget _buildMainWidget(BoxConstraints constraints) {
+    if (_latestValue?.hasError == true) {
+      return Container(
+        color: Colors.black,
+        child: _buildErrorWidget(),
+      );
+    }
+    
+    // 根据显示模式选择不同的布局
+    switch (_currentDisplayMode) {
+      case PlayerDisplayMode.expanded:
+        return _buildExpandedMode();
+      case PlayerDisplayMode.square:
+        return _buildSquareMode();
+      case PlayerDisplayMode.compact:
+        return _buildCompactMode(constraints);
+    }
+  }
+
+  // ============== 扩展模式 ==============
+  // 扩展模式：显示唱片动画 + 完整控制栏
+  Widget _buildExpandedMode() {
+    return Container(
+      color: Colors.transparent,
+      child: Stack(
+        children: [
+          // 渐变背景
+          if (_gradientColors != null)
+            Positioned.fill(
+              child: _buildGradientBackground(),
+            ),
+          // 主内容
+          _buildExpandedLayout(),
+        ],
+      ),
+    );
+  }
+
+  // 构建渐变背景
+  Widget _buildGradientBackground() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 渐变背景
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _gradientColors!,
+            ),
+          ),
+        ),
+        // 玻璃效果
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: Colors.black.withOpacity(0.3),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 构建扩展布局
+  Widget _buildExpandedLayout() {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            Expanded(
+              child: _buildDiscSection(),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildProgressSection(),
+                _buildControlsSection(),
+              ],
+            ),
+          ],
+        ),
+        Positioned(
+          top: kSpacingDouble,
+          left: 0,
+          right: 0,
+          child: _buildTitleSection(),
+        ),
+        // 字幕显示在距离进度条的 kSpacingHalf 上面
+        if (_controlsConfiguration.enableSubtitles)
+          Positioned(
+            bottom: kAudioControlBarHeight + kProgressBarHeight + kSpacingHalf,
+            left: kSpacingDouble,
+            right: kSpacingDouble,
+            child: IAppPlayerSubtitlesDrawer(
+              iappPlayerController: _iappPlayerController!,
+              iappPlayerSubtitlesConfiguration: _iappPlayerController!.iappPlayerConfiguration.subtitlesConfiguration,
+              subtitles: _iappPlayerController!.subtitlesLines,
+            ),
+          ),
+      ],
+    );
+  }
+
+  // 构建唱片区域
+  Widget _buildDiscSection() {
+    final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
+    final imageUrl = _getImageUrl();
+    final title = _getCurrentTitle();
+    final singer = _getCurrentSinger();
+    
+    return Center(
+      child: Container(
+        width: kExpandedDiscSize,
+        height: kExpandedDiscSize,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: AnimatedBuilder(
+          animation: _rotationAnimation ?? const AlwaysStoppedAnimation(0.0),
+          builder: (context, child) {
+            return Transform.rotate(
+              angle: (_rotationAnimation?.value ?? 0.0) * kFullRotation,
+              child: ClipOval(
+                child: Stack(
+                  children: [
+                    // 唱片纹理
+                    CustomPaint(
+                      size: const Size(kExpandedDiscSize, kExpandedDiscSize),
+                      painter: _DiscPainter(isCompact: false),
+                    ),
+                    // 中心封面
+                    Center(
+                      child: Container(
+                        width: kExpandedDiscSize * kDiscInnerCircleRatio,
+                        height: kExpandedDiscSize * kDiscInnerCircleRatio,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.transparent,
+                        ),
+                        child: ClipOval(
+                          child: _buildCoverImage(placeholder, imageUrl),
+                        ),
+                      ),
+                    ),
+                    // 中心白色标签
+                    Center(
+                      child: Container(
+                        width: kExpandedDiscSize * kDiscCenterRatio,
+                        height: kExpandedDiscSize * kDiscCenterRatio,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (singer != null)
+                              Text(
+                                singer,
+                                style: const TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.black54,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // 中心孔
+                    Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ============== 正方形模式 ==============
+  // 正方形模式：封面铺满 + 居中播放按钮
+  Widget _buildSquareMode() {
+    final imageUrl = _getImageUrl();
+    final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
+    
+    // 简化设计：直接使用Stack填充
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 黑色背景（作为图片加载失败的后备）
+        Container(color: Colors.black),
+        // 封面图片 - 使用Container包装确保填充
+        if (placeholder != null)
+          placeholder
+        else if (imageUrl != null && imageUrl.isNotEmpty)
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: imageUrl.startsWith('http://') || imageUrl.startsWith('https://')
+                    ? NetworkImage(imageUrl) as ImageProvider
+                    : AssetImage(imageUrl),
+                fit: BoxFit.cover,
+              ),
+            ),
+          )
+        else
+          Container(
+            color: Colors.grey[900],
+            child: Icon(
+              Icons.music_note,
+              size: 60,
+              color: Colors.grey[600],
+            ),
+          ),
+        // 半透明遮罩
+        Container(
+          color: Colors.black.withOpacity(0.4),
+        ),
+        // 居中的播放/暂停按钮
+        Center(
+          child: _buildSquareModePlayButton(),
+        ),
+      ],
+    );
+  }
+
+  // 构建正方形模式的播放按钮
+  Widget _buildSquareModePlayButton() {
+    final bool isFinished = isVideoFinished(_latestValue);
+    final bool isPlaying = _controller?.value.isPlaying ?? false;
+
+    IconData iconData;
+    if (isFinished) {
+      iconData = Icons.replay;
+    } else if (isPlaying) {
+      iconData = Icons.pause;
+    } else {
+      iconData = Icons.play_arrow;
+    }
+
+    return IAppPlayerClickableWidget(
+      key: const Key("iapp_player_audio_square_play_pause_button"),
+      onTap: _onPlayPause,
+      child: Container(
+        width: kSquareModePlayButtonSize,
+        height: kSquareModePlayButtonSize,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          // 纯黑色半透明背景，无边框
+          color: Colors.black.withOpacity(kSquareModeButtonOpacity),
+          // 强化阴影效果，增加层次感
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 20,
+              spreadRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Icon(
+          iconData,
+          color: Colors.white,
+          size: 40,
+        ),
+      ),
+    );
+  }
+
+  // ============== 紧凑模式 ==============
+  // 紧凑模式：横向布局
+  Widget _buildCompactMode(BoxConstraints constraints) {
+    final bool isPlaylist = _iappPlayerController!.isPlaylistMode;
+    final imageUrl = _getImageUrl();
+    final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
+    
+    // 修改：使用实际高度计算
+    final double playerHeight = constraints.maxHeight.isFinite 
+      ? math.min(constraints.maxHeight, kCompactModeMaxHeight)
+      : kCompactModeMinHeight;
+    // 修改：左侧封面为正方形
+    final double coverSize = playerHeight;
+    
+    return Container(
+      height: playerHeight,
+      decoration: BoxDecoration(
+        color: kCompactBackgroundColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // 左侧封面区域 - 正方形
+          _buildCompactCoverSection(placeholder, imageUrl, coverSize, showGradient: true),
+          // 右侧控制区域
+          Expanded(
+            child: Container(
+              color: kCompactBackgroundColor,
+              padding: const EdgeInsets.symmetric(
+                horizontal: kSpacingDouble,
+                vertical: kSpacingUnit,
+              ),
+              child: _buildCompactControlsArea(isPlaylist),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 构建紧凑模式左侧封面区域
+  Widget _buildCompactCoverSection(Widget? placeholder, String? imageUrl, double size, {bool showGradient = false}) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 修改：使用 ClipRect 确保图片不会溢出
+          ClipRect(
+            child: _buildCoverImage(placeholder, imageUrl, fit: BoxFit.cover),
+          ),
+          // 右侧渐变遮罩（仅在需要时显示）
+          if (showGradient)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: kGradientWidth,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.transparent,
+                      kCompactBackgroundColor.withOpacity(0.7),
+                      kCompactBackgroundColor,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // 构建紧凑模式右侧控制区域
+  Widget _buildCompactControlsArea(bool isPlaylist) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // 顶部栏（居右）
+        _buildCompactTopBar(isPlaylist),
+        // 歌曲信息（水平居中）
+        Expanded(
+          child: Center(
+            child: _buildCompactSongInfoArea(),
+          ),
+        ),
+        // 底部控制区
+        Column(
+          children: [
+            // 进度条和时间
+            _buildCompactProgressSection(),
+            SizedBox(height: kCompactSectionSpacing),
+            // 播放控制按钮（水平居中）
+            Center(
+              child: _buildCompactPlaybackControls(isPlaylist),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 构建紧凑模式顶部栏
+  Widget _buildCompactTopBar(bool isPlaylist) {
+    final bool isLive = _iappPlayerController?.isLiveStream() ?? false;
+    final duration = _latestValue?.duration ?? Duration.zero;
+    final position = _latestValue?.position ?? Duration.zero;
+    final remaining = duration - position;
+    
+    return SizedBox(
+      height: kCompactTopBarHeight,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // 左侧显示剩余时间
+          if (_controlsConfiguration.enableProgressText && !isLive)
+            Text(
+              '-${IAppPlayerUtils.formatDuration(remaining)}',
+              style: TextStyle(
+                fontSize: 11,
+                color: _controlsConfiguration.textColor.withOpacity(0.7),
+              ),
+            ),
+          const Spacer(),
+          // 右侧按钮组
+          Row(
+            children: [
+              // 播放列表模式按钮
+              if (isPlaylist) ...[
+                _buildCompactIconButton(
+                  icon: _iappPlayerController!.playlistShuffleMode 
+                    ? Icons.shuffle 
+                    : Icons.repeat,
+                  onTap: () {
+                    _iappPlayerController!.togglePlaylistShuffle();
+                    setState(() {});
+                  },
+                  size: kCompactSmallIconSize,
+                ),
+                SizedBox(width: kSpacingUnit),
+                _buildCompactIconButton(
+                  icon: Icons.queue_music,
+                  onTap: _showPlaylistMenu,
+                  size: kCompactSmallIconSize,
+                ),
+                if (_controlsConfiguration.enableFullscreen)
+                  SizedBox(width: kSpacingUnit),
+              ],
+              // 全屏按钮
+              if (_controlsConfiguration.enableFullscreen)
+                _buildCompactIconButton(
+                  icon: _iappPlayerController!.isFullScreen
+                      ? _controlsConfiguration.fullscreenDisableIcon
+                      : _controlsConfiguration.fullscreenEnableIcon,
+                  onTap: () {
+                    if (_iappPlayerController!.isFullScreen) {
+                      _iappPlayerController!.exitFullScreen();
+                    } else {
+                      _iappPlayerController!.enterFullScreen();
+                    }
+                  },
+                  size: kCompactSmallIconSize,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 构建紧凑模式歌曲信息区域
+  Widget _buildCompactSongInfoArea() {
+    final title = _getCurrentTitle();
+    final singer = _getCurrentSinger();
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (singer != null) ...[
+          Text(
+            singer,
+            style: TextStyle(
+              fontSize: 12,
+              color: _controlsConfiguration.textColor.withOpacity(0.7),
+              fontWeight: FontWeight.normal,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: kCompactSongInfoSpacing),
+        ],
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            color: _controlsConfiguration.textColor,
+            fontWeight: FontWeight.bold,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  // 构建紧凑模式的进度条区域
+  Widget _buildCompactProgressSection() {
+    return Row(
+      children: [
+        if (_controlsConfiguration.enableProgressBar)
+          Expanded(
+            child: SizedBox(
+              height: kCompactProgressHeight,
+              child: _buildProgressBar(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // 构建紧凑模式播放控制按钮
+  Widget _buildCompactPlaybackControls(bool isPlaylist) {
+    final bool isLive = _iappPlayerController?.isLiveStream() ?? false;
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (isPlaylist) ...[
+          _buildCompactIconButton(
+            icon: Icons.skip_previous,
+            onTap: (_iappPlayerController!.playlistController?.hasPrevious ?? false) 
+              ? _playPrevious 
+              : null,
+            enabled: _iappPlayerController!.playlistController?.hasPrevious ?? false,
+            size: kCompactControlButtonSize,
+          ),
+          SizedBox(width: kSpacingDouble),
+          _buildCompactPlayPauseButton(),
+          SizedBox(width: kSpacingDouble),
+          _buildCompactIconButton(
+            icon: Icons.skip_next,
+            onTap: (_iappPlayerController!.playlistController?.hasNext ?? false) 
+              ? _playNext 
+              : null,
+            enabled: _iappPlayerController!.playlistController?.hasNext ?? false,
+            size: kCompactControlButtonSize,
+          ),
+        ] else ...[
+          if (!isLive) ...[
+            _buildCompactIconButton(
+              icon: Icons.replay_10,
+              onTap: skipBack,
+              size: 24,
+            ),
+            SizedBox(width: kSpacingDouble),
+          ],
+          _buildCompactPlayPauseButton(),
+          if (!isLive) ...[
+            SizedBox(width: kSpacingDouble),
+            _buildCompactIconButton(
+              icon: Icons.forward_10,
+              onTap: skipForward,
+              size: 24,
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  // 构建紧凑模式的图标按钮
+  Widget _buildCompactIconButton({
+    required IconData icon,
+    required VoidCallback? onTap,
+    double size = 24,
+    bool enabled = true,
+  }) {
+    final effectiveColor = enabled 
+      ? _controlsConfiguration.iconsColor
+      : _controlsConfiguration.iconsColor.withOpacity(0.3);
+      
+    return IAppPlayerClickableWidget(
+      onTap: (enabled && onTap != null) ? onTap : () {},
+      child: Icon(
+        icon,
+        color: effectiveColor,
+        size: size,
+      ),
+    );
+  }
+
+  // 构建紧凑模式的播放/暂停按钮
+  Widget _buildCompactPlayPauseButton() {
+    final bool isFinished = isVideoFinished(_latestValue);
+    final bool isPlaying = _controller?.value.isPlaying ?? false;
+
+    IconData iconData;
+    if (isFinished) {
+      iconData = Icons.replay;
+    } else if (isPlaying) {
+      iconData = Icons.pause;
+    } else {
+      iconData = Icons.play_arrow;
+    }
+
+    return IAppPlayerClickableWidget(
+      key: const Key("iapp_player_audio_controls_play_pause_button"),
+      onTap: _onPlayPause,
+      child: Container(
+        width: kCompactPlayButtonSize,
+        height: kCompactPlayButtonSize,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _controlsConfiguration.iconsColor,
+        ),
+        child: Icon(
+          iconData,
+          color: kCompactBackgroundColor,
+          size: kCompactPlayPauseIconSize,
+        ),
       ),
     );
   }
@@ -1097,676 +1771,3 @@ class _DiscPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-  @override
-  void dispose() {
-    _dispose();
-    _rotationController?.dispose();
-    super.dispose();
-  }
-
-  // 清理控制器监听
-  void _dispose() {
-    _controller?.removeListener(_updateState);
-  }
-
-  @override
-  void didChangeDependencies() {
-    final _oldController = _iappPlayerController;
-    _iappPlayerController = IAppPlayerController.of(context);
-    _controller = _iappPlayerController!.videoPlayerController;
-    _latestValue = _controller!.value;
-
-    if (_oldController != _iappPlayerController) {
-      _dispose();
-      _initialize();
-    }
-
-    // 只在必要时重新计算尺寸
-    final currentScreenSize = MediaQuery.of(context).size;
-    if (_cachedScreenSize != currentScreenSize) {
-      _precalculateResponsiveSizes(context);
-    }
-
-    super.didChangeDependencies();
-  }
-
-  // 构建主控件布局
-  Widget _buildMainWidget(BoxConstraints constraints) {
-    if (_latestValue?.hasError == true) {
-      return Container(
-        color: Colors.black,
-        child: _buildErrorWidget(),
-      );
-    }
-    
-    // 根据显示模式选择不同的布局
-    switch (_currentDisplayMode) {
-      case PlayerDisplayMode.expanded:
-        return _buildExpandedMode();
-      case PlayerDisplayMode.square:
-        return _buildSquareMode();
-      case PlayerDisplayMode.compact:
-        return _buildCompactMode(constraints);
-    }
-  }
-
-  // ============== 扩展模式 ==============
-  // 扩展模式：显示唱片动画 + 完整控制栏
-  Widget _buildExpandedMode() {
-    return Container(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          // 渐变背景
-          if (_gradientColors != null)
-            Positioned.fill(
-              child: _buildGradientBackground(),
-            ),
-          // 主内容
-          _buildExpandedLayout(),
-        ],
-      ),
-    );
-  }
-
-  // 构建渐变背景
-  Widget _buildGradientBackground() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // 渐变背景
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: _gradientColors!,
-            ),
-          ),
-        ),
-        // 玻璃效果
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            color: Colors.black.withOpacity(0.3),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 构建扩展布局
-  Widget _buildExpandedLayout() {
-    return Stack(
-      children: [
-        Column(
-          children: [
-            Expanded(
-              child: _buildDiscSection(),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildProgressSection(),
-                _buildControlsSection(),
-              ],
-            ),
-          ],
-        ),
-        Positioned(
-          top: kSpacingDouble,
-          left: 0,
-          right: 0,
-          child: _buildTitleSection(),
-        ),
-        // 字幕显示在距离进度条的 kSpacingHalf 上面
-        if (_controlsConfiguration.enableSubtitles)
-          Positioned(
-            bottom: kAudioControlBarHeight + kProgressBarHeight + kSpacingHalf,
-            left: kSpacingDouble,
-            right: kSpacingDouble,
-            child: IAppPlayerSubtitlesDrawer(
-              iappPlayerController: _iappPlayerController!,
-              iappPlayerSubtitlesConfiguration: _iappPlayerController!.iappPlayerConfiguration.subtitlesConfiguration,
-              subtitles: _iappPlayerController!.subtitlesLines,
-            ),
-          ),
-      ],
-    );
-  }
-
-  // 构建唱片区域
-  Widget _buildDiscSection() {
-    final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
-    final imageUrl = _getImageUrl();
-    final title = _getCurrentTitle();
-    final singer = _getCurrentSinger();
-    
-    return Center(
-      child: Container(
-        width: kExpandedDiscSize,
-        height: kExpandedDiscSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
-        child: AnimatedBuilder(
-          animation: _rotationAnimation ?? const AlwaysStoppedAnimation(0.0),
-          builder: (context, child) {
-            return Transform.rotate(
-              angle: (_rotationAnimation?.value ?? 0.0) * kFullRotation,
-              child: ClipOval(
-                child: Stack(
-                  children: [
-                    // 唱片纹理
-                    CustomPaint(
-                      size: const Size(kExpandedDiscSize, kExpandedDiscSize),
-                      painter: _DiscPainter(isCompact: false),
-                    ),
-                    // 中心封面
-                    Center(
-                      child: Container(
-                        width: kExpandedDiscSize * kDiscInnerCircleRatio,
-                        height: kExpandedDiscSize * kDiscInnerCircleRatio,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.transparent,
-                        ),
-                        child: ClipOval(
-                          child: _buildCoverImage(placeholder, imageUrl),
-                        ),
-                      ),
-                    ),
-                    // 中心白色标签
-                    Center(
-                      child: Container(
-                        width: kExpandedDiscSize * kDiscCenterRatio,
-                        height: kExpandedDiscSize * kDiscCenterRatio,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (singer != null)
-                              Text(
-                                singer,
-                                style: const TextStyle(
-                                  fontSize: 8,
-                                  color: Colors.black54,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // 中心孔
-                    Center(
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[800],
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  // ============== 正方形模式 ==============
-  // 正方形模式：封面铺满 + 居中播放按钮
-  Widget _buildSquareMode() {
-    final imageUrl = _getImageUrl();
-    final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
-    
-    // 简化设计：直接使用Stack填充
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // 黑色背景（作为图片加载失败的后备）
-        Container(color: Colors.black),
-        // 封面图片 - 使用Container包装确保填充
-        if (placeholder != null)
-          placeholder
-        else if (imageUrl != null && imageUrl.isNotEmpty)
-          Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: imageUrl.startsWith('http://') || imageUrl.startsWith('https://')
-                    ? NetworkImage(imageUrl) as ImageProvider
-                    : AssetImage(imageUrl),
-                fit: BoxFit.cover,
-              ),
-            ),
-          )
-        else
-          Container(
-            color: Colors.grey[900],
-            child: Icon(
-              Icons.music_note,
-              size: 60,
-              color: Colors.grey[600],
-            ),
-          ),
-        // 半透明遮罩
-        Container(
-          color: Colors.black.withOpacity(0.4),
-        ),
-        // 居中的播放/暂停按钮
-        Center(
-          child: _buildSquareModePlayButton(),
-        ),
-      ],
-    );
-  }
-
-  // 构建正方形模式的播放按钮
-  Widget _buildSquareModePlayButton() {
-    final bool isFinished = isVideoFinished(_latestValue);
-    final bool isPlaying = _controller?.value.isPlaying ?? false;
-
-    IconData iconData;
-    if (isFinished) {
-      iconData = Icons.replay;
-    } else if (isPlaying) {
-      iconData = Icons.pause;
-    } else {
-      iconData = Icons.play_arrow;
-    }
-
-    return IAppPlayerClickableWidget(
-      key: const Key("iapp_player_audio_square_play_pause_button"),
-      onTap: _onPlayPause,
-      child: Container(
-        width: kSquareModePlayButtonSize,
-        height: kSquareModePlayButtonSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          // 纯黑色半透明背景，无边框
-          color: Colors.black.withOpacity(kSquareModeButtonOpacity),
-          // 强化阴影效果，增加层次感
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.6),
-              blurRadius: 20,
-              spreadRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Icon(
-          iconData,
-          color: Colors.white,
-          size: 40,
-        ),
-      ),
-    );
-  }
-
-  // ============== 紧凑模式 ==============
-  // 紧凑模式：横向布局
-  Widget _buildCompactMode(BoxConstraints constraints) {
-    final bool isPlaylist = _iappPlayerController!.isPlaylistMode;
-    final imageUrl = _getImageUrl();
-    final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
-    
-    // 修改：使用实际高度计算
-    final double playerHeight = constraints.maxHeight.isFinite 
-      ? math.min(constraints.maxHeight, kCompactModeMaxHeight)
-      : kCompactModeMinHeight;
-    // 修改：左侧封面为正方形
-    final double coverSize = playerHeight;
-    
-    return Container(
-      height: playerHeight,
-      decoration: BoxDecoration(
-        color: kCompactBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 左侧封面区域 - 正方形
-          _buildCompactCoverSection(placeholder, imageUrl, coverSize, showGradient: true),
-          // 右侧控制区域
-          Expanded(
-            child: Container(
-              color: kCompactBackgroundColor,
-              padding: const EdgeInsets.symmetric(
-                horizontal: kSpacingDouble,
-                vertical: kSpacingUnit,
-              ),
-              child: _buildCompactControlsArea(isPlaylist),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 构建紧凑模式左侧封面区域
-  Widget _buildCompactCoverSection(Widget? placeholder, String? imageUrl, double size, {bool showGradient = false}) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 修改：使用 ClipRect 确保图片不会溢出
-          ClipRect(
-            child: _buildCoverImage(placeholder, imageUrl, fit: BoxFit.cover),
-          ),
-          // 右侧渐变遮罩（仅在需要时显示）
-          if (showGradient)
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: kGradientWidth,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.transparent,
-                      kCompactBackgroundColor.withOpacity(0.7),
-                      kCompactBackgroundColor,
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // 构建紧凑模式右侧控制区域
-  Widget _buildCompactControlsArea(bool isPlaylist) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // 顶部栏（居右）
-        _buildCompactTopBar(isPlaylist),
-        // 歌曲信息（水平居中）
-        Expanded(
-          child: Center(
-            child: _buildCompactSongInfoArea(),
-          ),
-        ),
-        // 底部控制区
-        Column(
-          children: [
-            // 进度条和时间
-            _buildCompactProgressSection(),
-            SizedBox(height: kCompactSectionSpacing),
-            // 播放控制按钮（水平居中）
-            Center(
-              child: _buildCompactPlaybackControls(isPlaylist),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // 构建紧凑模式顶部栏
-  Widget _buildCompactTopBar(bool isPlaylist) {
-    final bool isLive = _iappPlayerController?.isLiveStream() ?? false;
-    final duration = _latestValue?.duration ?? Duration.zero;
-    final position = _latestValue?.position ?? Duration.zero;
-    final remaining = duration - position;
-    
-    return SizedBox(
-      height: kCompactTopBarHeight,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // 左侧显示剩余时间
-          if (_controlsConfiguration.enableProgressText && !isLive)
-            Text(
-              '-${IAppPlayerUtils.formatDuration(remaining)}',
-              style: TextStyle(
-                fontSize: 11,
-                color: _controlsConfiguration.textColor.withOpacity(0.7),
-              ),
-            ),
-          const Spacer(),
-          // 右侧按钮组
-          Row(
-            children: [
-              // 播放列表模式按钮
-              if (isPlaylist) ...[
-                _buildCompactIconButton(
-                  icon: _iappPlayerController!.playlistShuffleMode 
-                    ? Icons.shuffle 
-                    : Icons.repeat,
-                  onTap: () {
-                    _iappPlayerController!.togglePlaylistShuffle();
-                    setState(() {});
-                  },
-                  size: kCompactSmallIconSize,
-                ),
-                SizedBox(width: kSpacingUnit),
-                _buildCompactIconButton(
-                  icon: Icons.queue_music,
-                  onTap: _showPlaylistMenu,
-                  size: kCompactSmallIconSize,
-                ),
-                if (_controlsConfiguration.enableFullscreen)
-                  SizedBox(width: kSpacingUnit),
-              ],
-              // 全屏按钮
-              if (_controlsConfiguration.enableFullscreen)
-                _buildCompactIconButton(
-                  icon: _iappPlayerController!.isFullScreen
-                      ? _controlsConfiguration.fullscreenDisableIcon
-                      : _controlsConfiguration.fullscreenEnableIcon,
-                  onTap: () {
-                    if (_iappPlayerController!.isFullScreen) {
-                      _iappPlayerController!.exitFullScreen();
-                    } else {
-                      _iappPlayerController!.enterFullScreen();
-                    }
-                  },
-                  size: kCompactSmallIconSize,
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 构建紧凑模式歌曲信息区域
-  Widget _buildCompactSongInfoArea() {
-    final title = _getCurrentTitle();
-    final singer = _getCurrentSinger();
-    
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        if (singer != null) ...[
-          Text(
-            singer,
-            style: TextStyle(
-              fontSize: 12,
-              color: _controlsConfiguration.textColor.withOpacity(0.7),
-              fontWeight: FontWeight.normal,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: kCompactSongInfoSpacing),
-        ],
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            color: _controlsConfiguration.textColor,
-            fontWeight: FontWeight.bold,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  // 构建紧凑模式的进度条区域
-  Widget _buildCompactProgressSection() {
-    return Row(
-      children: [
-        if (_controlsConfiguration.enableProgressBar)
-          Expanded(
-            child: SizedBox(
-              height: kCompactProgressHeight,
-              child: _buildProgressBar(),
-            ),
-          ),
-      ],
-    );
-  }
-
-  // 构建紧凑模式播放控制按钮
-  Widget _buildCompactPlaybackControls(bool isPlaylist) {
-    final bool isLive = _iappPlayerController?.isLiveStream() ?? false;
-    
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (isPlaylist) ...[
-          _buildCompactIconButton(
-            icon: Icons.skip_previous,
-            onTap: (_iappPlayerController!.playlistController?.hasPrevious ?? false) 
-              ? _playPrevious 
-              : null,
-            enabled: _iappPlayerController!.playlistController?.hasPrevious ?? false,
-            size: kCompactControlButtonSize,
-          ),
-          SizedBox(width: kSpacingDouble),
-          _buildCompactPlayPauseButton(),
-          SizedBox(width: kSpacingDouble),
-          _buildCompactIconButton(
-            icon: Icons.skip_next,
-            onTap: (_iappPlayerController!.playlistController?.hasNext ?? false) 
-              ? _playNext 
-              : null,
-            enabled: _iappPlayerController!.playlistController?.hasNext ?? false,
-            size: kCompactControlButtonSize,
-          ),
-        ] else ...[
-          if (!isLive) ...[
-            _buildCompactIconButton(
-              icon: Icons.replay_10,
-              onTap: skipBack,
-              size: 24,
-            ),
-            SizedBox(width: kSpacingDouble),
-          ],
-          _buildCompactPlayPauseButton(),
-          if (!isLive) ...[
-            SizedBox(width: kSpacingDouble),
-            _buildCompactIconButton(
-              icon: Icons.forward_10,
-              onTap: skipForward,
-              size: 24,
-            ),
-          ],
-        ],
-      ],
-    );
-  }
-
-  // 构建紧凑模式的图标按钮
-  Widget _buildCompactIconButton({
-    required IconData icon,
-    required VoidCallback? onTap,
-    double size = 24,
-    bool enabled = true,
-  }) {
-    final effectiveColor = enabled 
-      ? _controlsConfiguration.iconsColor
-      : _controlsConfiguration.iconsColor.withOpacity(0.3);
-      
-    return IAppPlayerClickableWidget(
-      onTap: (enabled && onTap != null) ? onTap : () {},
-      child: Icon(
-        icon,
-        color: effectiveColor,
-        size: size,
-      ),
-    );
-  }
-
-  // 构建紧凑模式的播放/暂停按钮
-  Widget _buildCompactPlayPauseButton() {
-    final bool isFinished = isVideoFinished(_latestValue);
-    final bool isPlaying = _controller?.value.isPlaying ?? false;
-
-    IconData iconData;
-    if (isFinished) {
-      iconData = Icons.replay;
-    } else if (isPlaying) {
-      iconData = Icons.pause;
-    } else {
-      iconData = Icons.play_arrow;
-    }
-
-    return IAppPlayerClickableWidget(
-      key: const Key("iapp_player_audio_controls_play_pause_button"),
-      onTap: _onPlayPause,
-      child: Container(
-        width: kCompactPlayButtonSize,
-        height: kCompactPlayButtonSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: _controlsConfiguration.iconsColor,
-        ),
-        child: Icon(
-          iconData,
-          color: kCompactBackgroundColor,
-          size: kCompactPlayPauseIconSize,
-        ),
-      ),
-    );
-  }
