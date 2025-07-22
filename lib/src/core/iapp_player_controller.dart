@@ -250,6 +250,10 @@ class IAppPlayerController {
   // 上次字幕检查位置
   Duration? _lastSubtitleCheckPosition;
 
+  // 字幕滑动窗口配置
+  static const int _subtitleWindowSize = 300; // 保留前后300条字幕
+  static const Duration _subtitleWindowDuration = Duration(minutes: 10); // 保留前后10分钟的字幕
+
   // 构造函数，初始化配置和数据源
   IAppPlayerController(
     this.iappPlayerConfiguration, {
@@ -464,7 +468,9 @@ class IAppPlayerController {
         }
       }
 
-      _pendingSubtitleSegments!.removeWhere((s) => segmentsToRemove.contains(s));
+      if (segmentsToRemove.isNotEmpty) {
+        _pendingSubtitleSegments!.removeWhere((s) => segmentsToRemove.contains(s));
+      }
 
       if (segmentsToLoad.isNotEmpty) {
         final subtitlesParsed =
@@ -478,11 +484,60 @@ class IAppPlayerController {
         if (source == _iappPlayerSubtitlesSource) {
           subtitlesLines.addAll(subtitlesParsed);
           _asmsSegmentsLoaded.addAll(segmentsToLoad);
+          
+          // 实施字幕滑动窗口，清理过期字幕
+          _cleanupOldSubtitles(position);
         }
       }
       _asmsSegmentsLoading = false;
     } catch (exception) {
       IAppPlayerUtils.log("加载 ASMS 字幕段失败: $exception");
+    }
+  }
+
+  // 清理过期字幕（滑动窗口机制）
+  void _cleanupOldSubtitles(Duration currentPosition) {
+    if (subtitlesLines.length <= _subtitleWindowSize) {
+      return;
+    }
+
+    final minTime = currentPosition - _subtitleWindowDuration;
+    final maxTime = currentPosition + _subtitleWindowDuration;
+
+    // 保留时间窗口内的字幕
+    subtitlesLines.removeWhere((subtitle) {
+      final startTime = subtitle.start;
+      final endTime = subtitle.end;
+      return endTime != null && 
+             (endTime < minTime || (startTime != null && startTime > maxTime));
+    });
+
+    // 如果仍然超过数量限制，保留最近的字幕
+    if (subtitlesLines.length > _subtitleWindowSize) {
+      // 按时间排序
+      subtitlesLines.sort((a, b) {
+        final aStart = a.start?.inMilliseconds ?? 0;
+        final bStart = b.start?.inMilliseconds ?? 0;
+        return aStart.compareTo(bStart);
+      });
+
+      // 找到当前位置在列表中的索引
+      int currentIndex = 0;
+      for (int i = 0; i < subtitlesLines.length; i++) {
+        if (subtitlesLines[i].start != null && 
+            subtitlesLines[i].start!.inMilliseconds > currentPosition.inMilliseconds) {
+          currentIndex = i;
+          break;
+        }
+      }
+
+      // 计算保留范围
+      final halfWindow = _subtitleWindowSize ~/ 2;
+      final startIndex = (currentIndex - halfWindow).clamp(0, subtitlesLines.length);
+      final endIndex = (currentIndex + halfWindow).clamp(0, subtitlesLines.length);
+
+      // 保留窗口内的字幕
+      subtitlesLines = subtitlesLines.sublist(startIndex, endIndex);
     }
   }
 
@@ -597,10 +652,6 @@ class IAppPlayerController {
         } else {
           // 处理普通文件系统路径
           final file = File(iappPlayerDataSource.url);
-          if (!file.existsSync()) {
-            IAppPlayerUtils.log(
-                "文件 ${file.path} 不存在，可能是使用了原生路径");
-          }
 
           await videoPlayerController?.setFileDataSource(
               file,
@@ -914,12 +965,17 @@ class IAppPlayerController {
       return;
     }
 
-    if (_lastVideoPlayerValue != null &&
-        currentValue.position == _lastVideoPlayerValue!.position &&
-        currentValue.isPlaying == _lastVideoPlayerValue!.isPlaying &&
-        currentValue.isBuffering == _lastVideoPlayerValue!.isBuffering &&
-        currentValue.hasError == _lastVideoPlayerValue!.hasError) {
-      return;
+    if (_lastVideoPlayerValue != null) {
+      // 检查关键值是否有变化
+      final hasPositionChanged = currentValue.position != _lastVideoPlayerValue!.position;
+      final hasPlayingChanged = currentValue.isPlaying != _lastVideoPlayerValue!.isPlaying;
+      final hasBufferingChanged = currentValue.isBuffering != _lastVideoPlayerValue!.isBuffering;
+      final hasErrorChanged = currentValue.hasError != _lastVideoPlayerValue!.hasError;
+      
+      // 如果没有任何变化，直接返回
+      if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged) {
+        return;
+      }
     }
 
     if (currentValue.hasError && _videoPlayerValueOnError == null) {
@@ -976,7 +1032,10 @@ class IAppPlayerController {
 
   // 添加事件监听器
   void addEventsListener(Function(IAppPlayerEvent) eventListener) {
-    _eventListeners.add(eventListener);
+    // 防止重复添加相同的监听器
+    if (!_eventListeners.contains(eventListener)) {
+      _eventListeners.add(eventListener);
+    }
   }
 
   // 移除事件监听器
