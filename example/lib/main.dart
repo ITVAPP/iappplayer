@@ -126,7 +126,12 @@ class HomePage extends StatelessWidget {
               // 选项卡片
               Expanded(
                 child: ListView(
-                  padding: EdgeInsets.all(UIConstants.spaceLG - 4), // 20
+                  padding: EdgeInsets.only(
+                    left: UIConstants.spaceLG - 4, // 20
+                    right: UIConstants.spaceLG - 4, // 20
+                    bottom: UIConstants.spaceLG - 4, // 20
+                    top: 0, // 第一个选项卡无上边距
+                  ),
                   children: [
                     _buildModernCard(
                       context,
@@ -873,6 +878,18 @@ class _PlaylistExampleState extends State<PlaylistExample>
     return '视频 ${_currentIndex + 1}';
   }
 
+  // 修复：添加更新当前索引的方法
+  void _updateCurrentIndex() {
+    if (_playlistController != null && mounted) {
+      final newIndex = _playlistController!.currentDataSourceIndex;
+      if (newIndex != _currentIndex) {
+        setState(() {
+          _currentIndex = newIndex;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _releasePlayer();
@@ -1081,10 +1098,14 @@ class _PlaylistExampleState extends State<PlaylistExample>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // 上一个
+                        // 上一个 - 修复：添加索引更新
                         _buildCircleButton(
                           onPressed: _playlistController != null && !_isLoading
-                              ? () => _playlistController!.playPrevious()
+                              ? () {
+                                  _playlistController!.playPrevious();
+                                  // 延迟更新索引
+                                  Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
+                                }
                               : null,
                           icon: Icons.skip_previous_rounded,
                         ),
@@ -1104,10 +1125,14 @@ class _PlaylistExampleState extends State<PlaylistExample>
                               : Icons.play_arrow_rounded,
                           isPrimary: true,
                         ),
-                        // 下一个
+                        // 下一个 - 修复：添加索引更新
                         _buildCircleButton(
                           onPressed: _playlistController != null && !_isLoading
-                              ? () => _playlistController!.playNext()
+                              ? () {
+                                  _playlistController!.playNext();
+                                  // 延迟更新索引
+                                  Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
+                                }
                               : null,
                           icon: Icons.skip_next_rounded,
                         ),
@@ -1234,6 +1259,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
                     onTap: () {
                       _playlistController?.setupDataSource(index);
                       Navigator.pop(context);
+                      // 修复：更新当前索引
+                      Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                     },
                   );
                 },
@@ -1662,6 +1689,18 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     }
   }
 
+  // 修复：添加更新当前索引的方法
+  void _updateCurrentIndex() {
+    if (_playlistController != null && mounted) {
+      final newIndex = _playlistController!.currentDataSourceIndex;
+      if (newIndex != _currentIndex) {
+        setState(() {
+          _currentIndex = newIndex;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _releasePlayer();
@@ -1683,6 +1722,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   Widget build(BuildContext context) {
     final totalSongs = _playlistController?.dataSourceList.length ?? 0;
     final titles = ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'];
+    final artists = ['Unknown Artist', 'Unknown Artist', 'Unknown Artist']; // 修复：添加歌手信息
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -1749,16 +1789,28 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                         ),
                       ),
                       SizedBox(height: UIConstants.spaceMD - 1), // 15 - 减少间距
-                      // 当前歌曲信息 - 仅显示标题
+                      // 当前歌曲信息 - 修复：添加歌手信息
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
-                        child: Text(
-                          _currentIndex < titles.length ? titles[_currentIndex] : '',
-                          style: TextStyle(
-                            fontSize: UIConstants.fontXXL,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                        child: Column(
+                          children: [
+                            Text(
+                              _currentIndex < titles.length ? titles[_currentIndex] : '',
+                              style: TextStyle(
+                                fontSize: UIConstants.fontXXL,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: UIConstants.spaceXS),
+                            Text(
+                              _currentIndex < artists.length ? artists[_currentIndex] : '',
+                              style: TextStyle(
+                                fontSize: UIConstants.fontLG,
+                                color: Colors.white.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       SizedBox(height: UIConstants.spaceMD), // 增加底部间距
@@ -1781,10 +1833,14 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // 上一首
+                        // 上一首 - 修复：添加索引更新
                         _buildCircleButton(
                           onPressed: _playlistController != null && !_isLoading
-                              ? () => _playlistController!.playPrevious()
+                              ? () {
+                                  _playlistController!.playPrevious();
+                                  // 延迟更新索引
+                                  Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
+                                }
                               : null,
                           icon: Icons.skip_previous_rounded,
                         ),
@@ -1804,10 +1860,14 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                               : Icons.play_arrow_rounded,
                           isPrimary: true,
                         ),
-                        // 下一首
+                        // 下一首 - 修复：添加索引更新
                         _buildCircleButton(
                           onPressed: _playlistController != null && !_isLoading
-                              ? () => _playlistController!.playNext()
+                              ? () {
+                                  _playlistController!.playNext();
+                                  // 延迟更新索引
+                                  Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
+                                }
                               : null,
                           icon: Icons.skip_next_rounded,
                         ),
