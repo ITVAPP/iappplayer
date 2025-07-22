@@ -63,8 +63,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   static const double kModalBackgroundOpacity = 0.95;
   // 播放列表项悬停透明度
   static const double kModalItemHoverOpacity = 0.08;
-  // 播放指示器宽度
-  static const double kPlayIndicatorWidth = 48.0;
   // 默认音量
   static const double kDefaultVolume = 0.5;
   // 静音音量
@@ -96,16 +94,34 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     BoxShadow(blurRadius: 3.0, color: Colors.black45, offset: Offset(0.0, 1.0)),
   ];
 
+  // 缓存的静态Widget
+  static const Widget _loadingOverlay = ColoredBox(
+    color: Color(0x4D000000), // Colors.black.withOpacity(0.3)
+    child: Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        strokeWidth: 2.0,
+      ),
+    ),
+  );
+
+  // 缓存的空白Widget
+  static const Widget _emptyWidget = SizedBox();
+  
+  // 缓存的透明容器
+  static const Widget _transparentHitArea = ColoredBox(
+    color: Colors.transparent,
+    child: SizedBox.expand(),
+  );
+
   // 最新播放值
   VideoPlayerValue? _latestValue;
   // 最新音量
   double? _latestVolume;
-  // 统一Timer管理器
-  Timer? _unifiedTimer;
-  // Timer类型枚举
-  enum _TimerType { hide, init, showAfterExpandCollapse, doubleTap }
-  // 当前Timer类型
-  _TimerType? _currentTimerType;
+  // Timer管理器
+  Timer? _hideTimer;
+  Timer? _initTimer;
+  Timer? _showAfterExpandCollapseTimer;
   // 是否正在加载
   bool _wasLoading = false;
   // 视频播放控制器
@@ -127,17 +143,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   late double _responsiveControlBarHeight;
   // 双击检测相关变量
   DateTime? _lastTapTime;
-  
-  // 缓存常用计算值
-  bool? _cachedIsLive;
-  bool? _cachedIsPlaylist;
-  bool? _cachedIsFinished;
-  bool? _cachedControlsEnabled;
-  int _lastUpdateFrame = 0;
-  
-  // 缓存的Widget
-  Widget? _cachedLoadingWidget;
-  Widget? _cachedLiveWidget;
+  Timer? _doubleTapTimer;
 
   // 获取控件配置
   IAppPlayerControlsConfiguration get _controlsConfiguration => widget.controlsConfiguration;
@@ -150,32 +156,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
 
   @override
   IAppPlayerControlsConfiguration get iappPlayerControlsConfiguration => _controlsConfiguration;
-
-  // 缓存isLive判断
-  bool get _isLive {
-    _cachedIsLive ??= _iappPlayerController?.isLiveStream() ?? false;
-    return _cachedIsLive!;
-  }
-
-  // 缓存isPlaylist判断
-  bool get _isPlaylist {
-    _cachedIsPlaylist ??= _iappPlayerController?.isPlaylistMode ?? false;
-    return _cachedIsPlaylist!;
-  }
-
-  // 缓存isFinished判断
-  bool get _isFinished {
-    if (_cachedIsFinished == null) {
-      _cachedIsFinished = isVideoFinished(_latestValue);
-    }
-    return _cachedIsFinished!;
-  }
-
-  // 缓存controlsEnabled判断
-  bool get _controlsEnabled {
-    _cachedControlsEnabled ??= iappPlayerController?.controlsEnabled ?? false;
-    return _cachedControlsEnabled!;
-  }
 
   // 计算响应式尺寸
   double _getResponsiveSize(double baseSize) {
@@ -200,30 +180,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     }
   }
 
-  // Timer管理
-  void _setUnifiedTimer(Duration duration, VoidCallback callback, _TimerType type) {
-    _cancelUnifiedTimer();
-    _currentTimerType = type;
-    _unifiedTimer = Timer(duration, () {
-      _currentTimerType = null;
-      callback();
-    });
-  }
-
-  void _cancelUnifiedTimer() {
-    _unifiedTimer?.cancel();
-    _unifiedTimer = null;
-    _currentTimerType = null;
-  }
-
-  // 清除缓存
-  void _clearCache() {
-    _cachedIsLive = null;
-    _cachedIsPlaylist = null;
-    _cachedIsFinished = null;
-    _cachedControlsEnabled = null;
-  }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -234,10 +190,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     _iappPlayerController = IAppPlayerController.of(context);
     _controller = _iappPlayerController!.videoPlayerController;
     _latestValue = _controller!.value;
-    
-    // 只在控制器真正变化时重新初始化
     if (_oldController != _iappPlayerController) {
-      _clearCache();
       _dispose();
       _initialize();
     }
@@ -255,7 +208,14 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
       _wasLoading = currentLoading;
     }
     
-    if (_latestValue?.hasError == true) {
+    // 提前计算状态
+    final hasError = _latestValue?.hasError == true;
+    final isLive = _iappPlayerController?.isLiveStream() ?? false;
+    final isPlaylist = _iappPlayerController!.isPlaylistMode;
+    final showLoading = _wasLoading;
+    final enableSubtitles = _controlsConfiguration.enableSubtitles;
+    
+    if (hasError) {
       return Container(
         color: Colors.black,
         child: _buildErrorWidget(),
@@ -265,12 +225,28 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     final Widget content = Stack(
       fit: StackFit.expand,
       children: [
-        if (_wasLoading) Center(child: _buildCachedLoadingWidget()),
+        if (showLoading) Center(child: _buildLoadingWidget()),
         _buildHitArea(),
-        Positioned(top: 0, left: 0, right: 0, child: _buildTopBar()),
-        Positioned(bottom: 0, left: 0, right: 0, child: _buildBottomBar()),
+        // 使用RepaintBoundary隔离顶部控制栏
+        RepaintBoundary(
+          child: Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _buildTopBar(),
+          ),
+        ),
+        // 使用RepaintBoundary隔离底部控制栏
+        RepaintBoundary(
+          child: Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: _buildBottomBar(isLive, isPlaylist),
+          ),
+        ),
         // 字幕显示，动态调整位置
-        if (_controlsConfiguration.enableSubtitles)
+        if (enableSubtitles)
           AnimatedPositioned(
             duration: _controlsConfiguration.controlsHideTime,
             bottom: controlsNotVisible ? kSpacingUnit : kBottomBarPadding + _responsiveControlBarHeight + kProgressBarHeight,
@@ -286,42 +262,19 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
       ],
     );
     
-    // 手势检测逻辑
     final gestureDetector = IAppPlayerMultipleGestureDetector.of(context);
-    final onTapHandler = () {
-      gestureDetector?.onTap?.call();
-      controlsNotVisible ? cancelAndRestartTimer() : changePlayerControlsNotVisible(true);
-    };
-    final onDoubleTapHandler = () {
-      gestureDetector?.onDoubleTap?.call();
-      _onExpandCollapse();
-    };
     
+    // 优化后的手势处理
     if (!_controlsConfiguration.handleAllGestures) {
       return Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerUp: (_) {
-          final now = DateTime.now();
-          if (_lastTapTime != null && now.difference(_lastTapTime!) < kDoubleTapTimeout) {
-            // 双击检测成功
-            _cancelUnifiedTimer();
-            _lastTapTime = null;
-            onDoubleTapHandler();
-          } else {
-            // 第一次点击或超时
-            _lastTapTime = now;
-            _setUnifiedTimer(kDoubleTapTimeout, () {
-              _lastTapTime = null;
-              onTapHandler();
-            }, _TimerType.doubleTap);
-          }
-        },
+        onPointerUp: (_) => _handleTap(gestureDetector),
         child: content,
       );
     } else {
       return GestureDetector(
-        onTap: onTapHandler,
-        onDoubleTap: onDoubleTapHandler,
+        onTap: () => _handleSingleTap(gestureDetector),
+        onDoubleTap: () => _handleDoubleTap(gestureDetector),
         onLongPress: () {
           gestureDetector?.onLongPress?.call();
         },
@@ -330,19 +283,79 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     }
   }
 
+  // 优化的点击处理
+  void _handleTap(IAppPlayerMultipleGestureDetector? gestureDetector) {
+    final now = DateTime.now();
+    if (_lastTapTime != null && now.difference(_lastTapTime!) < kDoubleTapTimeout) {
+      // 双击检测成功
+      _cancelDoubleTapTimer();
+      _lastTapTime = null;
+      _handleDoubleTap(gestureDetector);
+    } else {
+      // 第一次点击或超时
+      _lastTapTime = now;
+      _cancelDoubleTapTimer();
+      _doubleTapTimer = Timer(kDoubleTapTimeout, () {
+        // 超时后执行单击操作
+        _lastTapTime = null;
+        _handleSingleTap(gestureDetector);
+      });
+    }
+  }
+
+  void _handleSingleTap(IAppPlayerMultipleGestureDetector? gestureDetector) {
+    gestureDetector?.onTap?.call();
+    controlsNotVisible ? cancelAndRestartTimer() : changePlayerControlsNotVisible(true);
+  }
+
+  void _handleDoubleTap(IAppPlayerMultipleGestureDetector? gestureDetector) {
+    gestureDetector?.onDoubleTap?.call();
+    _onExpandCollapse();
+  }
+
+  void _cancelDoubleTapTimer() {
+    _doubleTapTimer?.cancel();
+    _doubleTapTimer = null;
+  }
+
   @override
   void dispose() {
     _dispose();
-    _cancelUnifiedTimer();
+    _cancelDoubleTapTimer();
     super.dispose();
   }
 
   // 清理资源
   void _dispose() {
     _controller?.removeListener(_updateState);
-    _cancelUnifiedTimer();
+    _disposeTimers();
     _controlsVisibilityStreamSubscription?.cancel();
-    _clearCache();
+  }
+
+  // 统一管理Timer清理
+  void _disposeTimers() {
+    _hideTimer?.cancel();
+    _hideTimer = null;
+    _initTimer?.cancel();
+    _initTimer = null;
+    _showAfterExpandCollapseTimer?.cancel();
+    _showAfterExpandCollapseTimer = null;
+  }
+
+  // 设置新的Timer，自动清理旧Timer
+  void _setHideTimer(Timer? timer) {
+    _hideTimer?.cancel();
+    _hideTimer = timer;
+  }
+
+  void _setInitTimer(Timer? timer) {
+    _initTimer?.cancel();
+    _initTimer = timer;
+  }
+
+  void _setShowAfterExpandCollapseTimer(Timer? timer) {
+    _showAfterExpandCollapseTimer?.cancel();
+    _showAfterExpandCollapseTimer = timer;
   }
 
   // 构建错误提示
@@ -351,17 +364,16 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     if (errorBuilder != null) {
       return errorBuilder(context, _iappPlayerController!.videoPlayerController!.value.errorDescription);
     }
-
     final textStyle = TextStyle(color: _controlsConfiguration.textColor, fontSize: _responsiveTextSize);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.warning_rounded, color: _controlsConfiguration.iconsColor, size: _responsiveErrorIconSize),
-          const SizedBox(height: kSpacingDouble),
+          SizedBox(height: kSpacingDouble),
           Text(_iappPlayerController!.translations.generalDefaultError, style: textStyle),
-          if (_controlsConfiguration.enableRetry) ...[
-            const SizedBox(height: kSpacingDouble),
+          if (_controlsConfiguration.enableRetry) SizedBox(height: kSpacingDouble),
+          if (_controlsConfiguration.enableRetry)
             TextButton(
               onPressed: () => _iappPlayerController!.retryDataSource(),
               child: Text(
@@ -369,7 +381,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
                 style: textStyle.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
-          ],
         ],
       ),
     );
@@ -396,7 +407,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
       key: key,
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(kSpacingHalf),
+        padding: EdgeInsets.all(kSpacingHalf),
         child: _buildShadowedIcon(icon, size: iconSize),
       ),
     );
@@ -404,8 +415,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
 
   // 构建顶部控制栏
   Widget _buildTopBar() {
-    if (!_controlsEnabled) return const SizedBox();
-    
+    if (!iappPlayerController!.controlsEnabled) return _emptyWidget;
     return (_controlsConfiguration.enableOverflowMenu)
         ? AnimatedOpacity(
             opacity: controlsNotVisible ? 0.0 : 1.0,
@@ -413,22 +423,22 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
             onEnd: _onPlayerHide,
             child: Container(
               height: _responsiveControlBarHeight + kSpacingHalf * 2,
-              padding: const EdgeInsets.symmetric(horizontal: kSpacingUnit / 2, vertical: kSpacingHalf),
+              padding: EdgeInsets.symmetric(horizontal: kSpacingUnit / 2, vertical: kSpacingHalf),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (_controlsConfiguration.enablePip) _buildPipButtonWrapperWidget() else const SizedBox(),
+                  if (_controlsConfiguration.enablePip) _buildPipButtonWrapperWidget() else _emptyWidget,
                   _buildControlButton(onTap: onShowMoreClicked, icon: _controlsConfiguration.overflowMenuIcon),
                 ],
               ),
             ),
           )
-        : const SizedBox();
+        : _emptyWidget;
   }
 
   // 显示播放列表菜单
   void _showPlaylistMenu() {
-    _cancelUnifiedTimer();
+    _hideTimer?.cancel();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -445,26 +455,14 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     return SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: kSpacingDouble),
+        margin: EdgeInsets.symmetric(horizontal: kSpacingDouble),
         decoration: BoxDecoration(
           color: _controlsConfiguration.overflowModalColor.withOpacity(kModalBackgroundOpacity),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(kModalBorderRadius), 
-            topRight: Radius.circular(kModalBorderRadius)
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2), 
-              blurRadius: 20, 
-              offset: const Offset(0, -5)
-            )
-          ],
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(kModalBorderRadius), topRight: Radius.circular(kModalBorderRadius)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: Offset(0, -5))],
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(kModalBorderRadius), 
-            topRight: Radius.circular(kModalBorderRadius)
-          ),
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(kModalBorderRadius), topRight: Radius.circular(kModalBorderRadius)),
           child: _buildPlaylistMenuContent(),
         ),
       ),
@@ -475,56 +473,39 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   Widget _buildPlaylistMenuContent() {
     final playlistController = _iappPlayerController!.playlistController;
     final translations = _iappPlayerController!.translations;
-    
     if (playlistController == null) {
-      return SizedBox(
+      return Container(
         height: 200,
         child: Center(
           child: Text(
             translations.playlistUnavailable,
-            style: TextStyle(
-              color: _controlsConfiguration.overflowModalTextColor, 
-              fontSize: kModalItemFontSize
-            ),
+            style: TextStyle(color: _controlsConfiguration.overflowModalTextColor, fontSize: kModalItemFontSize),
           ),
         ),
       );
     }
-    
     final dataSourceList = playlistController.dataSourceList;
     final currentIndex = playlistController.currentDataSourceIndex;
-    
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * kPlaylistMaxHeightRatio
-      ),
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * kPlaylistMaxHeightRatio),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             height: kModalHeaderHeight,
-            padding: const EdgeInsets.only(left: kSpacingDouble, right: kSpacingUnit),
+            padding: EdgeInsets.only(left: kSpacingDouble, right: kSpacingUnit),
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: _controlsConfiguration.overflowModalTextColor.withOpacity(0.1), 
-                  width: 1
-                )
-              ),
+              border: Border(bottom: BorderSide(color: _controlsConfiguration.overflowModalTextColor.withOpacity(0.1), width: 1)),
             ),
             child: Row(
               children: [
                 Text(
                   translations.playlistTitle,
-                  style: TextStyle(
-                    color: _controlsConfiguration.overflowModalTextColor, 
-                    fontSize: kModalTitleFontSize, 
-                    fontWeight: FontWeight.bold
-                  ),
+                  style: TextStyle(color: _controlsConfiguration.overflowModalTextColor, fontSize: kModalTitleFontSize, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
-                  padding: const EdgeInsets.all(kSpacingUnit),
+                  padding: EdgeInsets.all(kSpacingUnit),
                   constraints: const BoxConstraints(),
                   icon: Icon(Icons.close, color: _controlsConfiguration.overflowModalTextColor),
                   onPressed: () => Navigator.pop(context),
@@ -535,13 +516,12 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: kSpacingUnit),
+              padding: EdgeInsets.symmetric(vertical: kSpacingUnit),
               itemCount: dataSourceList.length,
               itemBuilder: (context, index) {
                 final dataSource = dataSourceList[index];
                 final isCurrentItem = index == currentIndex;
-                final title = dataSource.notificationConfiguration?.title ?? 
-                              translations.videoItem.replaceAll('{index}', '${index + 1}');
+                final title = dataSource.notificationConfiguration?.title ?? translations.videoItem.replaceAll('{index}', '${index + 1}');
                 return _buildPlaylistItem(
                   title: title,
                   isCurrentItem: isCurrentItem,
@@ -559,35 +539,25 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   }
 
   // 构建播放列表项
-  Widget _buildPlaylistItem({
-    required String title, 
-    required bool isCurrentItem, 
-    required VoidCallback onTap
-  }) {
+  Widget _buildPlaylistItem({required String title, required bool isCurrentItem, required VoidCallback onTap}) {
     return IAppPlayerClickableWidget(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 500),
         height: kModalItemHeight,
-        margin: const EdgeInsets.symmetric(horizontal: kSpacingUnit, vertical: 2),
+        margin: EdgeInsets.symmetric(horizontal: kSpacingUnit, vertical: 2),
         decoration: BoxDecoration(
-          color: isCurrentItem 
-              ? _controlsConfiguration.overflowModalTextColor.withOpacity(kModalItemHoverOpacity) 
-              : Colors.transparent,
+          color: isCurrentItem ? _controlsConfiguration.overflowModalTextColor.withOpacity(kModalItemHoverOpacity) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
             Container(
-              width: kPlayIndicatorWidth,
+              width: 48.0,
               alignment: Alignment.center,
               child: isCurrentItem
-                  ? Icon(
-                      Icons.play_arrow_rounded, 
-                      color: _controlsConfiguration.overflowModalTextColor, 
-                      size: kPlayIndicatorIconSize
-                    )
-                  : null,
+                ? Icon(Icons.play_arrow_rounded, color: _controlsConfiguration.overflowModalTextColor, size: kPlayIndicatorIconSize)
+                : null,
             ),
             Expanded(
               child: Text(
@@ -602,7 +572,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: kSpacingDouble),
+            SizedBox(width: kSpacingDouble),
           ],
         ),
       ),
@@ -612,18 +582,13 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   // 播放指定索引的视频
   void _playAtIndex(int index) {
     final playlistController = _iappPlayerController!.playlistController;
-    if (playlistController != null) {
-      playlistController.setupDataSource(index);
-      _clearCache(); // 清除缓存，因为播放列表可能改变
-    }
+    if (playlistController != null) playlistController.setupDataSource(index);
   }
 
   // 构建画中画按钮
   Widget _buildPipButton() {
     return _buildControlButton(
-      onTap: () => iappPlayerController!.enablePictureInPicture(
-        iappPlayerController!.iappPlayerGlobalKey!
-      ),
+      onTap: () => iappPlayerController!.enablePictureInPicture(iappPlayerController!.iappPlayerGlobalKey!),
       icon: iappPlayerControlsConfiguration.pipMenuIcon,
     );
   }
@@ -637,16 +602,15 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         if (isPipSupported && _iappPlayerController!.iappPlayerGlobalKey != null) {
           return _buildPipButton();
         } else {
-          return const SizedBox();
+          return _emptyWidget;
         }
       },
     );
   }
 
   // 构建底部控制栏
-  Widget _buildBottomBar() {
-    if (!_controlsEnabled) return const SizedBox();
-    
+  Widget _buildBottomBar(bool isLive, bool isPlaylist) {
+    if (!iappPlayerController!.controlsEnabled) return _emptyWidget;
     return AnimatedOpacity(
       opacity: controlsNotVisible ? 0.0 : 1.0,
       duration: _controlsConfiguration.controlsHideTime,
@@ -658,10 +622,10 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
           children: <Widget>[
             // 进度条区域（包含时间显示）
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: kSpacingDouble),
+              padding: EdgeInsets.symmetric(horizontal: kSpacingDouble),
               child: Row(
                 children: [
-                  if (_controlsConfiguration.enableProgressText && !_isLive) ...[
+                  if (_controlsConfiguration.enableProgressText && !isLive) ...[
                     Text(
                       IAppPlayerUtils.formatDuration(_latestValue?.position ?? Duration.zero),
                       style: TextStyle(
@@ -670,7 +634,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
                         shadows: _textShadows,
                       ),
                     ),
-                    const SizedBox(width: kTimeProgressSpacing),
+                    SizedBox(width: kTimeProgressSpacing),
                   ],
                   if (_controlsConfiguration.enableProgressBar)
                     Expanded(
@@ -680,10 +644,10 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
                         child: _buildProgressBar(),
                       ),
                     )
-                  else if (_controlsConfiguration.enableProgressText && !_isLive)
+                  else if (_controlsConfiguration.enableProgressText && !isLive)
                     const Expanded(child: SizedBox()),
-                  if (_controlsConfiguration.enableProgressText && !_isLive) ...[
-                    const SizedBox(width: kTimeProgressSpacing),
+                  if (_controlsConfiguration.enableProgressText && !isLive) ...[
+                    SizedBox(width: kTimeProgressSpacing),
                     Text(
                       IAppPlayerUtils.formatDuration(_latestValue?.duration ?? Duration.zero),
                       style: TextStyle(
@@ -698,10 +662,10 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
             ),
             Container(
               height: _responsiveControlBarHeight,
-              padding: const EdgeInsets.symmetric(horizontal: kSpacingUnit),
+              padding: EdgeInsets.symmetric(horizontal: kSpacingUnit),
               child: Row(
                 children: [
-                  if (_isPlaylist)
+                  if (isPlaylist)
                     _buildControlButton(
                       onTap: () {
                         _iappPlayerController!.togglePlaylistShuffle();
@@ -710,15 +674,15 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
                       },
                       icon: _iappPlayerController!.playlistShuffleMode ? Icons.shuffle : Icons.repeat,
                     ),
-                  if (!_isLive && _controlsConfiguration.enableSkips)
-                    if (_isPlaylist) ...[
+                  if (!isLive && _controlsConfiguration.enableSkips)
+                    if (isPlaylist) ...[
                       if (_iappPlayerController!.playlistController?.hasPrevious ?? false)
                         _buildControlButton(onTap: () => _playWithTimer(true), icon: Icons.skip_previous)
                     ] else
                       _buildControlButton(onTap: skipBack, icon: Icons.fast_rewind),
                   if (_controlsConfiguration.enablePlayPause) _buildPlayPause(_controller!),
-                  if (!_isLive && _controlsConfiguration.enableSkips)
-                    if (_isPlaylist) ...[
+                  if (!isLive && _controlsConfiguration.enableSkips)
+                    if (isPlaylist) ...[
                       if (_iappPlayerController!.playlistController?.hasNext ?? false)
                         _buildControlButton(onTap: () => _playWithTimer(false), icon: Icons.skip_next)
                     ] else
@@ -726,13 +690,13 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
                   if (_controlsConfiguration.enableMute) _buildMuteButton(_controller),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: kSpacingHalf),
-                      child: _isLive
-                          ? Center(child: _buildCachedLiveWidget())
-                          : const SizedBox(),
+                      padding: EdgeInsets.symmetric(horizontal: kSpacingHalf),
+                      child: isLive
+                          ? Center(child: _buildLiveWidget())
+                          : _emptyWidget,
                     ),
                   ),
-                  if (_isPlaylist) _buildControlButton(onTap: _showPlaylistMenu, icon: Icons.queue_music),
+                  if (isPlaylist) _buildControlButton(onTap: _showPlaylistMenu, icon: Icons.queue_music),
                   if (_controlsConfiguration.enableFullscreen)
                     _buildControlButton(
                       onTap: _onExpandCollapse,
@@ -759,31 +723,21 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         playlistController.playNext();
       }
       cancelAndRestartTimer();
-      _clearCache(); // 清除缓存
     }
   }
 
   // 构建直播标识
-  Widget _buildCachedLiveWidget() {
-    _cachedLiveWidget ??= Text(
+  Widget _buildLiveWidget() {
+    return Text(
       _iappPlayerController!.translations.controlsLive,
-      style: const TextStyle(
-        color: Colors.red, 
-        fontWeight: FontWeight.bold, 
-        shadows: _textShadows
-      ),
+      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, shadows: _textShadows),
     );
-    return _cachedLiveWidget!;
   }
 
   // 构建点击区域
   Widget _buildHitArea() {
-    if (!_controlsEnabled) return const SizedBox();
-    return Container(
-      color: Colors.transparent, 
-      width: double.infinity, 
-      height: double.infinity
-    );
+    if (!iappPlayerController!.controlsEnabled) return _emptyWidget;
+    return _transparentHitArea;
   }
 
   // 构建下一视频提示
@@ -798,30 +752,20 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
             child: Align(
               alignment: Alignment.bottomRight,
               child: Container(
-                margin: EdgeInsets.only(
-                  bottom: _responsiveControlBarHeight + kProgressBarHeight + kBottomBarPadding + kNextVideoBottomSpacing, 
-                  right: kSpacingTriple
-                ),
-                decoration: BoxDecoration(
-                  color: _controlsConfiguration.controlBarColor, 
-                  borderRadius: BorderRadius.circular(kNextVideoBorderRadius)
-                ),
+                margin: EdgeInsets.only(bottom: _responsiveControlBarHeight + kProgressBarHeight + kBottomBarPadding + kNextVideoBottomSpacing, right: kSpacingTriple),
+                decoration: BoxDecoration(color: _controlsConfiguration.controlBarColor, borderRadius: BorderRadius.circular(kNextVideoBorderRadius)),
                 child: Padding(
                   padding: const EdgeInsets.all(kNextVideoPadding),
                   child: Text(
                     "${_iappPlayerController!.translations.controlsNextIn} $time...",
-                    style: TextStyle(
-                      color: Colors.white, 
-                      fontSize: _responsiveTextSize, 
-                      shadows: _textShadows
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: _responsiveTextSize, shadows: _textShadows),
                   ),
                 ),
               ),
             ),
           );
         } else {
-          return const SizedBox();
+          return _emptyWidget;
         }
       },
     );
@@ -847,20 +791,17 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
 
   // 构建播放/暂停/重播按钮
   Widget _buildPlayPause(VideoPlayerController controller) {
+    final bool isFinished = isVideoFinished(_latestValue);
     return _buildControlButton(
       key: const Key("iapp_player_material_controls_play_pause_button"),
       onTap: _onPlayPause,
-      icon: _isFinished 
-          ? Icons.replay 
-          : controller.value.isPlaying 
-              ? _controlsConfiguration.pauseIcon 
-              : _controlsConfiguration.playIcon,
+      icon: isFinished ? Icons.replay : controller.value.isPlaying ? _controlsConfiguration.pauseIcon : _controlsConfiguration.playIcon,
     );
   }
 
   @override
   void cancelAndRestartTimer() {
-    _cancelUnifiedTimer();
+    _hideTimer?.cancel();
     _startHideTimer();
     changePlayerControlsNotVisible(false);
   }
@@ -869,17 +810,12 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   Future<void> _initialize() async {
     _controller!.addListener(_updateState);
     _updateState();
-    
     if ((_controller!.value.isPlaying) || _iappPlayerController!.iappPlayerConfiguration.autoPlay) {
       _startHideTimer();
     }
-    
     if (_controlsConfiguration.showControlsOnInitialize) {
-      _setUnifiedTimer(const Duration(milliseconds: 500), () {
-        changePlayerControlsNotVisible(false);
-      }, _TimerType.init);
+      _setInitTimer(Timer(const Duration(milliseconds: 500), () => changePlayerControlsNotVisible(false)));
     }
-    
     _controlsVisibilityStreamSubscription = _iappPlayerController!.controlsVisibilityStream.listen((state) {
       changePlayerControlsNotVisible(!state);
       if (!controlsNotVisible) cancelAndRestartTimer();
@@ -890,71 +826,57 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   void _onExpandCollapse() {
     changePlayerControlsNotVisible(true);
     _iappPlayerController!.toggleFullScreen();
-    _setUnifiedTimer(_controlsConfiguration.controlsHideTime, () {
+    _setShowAfterExpandCollapseTimer(Timer(_controlsConfiguration.controlsHideTime, () {
       setState(() => cancelAndRestartTimer());
-    }, _TimerType.showAfterExpandCollapse);
+    }));
   }
 
   // 播放/暂停切换
   void _onPlayPause() {
+    bool isFinished = false;
+    if (_latestValue?.position != null && _latestValue?.duration != null) {
+      isFinished = _latestValue!.position >= _latestValue!.duration!;
+    }
     if (_controller!.value.isPlaying) {
       changePlayerControlsNotVisible(false);
-      _cancelUnifiedTimer();
+      _hideTimer?.cancel();
       _iappPlayerController!.pause();
     } else {
       cancelAndRestartTimer();
       if (!_controller!.value.initialized) {
       } else {
-        if (_isFinished) _iappPlayerController!.seekTo(const Duration());
+        if (isFinished) _iappPlayerController!.seekTo(const Duration());
         _iappPlayerController!.play();
         _iappPlayerController!.cancelNextVideoTimer();
       }
     }
-    // 清除缓存的isFinished状态
-    _cachedIsFinished = null;
   }
 
   // 启动隐藏定时器
   void _startHideTimer() {
     if (_iappPlayerController!.controlsAlwaysVisible) return;
-    _setUnifiedTimer(const Duration(milliseconds: 5000), () {
-      changePlayerControlsNotVisible(true);
-    }, _TimerType.hide);
+    _setHideTimer(Timer(const Duration(milliseconds: 5000), () => changePlayerControlsNotVisible(true)));
   }
 
-  // 更新播放状态
+  // 更新播放状态 - 优化setState范围
   void _updateState() {
     if (!mounted) return;
     
-    // 限制更新频率
-    final currentFrame = DateTime.now().millisecondsSinceEpoch ~/ 16; // 约60fps
-    if (currentFrame - _lastUpdateFrame < 2) return; // 跳过过于频繁的更新
-    _lastUpdateFrame = currentFrame;
-    
     final newValue = _controller!.value;
-    
-    // 更新条件判断
-    final shouldUpdate = !controlsNotVisible || 
-                        _isFinished != isVideoFinished(newValue) || 
-                        _wasLoading || 
-                        isLoading(newValue);
+    // 保持原始逻辑：控件可见时总是检查更新，不可见时只在特定情况下更新
+    final shouldUpdate = !controlsNotVisible || isVideoFinished(newValue) || _wasLoading || isLoading(newValue);
     
     if (shouldUpdate) {
-      // 检查状态变化
-      final hasRelevantChanges = 
-          _latestValue?.isPlaying != newValue.isPlaying ||
-          _latestValue?.position.inSeconds != newValue.position.inSeconds || // 按秒比较，减少更新
+      // 检查具体属性是否变化
+      if (_latestValue?.isPlaying != newValue.isPlaying ||
+          _latestValue?.position != newValue.position ||
           _latestValue?.duration != newValue.duration ||
           _latestValue?.hasError != newValue.hasError ||
           _latestValue?.isBuffering != newValue.isBuffering ||
-          _latestValue?.volume != newValue.volume;
-      
-      if (hasRelevantChanges) {
+          _latestValue?.volume != newValue.volume) {
         setState(() {
           _latestValue = newValue;
-          _cachedIsFinished = null; // 清除缓存的完成状态
-          
-          if (isVideoFinished(_latestValue) && !_isLive) {
+          if (isVideoFinished(_latestValue) && _iappPlayerController?.isLiveStream() == false) {
             changePlayerControlsNotVisible(false);
           }
         });
@@ -967,7 +889,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     return IAppPlayerProgressBar(
       _controller,
       _iappPlayerController,
-      onDragStart: () => _cancelUnifiedTimer(),
+      onDragStart: () => _hideTimer?.cancel(),
       onDragEnd: () => _startHideTimer(),
       onTapDown: () => cancelAndRestartTimer(),
       colors: IAppPlayerProgressColors(
@@ -985,28 +907,10 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   }
 
   // 构建加载指示器
-  Widget _buildCachedLoadingWidget() {
-    if (_cachedLoadingWidget != null) return _cachedLoadingWidget!;
-    
+  Widget? _buildLoadingWidget() {
     if (_controlsConfiguration.loadingWidget != null) {
-      _cachedLoadingWidget = Container(
-        color: _controlsConfiguration.controlBarColor, 
-        child: _controlsConfiguration.loadingWidget
-      );
-    } else {
-      _cachedLoadingWidget = Container(
-        color: Colors.black.withOpacity(0.3),
-        child: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              _controlsConfiguration.loadingColor ?? Colors.white
-            ),
-            strokeWidth: 2.0,
-          ),
-        ),
-      );
+      return Container(color: _controlsConfiguration.controlBarColor, child: _controlsConfiguration.loadingWidget);
     }
-    
-    return _cachedLoadingWidget!;
+    return _loadingOverlay;
   }
 }
