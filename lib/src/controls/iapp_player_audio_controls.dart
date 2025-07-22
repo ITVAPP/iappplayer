@@ -134,12 +134,12 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kCompactSectionSpacing = 12.0; // 各区域间距
   static const double kCompactProgressHeight = 4.0; // 进度条高度
   static const double kCompactTopBarHeight = 24.0; // 顶部栏高度
-  static const double kCompactPlayButtonSize = 48.0; // 播放按钮尺寸
+  static const double kCompactPlayButtonSize = 36.0; // 修改：播放按钮尺寸从48改为36
   static const double kCompactControlButtonSize = 28.0; // 控制按钮尺寸
   static const double kCompactSmallIconSize = 20.0; // 小图标尺寸
   static const double kCompactCoverOnlyPlayButtonSize = 60.0; // 仅封面模式播放按钮尺寸
   static const double kCompactCoverOnlyButtonOpacity = 0.8; // 修改：半透明按钮透明度
-  static const double kCompactPlayPauseIconSize = 27.0; // 修改：紧凑模式播放按钮图标大小
+  static const double kCompactPlayPauseIconSize = 22.0; // 修改：紧凑模式播放按钮图标大小从27改为22
 
   // 正方形模式相关常量
   static const double kSquareModePlayButtonSize = 60.0; // 正方形模式播放按钮尺寸
@@ -615,9 +615,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 封面背景铺满
+        // 封面背景铺满 - 修改：使用 BoxFit.fill 确保完全填充
         Positioned.fill(
-          child: _buildCoverImage(placeholder, imageUrl),
+          child: _buildCoverImage(placeholder, imageUrl, fit: BoxFit.fill),
         ),
         // 半透明遮罩
         Container(
@@ -678,14 +678,17 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final imageUrl = _getImageUrl();
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
     
-    // 计算播放器高度
-    final double playerHeight = math.min(constraints.maxHeight, kCompactModeMinHeight);
+    // 修改：使用实际高度计算
+    final double playerHeight = constraints.maxHeight.isFinite 
+      ? math.min(constraints.maxHeight, kCompactModeMaxHeight)
+      : kCompactModeMinHeight;
+    // 修改：左侧封面为正方形
     final double coverSize = playerHeight;
     
     // 检查是否需要仅封面模式
     final double availableWidth = constraints.maxWidth;
     final double controlsWidth = availableWidth - coverSize;
-    final bool isCoverOnlyMode = constraints.maxHeight < kCompactModeMinHeight ||
+    final bool isCoverOnlyMode = playerHeight < kCompactModeMinHeight ||
                                   controlsWidth < kCompactControlsMinWidth;
     
     return Container(
@@ -704,7 +707,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         ? _buildCompactCoverOnlyMode(placeholder, imageUrl)
         : Row(
             children: [
-              // 左侧封面区域
+              // 左侧封面区域 - 正方形
               _buildCompactCoverSection(placeholder, imageUrl, coverSize, showGradient: true),
               // 右侧控制区域
               Expanded(
@@ -791,34 +794,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 背景图片（带毛玻璃效果）
-          if (placeholder != null || imageUrl != null) ...[
-            // 毛玻璃背景
-            Positioned.fill(
-              child: ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                  child: _buildCoverImage(placeholder, imageUrl),
-                ),
-              ),
-            ),
-            // 前景图片 - 铺满容器
-            Positioned.fill(
-              child: _buildCoverImage(placeholder, imageUrl),
-            ),
-          ] else ...[
-            // 默认音乐图标背景
-            Container(
-              color: Colors.grey[900],
-              child: Center(
-                child: Icon(
-                  Icons.music_note,
-                  size: 60,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ),
-          ],
+          // 修改：使用 ClipRect 确保图片不会溢出
+          ClipRect(
+            child: _buildCoverImage(placeholder, imageUrl, fit: BoxFit.cover),
+          ),
           // 右侧渐变遮罩（仅在需要时显示）
           if (showGradient)
             Positioned(
@@ -1117,15 +1096,17 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return _iappPlayerController?.iappPlayerDataSource?.notificationConfiguration?.imageUrl;
   }
 
-  // 构建封面图片
-  Widget _buildCoverImage(Widget? placeholder, String? imageUrl) {
+  // 构建封面图片 - 修改：添加可选的 fit 参数
+  Widget _buildCoverImage(Widget? placeholder, String? imageUrl, {BoxFit? fit}) {
+    final effectiveFit = fit ?? BoxFit.cover;
+    
     if (placeholder != null) {
       return placeholder;
     } else if (imageUrl != null && imageUrl.isNotEmpty) {
       if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
         return Image.network(
           imageUrl,
-          fit: BoxFit.cover,
+          fit: effectiveFit,
           errorBuilder: (context, error, stackTrace) => Container(
             color: Colors.grey[900],
             child: Icon(
@@ -1138,7 +1119,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       } else {
         return Image.asset(
           imageUrl,
-          fit: BoxFit.cover,
+          fit: effectiveFit,
           errorBuilder: (context, error, stackTrace) => Container(
             color: Colors.grey[900],
             child: Icon(
@@ -1810,7 +1791,7 @@ class _DiscPainter extends CustomPainter {
     // 绘制纹理圆环
     final groovePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isCompact ? _IAppPlayerAudioControlsState.kDiscGrooveWidth : 5.0;
+      ..strokeWidth = isCompact ? _IAppPlayerAudioControlsState.kDiscGrooveWidth : 2.0; // 修改：扩展模式线条更细
     
     // 根据模式选择不同的线条样式
     if (isCompact) {
@@ -1822,10 +1803,19 @@ class _DiscPainter extends CustomPainter {
         canvas.drawCircle(center, r, groovePaint);
       }
     } else {
-      // 扩展模式：减少纹理密度
-      final spacing = _IAppPlayerAudioControlsState.kDiscGrooveSpacing;
+      // 修改：扩展模式精确绘制3条纹理线
       groovePaint.color = Colors.white.withOpacity(0.3);
-      for (double r = spacing; r < radius; r += spacing * 2) {
+      
+      // 计算封面边缘位置
+      final coverRadius = radius * _IAppPlayerAudioControlsState.kDiscInnerCircleRatio;
+      // 可用空间
+      final availableSpace = radius - coverRadius;
+      // 将可用空间分为4份（3条线 + 4个间隔）
+      final spacing = availableSpace / 4;
+      
+      // 从封面边缘开始，绘制3条纹理线
+      for (int i = 1; i <= 3; i++) {
+        final r = coverRadius + spacing * i;
         canvas.drawCircle(center, r, groovePaint);
       }
     }
