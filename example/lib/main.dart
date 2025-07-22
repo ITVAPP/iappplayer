@@ -137,7 +137,7 @@ class HomePage extends StatelessWidget {
                       context,
                       icon: Icons.movie_outlined,
                       title: '视频播放器',
-                      subtitle: '播放单个本地视频',
+                      subtitle: '支持切换软硬件解码',
                       gradient: [
                         const Color(0xFF667eea),
                         const Color(0xFF764ba2),
@@ -152,7 +152,7 @@ class HomePage extends StatelessWidget {
                       context,
                       icon: Icons.playlist_play,
                       title: '视频列表',
-                      subtitle: '连续播放多个视频',
+                      subtitle: '支持随机和顺序播放',
                       gradient: [
                         const Color(0xFFf093fb),
                         const Color(0xFFf5576c),
@@ -182,7 +182,7 @@ class HomePage extends StatelessWidget {
                       context,
                       icon: Icons.queue_music,
                       title: '音乐列表',
-                      subtitle: '连续播放多首歌曲',
+                      subtitle: '另一种播放UI的展示',
                       gradient: [
                         const Color(0xFFfa709a),
                         const Color(0xFFfee140),
@@ -216,7 +216,7 @@ class HomePage extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(UIConstants.radiusLG),
         child: Container(
-          padding: EdgeInsets.all(UIConstants.spaceLG - 4), // 20
+          padding: EdgeInsets.all(UIConstants.spaceMD), 
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(UIConstants.radiusLG),
             gradient: LinearGradient(
@@ -1465,7 +1465,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                         height: UIConstants.musicPlayerSquareSize,
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusMD),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
                           color: Colors.black,
                           boxShadow: [
                             // 发光效果
@@ -1758,9 +1758,9 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                       // 播放器区域 - 保持原尺寸，带发光效果
                       Container(
                         height: UIConstants.musicPlayerHeight,
-                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusMD),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
                           color: Colors.black,
                           boxShadow: [
                             // 发光效果
