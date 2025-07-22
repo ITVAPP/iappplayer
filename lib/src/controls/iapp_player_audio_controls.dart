@@ -107,13 +107,13 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kDiscBorderWidth = 2.0;
 
   // 唱片相关常量 - 修改以减少纹理，增大封面
-  static const double kDiscGrooveWidth = 3.0; // 紧凑模式线条宽度
-  static const double kDiscGrooveSpacing = 12.0; // 增大间距，减少纹理密度（原7.5）
+  static const double kDiscGrooveWidth = 5.0; // 修改：增加线条宽度到 5.0（原3.0）
+  static const double kDiscGrooveSpacing = 8.0; // 修改：减少间距以增加线条数量（原12.0）
   static const double kDiscCenterRatio = 0.25; // 中心标签比例
   static const double kDiscInnerCircleRatio = 0.7; // 增大内圈封面比例（原0.6）
 
   // 扩展模式唱片尺寸
-  static const double kExpandedDiscSize = 280.0; // 增大扩展模式唱片（原240）
+  static const double kExpandedDiscSize = 150.0; // 修改：调整为 150.0（原280.0）
 
   // 动画相关常量
   static const Duration kRotationDuration = Duration(seconds: 5); // 旋转周期
@@ -121,9 +121,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 紧凑模式新样式常量
   static const double kCompactHeight = 140.0; // 播放器固定高度
-  static const double kCompactBorderRadius = 16.0; // 圆角半径
+  static const double kCompactBorderRadius = 0.0; // 修改：去除圆角（原16.0）
   static const Color kCompactBackgroundColor = Colors.black; // 背景色
-  static const double kCompactControlsMinWidth = 200.0; // 控制区域最小宽度
+  static const double kCompactControlsMinWidth = 150.0; // 修改：调整控制区域最小宽度（原200.0）
   static const double kGradientWidth = 60.0; // 渐变宽度
   static const double kCompactSongInfoSpacing = 4.0; // 歌曲信息间距
   static const double kCompactSectionSpacing = 12.0; // 各区域间距
@@ -408,13 +408,17 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final double availableWidth = constraints.maxWidth;
     final double controlsWidth = availableWidth - coverSize;
     
-    // 判断是否只显示封面模式
-    final bool isCoverOnlyMode = controlsWidth < kCompactControlsMinWidth;
+    // 修改：优先判断宽高比，再检测高度，最后才检测控制区域最小宽度
+    final double aspectRatio = constraints.maxWidth / constraints.maxHeight;
+    final bool isSquareRatio = (aspectRatio - 1.0).abs() < 0.1; // 允许10%的误差
+    final bool isCoverOnlyMode = isSquareRatio || 
+                                  constraints.maxHeight < kCompactModeMinHeight ||
+                                  controlsWidth < kCompactControlsMinWidth;
     
     return Container(
       height: kCompactHeight,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(kCompactBorderRadius),
+        borderRadius: BorderRadius.circular(kCompactBorderRadius), // 修改：使用 0.0 去除圆角
         color: kCompactBackgroundColor,
         boxShadow: [
           BoxShadow(
@@ -425,7 +429,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(kCompactBorderRadius),
+        borderRadius: BorderRadius.circular(kCompactBorderRadius), // 修改：使用 0.0 去除圆角
         child: isCoverOnlyMode
           ? _buildCoverOnlyMode(placeholder, imageUrl)
           : Row(
@@ -454,8 +458,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 封面背景
-        _buildCoverImage(placeholder, imageUrl),
+        // 修改：封面背景铺满整个播放器
+        Positioned.fill(
+          child: _buildCoverImage(placeholder, imageUrl),
+        ),
         // 半透明遮罩
         Container(
           color: Colors.black.withOpacity(0.4),
@@ -1720,7 +1726,7 @@ class _DiscPainter extends CustomPainter {
     // 绘制纹理圆环
     final groovePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isCompact ? _IAppPlayerAudioControlsState.kDiscGrooveWidth : 2.0;
+      ..strokeWidth = isCompact ? _IAppPlayerAudioControlsState.kDiscGrooveWidth : 5.0; // 修改：增加线条宽度
     
     // 根据模式选择不同的线条样式
     if (isCompact) {
@@ -1732,8 +1738,8 @@ class _DiscPainter extends CustomPainter {
         canvas.drawCircle(center, r, groovePaint);
       }
     } else {
-      // 扩展模式：减少纹理密度
-      final spacing = _IAppPlayerAudioControlsState.kDiscGrooveSpacing * 2; // 间距翻倍
+      // 扩展模式：减少纹理密度，增加线条数量
+      final spacing = _IAppPlayerAudioControlsState.kDiscGrooveSpacing; // 修改：减少间距（去掉 * 2）
       for (double r = spacing; r < radius; r += spacing) {
         // 更柔和的颜色对比
         groovePaint.color = (r ~/ spacing) % 2 == 0 
