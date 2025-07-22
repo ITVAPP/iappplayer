@@ -107,10 +107,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kDiscBorderWidth = 2.0;
 
   // 唱片相关常量 - 修改以减少纹理，增大封面
-  static const double kDiscGrooveWidth = 5.0; // 修改：增加线条宽度到 5.0（原3.0）
-  static const double kDiscGrooveSpacing = 8.0; // 修改：减少间距以增加线条数量（原12.0）
+  static const double kDiscGrooveWidth = 4.0; // 线条宽度
+  static const double kDiscGrooveSpacing = 10.0; // 修改：增加间距
   static const double kDiscCenterRatio = 0.25; // 中心标签比例
-  static const double kDiscInnerCircleRatio = 0.7; // 增大内圈封面比例（原0.6）
+  static const double kDiscInnerCircleRatio = 0.75; // 修改：增大内圈封面比例
 
   // 扩展模式唱片尺寸
   static const double kExpandedDiscSize = 150.0; // 修改：调整为 150.0（原280.0）
@@ -120,10 +120,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kFullRotation = 2 * math.pi; // 完整旋转角度
 
   // 紧凑模式新样式常量
-  static const double kCompactHeight = 140.0; // 播放器固定高度
-  static const double kCompactBorderRadius = 0.0; // 修改：去除圆角（原16.0）
   static const Color kCompactBackgroundColor = Colors.black; // 背景色
-  static const double kCompactControlsMinWidth = 150.0; // 修改：调整控制区域最小宽度（原200.0）
+  static const double kCompactControlsMinWidth = 120.0; // 控制区域最小宽度
   static const double kGradientWidth = 60.0; // 渐变宽度
   static const double kCompactSongInfoSpacing = 4.0; // 歌曲信息间距
   static const double kCompactSectionSpacing = 12.0; // 各区域间距
@@ -133,6 +131,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kCompactControlButtonSize = 28.0; // 控制按钮尺寸
   static const double kCompactSmallIconSize = 20.0; // 小图标尺寸
   static const double kCompactCoverOnlyPlayButtonSize = 60.0; // 仅封面模式播放按钮尺寸
+  static const double kCompactCoverOnlyButtonOpacity = 0.8; // 修改：半透明按钮透明度
 
   // 常量样式定义
   static const List<Shadow> _textShadows = [
@@ -402,23 +401,27 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final imageUrl = _getImageUrl();
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
     
-    // 计算封面尺寸（正方形，基于高度）
-    final double coverSize = kCompactHeight;
+    // 修改：正方形容器时使用容器尺寸
+    final double aspectRatio = constraints.maxWidth / constraints.maxHeight;
+    final bool isSquareRatio = (aspectRatio - 1.0).abs() < 0.1; // 允许10%的误差
+    
+    // 修改：正方形容器时的播放器高度为容器高度
+    final double playerHeight = isSquareRatio ? constraints.maxHeight : kCompactModeMinHeight;
+    final double coverSize = playerHeight; // 封面尺寸等于播放器高度
+    
     // 计算控制区域可用宽度
     final double availableWidth = constraints.maxWidth;
     final double controlsWidth = availableWidth - coverSize;
     
     // 修改：优先判断宽高比，再检测高度，最后才检测控制区域最小宽度
-    final double aspectRatio = constraints.maxWidth / constraints.maxHeight;
-    final bool isSquareRatio = (aspectRatio - 1.0).abs() < 0.1; // 允许10%的误差
     final bool isCoverOnlyMode = isSquareRatio || 
                                   constraints.maxHeight < kCompactModeMinHeight ||
                                   controlsWidth < kCompactControlsMinWidth;
     
     return Container(
-      height: kCompactHeight,
+      height: playerHeight,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(kCompactBorderRadius), // 修改：使用 0.0 去除圆角
+        borderRadius: BorderRadius.circular(0.0), // 移除圆角
         color: kCompactBackgroundColor,
         boxShadow: [
           BoxShadow(
@@ -429,9 +432,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(kCompactBorderRadius), // 修改：使用 0.0 去除圆角
+        borderRadius: BorderRadius.circular(0.0), // 移除圆角
         child: isCoverOnlyMode
-          ? _buildCoverOnlyMode(placeholder, imageUrl)
+          ? _buildCoverOnlyMode(placeholder, imageUrl, isSquareRatio)
           : Row(
               children: [
                 // 左侧封面区域（正方形）
@@ -454,7 +457,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   }
 
   // 构建仅封面模式
-  Widget _buildCoverOnlyMode(Widget? placeholder, String? imageUrl) {
+  Widget _buildCoverOnlyMode(Widget? placeholder, String? imageUrl, bool isSquare) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -468,14 +471,14 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         ),
         // 居中的播放/暂停按钮
         Center(
-          child: _buildCompactCoverOnlyPlayButton(),
+          child: _buildCompactCoverOnlyPlayButton(isSquare),
         ),
       ],
     );
   }
 
   // 构建仅封面模式的播放/暂停按钮
-  Widget _buildCompactCoverOnlyPlayButton() {
+  Widget _buildCompactCoverOnlyPlayButton(bool isSquare) {
     final bool isFinished = isVideoFinished(_latestValue);
     final bool isPlaying = _controller?.value.isPlaying ?? false;
 
@@ -496,7 +499,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         height: kCompactCoverOnlyPlayButtonSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withOpacity(isSquare ? kCompactCoverOnlyButtonOpacity : 0.9), // 修改：正方形时半透明
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.3),
@@ -939,81 +942,84 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           builder: (context, child) {
             return Transform.rotate(
               angle: _rotationAnimation!.value * kFullRotation,
-              child: child,
-            );
-          },
-          child: ClipOval(
-            child: Stack(
-              children: [
-                // 唱片纹理
-                CustomPaint(
-                  size: const Size(kExpandedDiscSize, kExpandedDiscSize),
-                  painter: _DiscPainter(isCompact: false),
-                ),
-                // 中心白色标签
-                Center(
-                  child: Container(
-                    width: kExpandedDiscSize * kDiscCenterRatio,
-                    height: kExpandedDiscSize * kDiscCenterRatio,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
+              child: ClipOval(
+                child: Stack(
+                  children: [
+                    // 唱片纹理
+                    CustomPaint(
+                      size: const Size(kExpandedDiscSize, kExpandedDiscSize),
+                      painter: _DiscPainter(isCompact: false),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (placeholder != null || imageUrl != null)
-                          Container(
-                            width: kExpandedDiscSize * kDiscCenterRatio * 0.6,
-                            height: kExpandedDiscSize * kDiscCenterRatio * 0.6,
-                            child: ClipOval(
-                              child: _buildDiscCover(
-                                placeholder, 
-                                imageUrl, 
-                                kExpandedDiscSize * kDiscCenterRatio * 0.6
-                              ),
-                            ),
-                          )
-                        else ...[
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    // 中心封面 - 修改：调整到唱片大小的四分之三
+                    Center(
+                      child: Container(
+                        width: kExpandedDiscSize * kDiscInnerCircleRatio,
+                        height: kExpandedDiscSize * kDiscInnerCircleRatio,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.transparent,
+                        ),
+                        child: ClipOval(
+                          child: _buildDiscCover(
+                            placeholder, 
+                            imageUrl, 
+                            kExpandedDiscSize * kDiscInnerCircleRatio
                           ),
-                          if (singer != null)
+                        ),
+                      ),
+                    ),
+                    // 中心白色标签
+                    Center(
+                      child: Container(
+                        width: kExpandedDiscSize * kDiscCenterRatio,
+                        height: kExpandedDiscSize * kDiscCenterRatio,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
                             Text(
-                              singer,
+                              title,
                               style: const TextStyle(
-                                fontSize: 8,
-                                color: Colors.black54,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                        ],
-                      ],
+                            if (singer != null)
+                              Text(
+                                singer,
+                                style: const TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.black54,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                // 中心孔
-                Center(
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      shape: BoxShape.circle,
+                    // 中心孔
+                    Center(
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -1214,7 +1220,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建控制按钮区域（修改添加全屏按钮）
+  // 构建控制按钮区域（修改使用Stack实现真正的居中）
   Widget _buildControlsSection() {
     final bool isPlaylist = _iappPlayerController!.isPlaylistMode;
     final bool isLive = _iappPlayerController?.isLiveStream() ?? false;
@@ -1223,42 +1229,50 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       height: kAudioControlBarHeight,
       margin: const EdgeInsets.only(bottom: kSpacingHalf),
       padding: _controlsPadding,
-      child: Row(
+      child: Stack(
         children: [
-          if (isPlaylist) ...[
-            _buildShuffleButton(),
-            if (_controlsConfiguration.enableMute) _buildMuteButton(),
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+          // 左侧按钮
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Row(
+              children: [
+                if (isPlaylist) _buildShuffleButton(),
+                if (_controlsConfiguration.enableMute) _buildMuteButton(),
+              ],
+            ),
+          ),
+          // 中间播放控制按钮（始终居中）
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isPlaylist) ...[
                   _buildPreviousButton(),
                   _buildPlayPauseButton(),
                   _buildNextButton(),
-                ],
-              ),
-            ),
-            if (_controlsConfiguration.enableMute) _buildPlaceholder(),
-            _buildPlaylistMenuButton(),
-          ] else ...[
-            if (_controlsConfiguration.enableMute) _buildMuteButton(),
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                ] else ...[
                   if (!isLive) _buildSkipBackButton(),
                   _buildPlayPauseButton(),
                   if (!isLive) _buildSkipForwardButton(),
                 ],
-              ),
+              ],
             ),
-            if (_controlsConfiguration.enableMute) _buildPlaceholder(),
-          ],
-          // 添加全屏按钮
-          if (_controlsConfiguration.enableFullscreen) ...[
-            SizedBox(width: kSpacingUnit),
-            _buildFullscreenButton(),
-          ],
+          ),
+          // 右侧按钮
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Row(
+              children: [
+                if (isPlaylist) _buildPlaylistMenuButton(),
+                if (_controlsConfiguration.enableFullscreen)
+                  _buildFullscreenButton(),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1409,14 +1423,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return _buildIconButton(
       icon: Icons.queue_music,
       onTap: _showPlaylistMenu,
-    );
-  }
-
-  // 构建占位符
-  Widget _buildPlaceholder() {
-    return Container(
-      padding: _iconButtonPadding,
-      child: SizedBox(width: _responsiveIconSize, height: _responsiveIconSize),
     );
   }
 
@@ -1738,13 +1744,10 @@ class _DiscPainter extends CustomPainter {
         canvas.drawCircle(center, r, groovePaint);
       }
     } else {
-      // 扩展模式：减少纹理密度，增加线条数量
-      final spacing = _IAppPlayerAudioControlsState.kDiscGrooveSpacing; // 修改：减少间距（去掉 * 2）
-      for (double r = spacing; r < radius; r += spacing) {
-        // 更柔和的颜色对比
-        groovePaint.color = (r ~/ spacing) % 2 == 0 
-          ? const Color(0xFF0C0C0C) // 更接近黑色
-          : const Color(0xFF141414); // 更接近黑色
+      // 扩展模式：减少纹理密度，增加线条数量，颜色更白
+      final spacing = _IAppPlayerAudioControlsState.kDiscGrooveSpacing;
+      groovePaint.color = Colors.white.withOpacity(0.3); // 修改：更白的颜色
+      for (double r = spacing; r < radius; r += spacing * 2) { // 修改：间距加倍
         canvas.drawCircle(center, r, groovePaint);
       }
     }
