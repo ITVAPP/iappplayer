@@ -986,16 +986,24 @@ class _PlaylistExampleState extends State<PlaylistExample>
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              padding: EdgeInsets.all(UIConstants.spaceSM + 4), // 12
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                            // 左侧播放列表按钮 - 可点击打开播放列表
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _showPlaylistMenu,
                                 borderRadius: BorderRadius.circular(UIConstants.radiusSM),
-                              ),
-                              child: Icon(
-                                Icons.playlist_play_rounded,
-                                color: Colors.white,
-                                size: UIConstants.iconMD,
+                                child: Container(
+                                  padding: EdgeInsets.all(UIConstants.spaceSM + 4), // 12
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(UIConstants.radiusSM),
+                                  ),
+                                  child: Icon(
+                                    Icons.queue_music_rounded,
+                                    color: Colors.white,
+                                    size: UIConstants.iconMD,
+                                  ),
+                                ),
                               ),
                             ),
                             SizedBox(width: UIConstants.spaceMD),
@@ -1003,14 +1011,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    '正在播放',
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.8),
-                                      fontSize: UIConstants.fontSM,
-                                    ),
-                                  ),
-                                  SizedBox(height: UIConstants.spaceXS),
                                   Text(
                                     _getCurrentVideoTitle(), // 显示当前视频标题
                                     style: TextStyle(
@@ -1063,27 +1063,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                         ),
                                       ),
                                     ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // 播放列表按钮
-                            SizedBox(width: UIConstants.spaceSM),
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: _showPlaylistMenu,
-                                borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                                child: Container(
-                                  padding: EdgeInsets.all(UIConstants.spaceSM),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                                  ),
-                                  child: Icon(
-                                    Icons.queue_music_rounded,
-                                    color: Colors.white,
-                                    size: UIConstants.iconMD,
                                   ),
                                 ),
                               ),
