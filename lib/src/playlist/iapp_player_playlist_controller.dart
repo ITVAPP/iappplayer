@@ -104,10 +104,18 @@ class IAppPlayerPlaylistController {
     if (_iappPlayerController!.isFullScreen) {
       _iappPlayerController!.exitFullScreen();
     }
-  
+
     _changingToNextVideo = true;
     setupDataSource(nextDataSourceId);
     _changingToNextVideo = false;
+  
+    // 发送带有索引的事件
+    _iappPlayerController!.postEvent(
+      IAppPlayerEvent(
+        IAppPlayerEventType.changedPlaylistItem,
+        parameters: {'index': nextDataSourceId},
+      ),
+    );
   }
   
   /// 处理播放器事件，控制下一视频计时器启动
