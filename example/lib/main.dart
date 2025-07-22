@@ -657,7 +657,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceSM), // 修改：从没有间距改为spaceSM，与播放器和解码器之间的间距保持一致
+                      SizedBox(height: UIConstants.spaceMD), // 修改：统一间距为spaceMD
                     ],
                   ),
                   // 控制按钮区域
@@ -685,7 +685,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           icon: (_controller?.isPlaying() ?? false)
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
-                          label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
+                          label: (_controller?.isPlaying() ?? false) ? '暂停播放' : '继续播放', // 修改：动态文字
                           isPrimary: true,
                         ),
                         SizedBox(height: UIConstants.spaceMD),
@@ -1034,7 +1034,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceSM), // 修改：从spaceMD改为spaceSM，减少间距
+                      SizedBox(height: UIConstants.spaceMD), // 修改：统一间距为spaceMD
                     ],
                   ),
                   // 控制按钮区域
@@ -1072,7 +1072,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                   : null,
                               icon: (_controller?.isPlaying() ?? false)
                                   ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
+                                  : Icons.play_arrow_rounded, // 修改：确保暂停时显示播放图标
                               isPrimary: true,
                             ),
                             // 下一个
@@ -1119,8 +1119,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
     bool isPrimary = false,
   }) {
     return Container(
-      width: isPrimary ? UIConstants.buttonSizeLarge : UIConstants.buttonSizeNormal,
-      height: isPrimary ? UIConstants.buttonSizeLarge : UIConstants.buttonSizeNormal,
+      width: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall, // 修改：调小按钮尺寸
+      height: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall, // 修改：调小按钮尺寸
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: isPrimary ? LinearGradient(
@@ -1147,7 +1147,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
             child: Icon(
               icon,
               color: Colors.white,
-              size: isPrimary ? UIConstants.iconXXL : UIConstants.iconLG,
+              size: isPrimary ? UIConstants.iconLG : UIConstants.iconMD, // 修改：调整图标大小
             ),
           ),
         ),
@@ -1387,7 +1387,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                           icon: (_controller?.isPlaying() ?? false)
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
-                          label: (_controller?.isPlaying() ?? false) ? '暂停' : '播放',
+                          label: (_controller?.isPlaying() ?? false) ? '暂停播放' : '继续播放', // 修改：动态文字
                           isPrimary: true,
                         ),
                         SizedBox(height: UIConstants.spaceMD),
@@ -1405,7 +1405,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                           icon: _controller?.isFullScreen ?? false
                               ? Icons.fullscreen_exit_rounded
                               : Icons.fullscreen_rounded,
-                          label: '全屏歌词',
+                          label: '全屏播放', // 修改：文字改为全屏播放
                         ),
                       ],
                     ),
@@ -1668,7 +1668,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                                   : null,
                               icon: (_controller?.isPlaying() ?? false)
                                   ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
+                                  : Icons.play_arrow_rounded, // 修改：确保暂停时显示播放图标
                               isPrimary: true,
                             ),
                             // 下一首
@@ -1704,7 +1704,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                           icon: _controller?.isFullScreen ?? false
                               ? Icons.fullscreen_exit_rounded
                               : Icons.fullscreen_rounded,
-                          label: '全屏歌词',
+                          label: '全屏播放', // 修改：文字改为全屏播放
                         ),
                       ],
                     ),
