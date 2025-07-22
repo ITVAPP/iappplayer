@@ -97,7 +97,8 @@ class _IAppPlayerWithControlsState extends State<IAppPlayerWithControls> {
 
     aspectRatio ??= _defaultAspectRatio;
     final innerContainer = Container(
-      width: double.infinity,
+      // 音频模式不强制宽度，让它自适应父级约束
+      width: controlsConfiguration.audioOnly ? null : double.infinity,
       color: iappConfiguration.controlsConfiguration.backgroundColor,
       child: AspectRatio(
         aspectRatio: aspectRatio,
