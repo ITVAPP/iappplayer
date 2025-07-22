@@ -52,7 +52,7 @@ class UIConstants {
   static const double shadowLG = 30.0;
   
   // 音乐播放器专用
-  static const double musicPlayerHeight = 150.0;
+  static const double musicPlayerHeight = 120.0;
   static const double musicPlayerSquareSize = 200.0; // 新增：单首音乐播放的正方形尺寸
 }
 
