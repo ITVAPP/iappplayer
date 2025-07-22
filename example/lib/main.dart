@@ -1328,6 +1328,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
   IAppPlayerController? _controller;
   bool _isLoading = true;
   bool _isPlaying = false; // 添加播放状态跟踪
+  String? _currentLyric; // 添加当前歌词状态
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -1365,6 +1366,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
       title: 'Creative Design',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
       audioOnly: true,
+      aspectRatio: 1.0,
       subtitleContent: lrcContent,
       enableFullscreen: true, // 添加全屏功能
       eventListener: (event) {
@@ -1385,6 +1387,9 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
           setState(() {
             _isPlaying = false;
           });
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.progress) {
+          // 监听播放进度，更新歌词
+          _updateCurrentLyric();
         }
       },
       autoDetectFullscreenDeviceOrientation: true,
@@ -1402,6 +1407,29 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
       setState(() {
         _controller = result.activeController;
       });
+    }
+  }
+
+  // 更新当前歌词
+  void _updateCurrentLyric() {
+    if (_controller == null || !mounted) return;
+    
+    // 获取当前正在渲染的字幕
+    final subtitle = _controller!.renderedSubtitle;
+    if (subtitle != null && subtitle.texts != null && subtitle.texts!.isNotEmpty) {
+      final newLyric = subtitle.texts!.join(' ');
+      if (newLyric != _currentLyric) {
+        setState(() {
+          _currentLyric = newLyric;
+        });
+      }
+    } else {
+      // 处理没有歌词的情况
+      if (_currentLyric != null && _currentLyric!.isNotEmpty) {
+        setState(() {
+          _currentLyric = null;
+        });
+      }
     }
   }
 
@@ -1521,6 +1549,25 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                                 color: Colors.white.withOpacity(0.6),
                               ),
                             ),
+                            // 显示当前歌词
+                            if (_currentLyric != null && _currentLyric!.isNotEmpty) ...[
+                              SizedBox(height: UIConstants.spaceSM),
+                              AnimatedSwitcher(
+                                duration: Duration(milliseconds: 300),
+                                child: Text(
+                                  _currentLyric!,
+                                  key: ValueKey(_currentLyric),
+                                  style: TextStyle(
+                                    fontSize: UIConstants.fontMD,
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -1711,6 +1758,13 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
       if (newLyric != _currentLyric) {
         setState(() {
           _currentLyric = newLyric;
+        });
+      }
+    } else {
+      // 处理没有歌词的情况
+      if (_currentLyric != null && _currentLyric!.isNotEmpty) {
+        setState(() {
+          _currentLyric = null;
         });
       }
     }
