@@ -1001,7 +1001,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                 onTap: _showPlaylistMenu,
                                 borderRadius: BorderRadius.circular(UIConstants.radiusSM),
                                 child: Container(
-                                  padding: EdgeInsets.all(UIConstants.spaceSM + 4), // 12
+                                  padding: EdgeInsets.all(UIConstants.spaceSM),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(UIConstants.radiusSM),
@@ -1190,7 +1190,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: UIConstants.spaceLG,
-                vertical: UIConstants.spaceMD,
+                vertical: UIConstants.spaceSM,
               ),
               decoration: BoxDecoration(
                 border: Border(
@@ -1229,9 +1229,9 @@ class _PlaylistExampleState extends State<PlaylistExample>
             ),
             // 列表内容
             Container(
-              height: 300,
+              height: 260,
               child: ListView.builder(
-                padding: EdgeInsets.symmetric(vertical: UIConstants.spaceSM),
+                padding: EdgeInsets.symmetric(vertical: UIConstants.spaceXS),
                 itemCount: 3,
                 itemBuilder: (context, index) {
                   final titles = ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'];
@@ -1483,14 +1483,20 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                          child: _controller != null
-                              ? IAppPlayer(controller: _controller!)
-                              : const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
+                          child: AspectRatio(
+                            aspectRatio: 1.0,  // 传递比例显示正方形播放器
+                            child: Container(
+                              color: Colors.black,
+                              child: _controller != null
+                                  ? IAppPlayer(controller: _controller!)
+                                  : const Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                            ),
+                          ),
                         ),
                       ),
                       SizedBox(height: UIConstants.spaceLG),
