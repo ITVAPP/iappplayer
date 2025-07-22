@@ -1595,6 +1595,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   int _currentIndex = 0;
   bool _shuffleMode = false;
   bool _isPlaying = false; // 添加播放状态跟踪
+  String? _currentLyric; // 当前歌词
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -1647,6 +1648,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
           if (index != null) {
             setState(() {
               _currentIndex = index;
+              _currentLyric = null; // 切换歌曲时清空歌词
             });
           }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistShuffle) {
@@ -1666,6 +1668,9 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
           setState(() {
             _isPlaying = false;
           });
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.progress) {
+          // 监听播放进度，更新歌词
+          _updateCurrentLyric();
         }
       },
       shuffleMode: false,
@@ -1689,6 +1694,22 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     }
   }
 
+  // 更新当前歌词
+  void _updateCurrentLyric() {
+    if (_controller == null || !mounted) return;
+    
+    // 获取当前正在渲染的字幕
+    final subtitle = _controller!.renderedSubtitle;
+    if (subtitle != null && subtitle.texts != null && subtitle.texts!.isNotEmpty) {
+      final newLyric = subtitle.texts!.join(' ');
+      if (newLyric != _currentLyric) {
+        setState(() {
+          _currentLyric = newLyric;
+        });
+      }
+    }
+  }
+
   // 修复：添加更新当前索引的方法
   void _updateCurrentIndex() {
     if (_playlistController != null && mounted) {
@@ -1696,6 +1717,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
       if (newIndex != _currentIndex) {
         setState(() {
           _currentIndex = newIndex;
+          _currentLyric = null; // 切换歌曲时清空歌词
         });
       }
     }
@@ -1789,7 +1811,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                         ),
                       ),
                       SizedBox(height: UIConstants.spaceMD - 1), // 15 - 减少间距
-                      // 当前歌曲信息 - 修复：添加歌手信息
+                      // 当前歌曲信息 - 添加歌词显示
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
                         child: Column(
@@ -1810,6 +1832,25 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                                 color: Colors.white.withOpacity(0.6),
                               ),
                             ),
+                            // 显示当前歌词
+                            if (_currentLyric != null && _currentLyric!.isNotEmpty) ...[
+                              SizedBox(height: UIConstants.spaceSM),
+                              AnimatedSwitcher(
+                                duration: Duration(milliseconds: 300),
+                                child: Text(
+                                  _currentLyric!,
+                                  key: ValueKey(_currentLyric),
+                                  style: TextStyle(
+                                    fontSize: UIConstants.fontMD,
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -1838,7 +1879,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playPrevious();
-                                  // 延迟更新索引
+                                  // 延迟更新索引和歌词
                                   Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                                 }
                               : null,
@@ -1865,7 +1906,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playNext();
-                                  // 延迟更新索引
+                                  // 延迟更新索引和歌词
                                   Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                                 }
                               : null,
