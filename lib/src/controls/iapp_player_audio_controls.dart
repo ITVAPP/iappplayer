@@ -16,7 +16,7 @@ import 'package:iapp_player/src/subtitles/iapp_player_subtitles_drawer.dart';
 // 播放器显示模式
 enum PlayerDisplayMode {
   expanded,   // 扩展模式：高度 ≥ 200px 且非正方形
-  square,     // 正方形模式：宽高比接近 1:1
+  square,     // 封面模式：宽高比接近 1:1
   compact,    // 紧凑模式：高度 < 200px 且非正方形
 }
 
@@ -90,6 +90,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const Color kPlaylistBackgroundColor = Color(0xFF1A1A1A); // 深色背景
   static const Color kPlaylistSurfaceColor = Color(0xFF2A2A2A); // 表面颜色
   static const double kPlaylistItemRadius = 12.0; // 列表项圆角
+  // 修改：减小列表项上下间距
+  static const double kPlaylistItemVerticalMargin = 1.0; // 原来是 2.0
 
 
   // 禁用按钮透明度
@@ -185,7 +187,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const EdgeInsets _titlePadding = EdgeInsets.symmetric(horizontal: kSpacingUnit);
   static const EdgeInsets _modalHeaderPadding = EdgeInsets.only(left: kSpacingDouble, right: kSpacingUnit);
   static const EdgeInsets _modalListPadding = EdgeInsets.symmetric(vertical: kSpacingUnit);
-  static const EdgeInsets _modalItemMargin = EdgeInsets.symmetric(horizontal: kSpacingUnit, vertical: 2);
+  // 修改：使用新的垂直间距常量
+  static const EdgeInsets _modalItemMargin = EdgeInsets.symmetric(horizontal: kSpacingUnit, vertical: kPlaylistItemVerticalMargin);
 
   // 常量BorderRadius
   static const BorderRadius _modalTopBorderRadius = BorderRadius.only(
@@ -355,7 +358,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     // 计算宽高比
     final double aspectRatio = constraints.maxWidth / constraints.maxHeight;
     
-    // 正方形模式：aspectRatio = 1.0（精确值，允许1%误差）
+    // 封面模式：aspectRatio = 1.0（精确值，允许1%误差）
     if ((aspectRatio - 1.0).abs() < 0.01) {
       _cachedDisplayMode = PlayerDisplayMode.square;
     }
@@ -695,8 +698,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // ============== 正方形模式 ==============
-  // 正方形模式：封面铺满 + 居中播放按钮 - 修改：使用 _buildCoverImage 方法
+  // ============== 封面模式 ==============
+  // 封面模式：封面铺满 + 居中播放按钮 - 修改：使用 _buildCoverImage 方法
   Widget _buildSquareMode() {
     final imageUrl = _getImageUrl();
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
@@ -735,7 +738,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建正方形模式的播放按钮
+  // 构建封面模式的播放按钮
   Widget _buildSquareModePlayButton() {
     final bool isFinished = isVideoFinished(_latestValue);
     final bool isPlaying = _controller?.value.isPlaying ?? false;
@@ -1618,17 +1621,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: kPlaylistPrimaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.queue_music_rounded,
-                    color: kPlaylistPrimaryColor,
-                    size: 20,
-                  ),
+                // 修改：去掉图标背景容器
+                Icon(
+                  Icons.queue_music_rounded,
+                  color: kPlaylistPrimaryColor,
+                  size: 20,
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -1770,30 +1767,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ),
             ),
             const SizedBox(width: 12),
-            // 正在播放动画
-            if (isCurrentItem)
-              Container(
-                width: 20,
-                height: 20,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(seconds: 1),
-                      curve: Curves.easeInOut,
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: kPlaylistPrimaryColor.withOpacity(0.3),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            // 修改：移除正在播放动画
           ],
         ),
       ),
