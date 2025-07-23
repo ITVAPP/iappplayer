@@ -1685,6 +1685,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   Widget _buildPlaylistItem({
     required String title,
     String? author,
+    required int index,
     required bool isCurrentItem,
     required VoidCallback onTap,
   }) {
@@ -1727,12 +1728,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                     ),
                   )
                 : Text(
-                    '${dataSourceList.indexOf(
-                      dataSourceList.firstWhere((ds) => 
-                        ds.notificationConfiguration?.title == title ||
-                        ds.notificationConfiguration?.title == null
-                      )
-                    ) + 1}',
+                    '${index + 1}',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.4),
                       fontSize: 14,
