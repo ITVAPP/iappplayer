@@ -130,8 +130,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   static const double kModalBorderRadius = 18.0;
   // 定义模态框头部高度
   static const double kModalHeaderHeight = 48.0;
-  // 定义播放列表项高度
-  static const double kModalItemHeight = 30.0;
   // 定义模态框标题字体大小
   static const double kModalTitleFontSize = 18.0;
   // 定义播放列表项字体大小
@@ -170,7 +168,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   static const Color kPlaylistBackgroundColor = Color(0xFF1A1A1A); // 深色背景
   static const Color kPlaylistSurfaceColor = Color(0xFF2A2A2A); // 表面颜色
   static const double kPlaylistItemRadius = 12.0; // 列表项圆角
-  static const double kPlaylistBlurRadius = 10.0; // 模糊效果半径
+
 
   // 定义图标阴影
   static const List<Shadow> _iconShadows = [
@@ -184,6 +182,17 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   static const List<BoxShadow> _progressBarShadows = [
     BoxShadow(blurRadius: 3.0, color: Colors.black45, offset: Offset(0.0, 1.0)),
   ];
+
+  // 静态Widget缓存
+  static final Widget _defaultLoadingWidget = Container(
+    color: Colors.black.withOpacity(0.3),
+    child: const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        strokeWidth: 2.0,
+      ),
+    ),
+  );
 
   // 存储最新播放值
   VideoPlayerValue? _latestValue;
@@ -231,6 +240,9 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   double? _lastVolume;
   // 标记是否正在全屏切换中
   bool _isFullscreenTransitioning = false;
+  // 缓存播放列表状态
+  int? _cachedPlaylistIndex;
+  bool? _cachedShuffleMode;
 
   // 获取控件配置
   IAppPlayerControlsConfiguration get _controlsConfiguration => widget.controlsConfiguration;
@@ -483,29 +495,26 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
             topLeft: Radius.circular(kModalBorderRadius), 
             topRight: Radius.circular(kModalBorderRadius)
           ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: kPlaylistBlurRadius, sigmaY: kPlaylistBlurRadius),
-            child: Container(
-              decoration: BoxDecoration(
-                color: kPlaylistBackgroundColor.withOpacity(kModalBackgroundOpacity),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(kModalBorderRadius), 
-                  topRight: Radius.circular(kModalBorderRadius)
-                ),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
+          child: Container(
+            decoration: BoxDecoration(
+              color: kPlaylistBackgroundColor.withOpacity(kModalBackgroundOpacity),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(kModalBorderRadius), 
+                topRight: Radius.circular(kModalBorderRadius)
               ),
-              child: _buildPlaylistMenuContent(),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
             ),
+            child: _buildPlaylistMenuContent(),
           ),
         ),
       ),
@@ -753,7 +762,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     return FutureBuilder<bool>(
       future: _pipSupportedFuture,
       builder: (context, snapshot) {
-        // 缓存画中画支持状态
         if (snapshot.hasData && _isPipSupported == null) {
           _isPipSupported = snapshot.data;
         }
@@ -985,7 +993,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
 
   // 切换全屏模式
   void _onExpandCollapse() {
-    // 防抖：如果正在切换中，忽略新的请求
+    // 如果正在切换中，忽略新的请求
     if (_isFullscreenTransitioning) return;
     
     _isFullscreenTransitioning = true;
@@ -1042,15 +1050,31 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     final currentPositionInSeconds = newValue.position.inSeconds;
     final bool positionSecondsChanged = _lastPositionInSeconds != currentPositionInSeconds;
     
+    // 播放列表状态检测
+    bool playlistStateChanged = false;
+    if (_iappPlayerController?.isPlaylistMode == true) {
+      final currentIndex = _iappPlayerController!.playlistController?.currentDataSourceIndex;
+      final currentShuffleMode = _iappPlayerController!.playlistShuffleMode;
+      
+      playlistStateChanged = _cachedPlaylistIndex != currentIndex || 
+                            _cachedShuffleMode != currentShuffleMode;
+      
+      if (playlistStateChanged) {
+        _cachedPlaylistIndex = currentIndex;
+        _cachedShuffleMode = currentShuffleMode;
+      }
+    }
+    
     // 检查其他状态变化
     final bool otherStateChanged = 
         _lastIsPlaying != newValue.isPlaying ||
         _lastDuration != newValue.duration ||
         _lastHasError != newValue.hasError ||
         _lastIsBuffering != newValue.isBuffering ||
-        (_lastVolume != newValue.volume && (_lastVolume == null || (newValue.volume - _lastVolume!).abs() > 0.01));
+        (_lastVolume != newValue.volume && (_lastVolume == null || (newValue.volume - _lastVolume!).abs() > 0.01)) ||
+        playlistStateChanged;
     
-    // 特殊情况：视频结束或加载状态变化时总是更新
+    // 视频结束或加载状态变化时总是更新
     final bool specialCaseUpdate = 
         isVideoFinished(newValue) || 
         _wasLoading || 
@@ -1104,14 +1128,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
     if (_controlsConfiguration.loadingWidget != null) {
       return Container(color: _controlsConfiguration.controlBarColor, child: _controlsConfiguration.loadingWidget);
     }
-    return Container(
-      color: Colors.black.withOpacity(0.3),
-      child: Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(_controlsConfiguration.loadingColor ?? Colors.white),
-          strokeWidth: 2.0,
-        ),
-      ),
-    );
+    return _defaultLoadingWidget;
   }
 }
