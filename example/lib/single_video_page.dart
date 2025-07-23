@@ -28,6 +28,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   DecoderState _currentDecoder = DecoderState.hardware;
   bool _isPlaying = false; // 添加播放状态跟踪
   bool _isPipMode = false; // 添加画中画状态跟踪
+  GlobalKey? _playerGlobalKey; // 添加：播放器全局键
 
   @override
   IAppPlayerController? get controller => _controller;
