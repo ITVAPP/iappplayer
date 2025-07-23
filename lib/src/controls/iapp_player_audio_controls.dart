@@ -104,18 +104,14 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kTitleFontSize = 16.0;
   // 封面圆角
   static const double kCoverBorderRadius = 12.0;
-  // 默认音乐图标比例
-  static const double kDefaultMusicIconRatio = 0.6;
-
   // 紧凑模式相关常量
   static const double kCompactModeMinHeight = 120.0;
   static const double kCompactModeMaxHeight = 180.0;
   static const double kCompactDiscSize = 80.0;
-  static const double kDiscBorderWidth = 2.0;
 
   // 唱片相关常量 - 修改以减少纹理，增大封面
-  static const double kDiscGrooveWidth = 3.0; // 线条宽度
-  static const double kDiscGrooveSpacing = 11.0; // 修改：增加间距
+  static const double kDiscGrooveWidth = 2.0; // 线条宽度
+  static const double kDiscGrooveSpacing = 12.0; // 修改：增加间距
   static const double kDiscCenterRatio = 0.25; // 中心标签比例
   static const double kDiscInnerCircleRatio = 0.75; // 修改：增大内圈封面比例
 
@@ -128,7 +124,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 紧凑模式新样式常量
   static const Color kCompactBackgroundColor = Colors.black; // 背景色
-  static const double kCompactControlsMinWidth = 120.0; // 控制区域最小宽度
   static const double kGradientWidth = 60.0; // 渐变宽度
   static const double kCompactSongInfoSpacing = 4.0; // 歌曲信息间距
   static const double kCompactSectionSpacing = 12.0; // 各区域间距
@@ -366,6 +361,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   void dispose() {
     _dispose();
     _rotationController?.dispose();
+    // 修改：重置动画初始化标志，确保组件重新创建时状态正确
+    _animationsInitialized = false;
     super.dispose();
   }
 
@@ -386,9 +383,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       _initialize();
     }
 
-    // 只在必要时重新计算尺寸
+    // 修改：优化响应式尺寸计算时机
+    // 只在必要时重新计算尺寸（屏幕尺寸变化或首次初始化）
     final currentScreenSize = MediaQuery.of(context).size;
-    if (_cachedScreenSize != currentScreenSize) {
+    if (_cachedScreenSize == null || _cachedScreenSize != currentScreenSize) {
       _precalculateResponsiveSizes(context);
     }
 
@@ -1661,6 +1659,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 播放/暂停切换
   void _onPlayPause() {
+    // 修改：加强空值安全检查
+    if (_controller == null || !(_controller!.value.initialized)) {
+      return;
+    }
+    
     final bool isFinished = _latestValue?.position != null && 
       _latestValue?.duration != null && 
       _latestValue!.position >= _latestValue!.duration!;
@@ -1668,7 +1671,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     if (_controller!.value.isPlaying) {
       _iappPlayerController!.pause();
       _stopAnimations();
-    } else if (_controller!.value.initialized) {
+    } else {
       if (isFinished) _iappPlayerController!.seekTo(const Duration());
       _iappPlayerController!.play();
       _iappPlayerController!.cancelNextVideoTimer();
@@ -1705,13 +1708,14 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     
     final newValue = _controller!.value;
     
-    // 进度条更新
-    final needsUpdate = _latestValue == null ||
+    // 修改：优化更新条件判断，提高精确性
+    final needsUpdate = _latestValue == null || (
         _latestValue!.isPlaying != newValue.isPlaying ||
-        _latestValue!.position != newValue.position ||
-        _latestValue!.duration != newValue.duration ||
+        _latestValue!.position.inMilliseconds != newValue.position.inMilliseconds ||
+        _latestValue!.duration?.inMilliseconds != newValue.duration?.inMilliseconds ||
         _latestValue!.hasError != newValue.hasError ||
-        _latestValue!.volume != newValue.volume;
+        (_latestValue!.volume - newValue.volume).abs() > 0.01
+    );
     
     if (needsUpdate) {
       setState(() {
