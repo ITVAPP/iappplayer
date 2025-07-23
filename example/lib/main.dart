@@ -968,10 +968,10 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ),
                         ),
                       ),
-                      // 播放信息卡片 - 显示当前视频标题（修改：移除模式切换按钮）spaceMD
+                      // 播放信息卡片 - 显示当前视频标题（修改：移除模式切换按钮）
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
-                        padding: EdgeInsets.all(UIConstants.spaceSM),
+                        padding: EdgeInsets.all(UIConstants.spaceMD),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
