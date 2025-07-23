@@ -1333,23 +1333,31 @@ class IAppPlayerController {
       _wasInFullScreenBeforePiP = _isFullScreen;
       _wasControlsEnabledBeforePiP = _controlsEnabled;
       setControlsEnabled(false);
+      
+      // 获取视频区域的实际位置和尺寸
+      final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
+          .findRenderObject() as RenderBox?;
+      if (renderBox == null) {
+        IAppPlayerUtils.log(
+            "无法显示画中画，RenderBox 为空，请提供有效的全局键");
+        return;
+      }
+      
+      final Offset position = renderBox.localToGlobal(Offset.zero);
+      
       if (Platform.isAndroid) {
-        _wasInFullScreenBeforePiP = _isFullScreen;
+        // 统一Android和iOS的实现方式
         await videoPlayerController?.enablePictureInPicture(
-            left: 0, top: 0, width: 0, height: 0);
-        enterFullScreen();
+          left: position.dx,
+          top: position.dy,
+          width: renderBox.size.width,
+          height: renderBox.size.height,
+        );
         _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
         return;
       }
+      
       if (Platform.isIOS) {
-        final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
-            .findRenderObject() as RenderBox?;
-        if (renderBox == null) {
-          IAppPlayerUtils.log(
-              "无法显示画中画，RenderBox 为空，请提供有效的全局键");
-          return;
-        }
-        final Offset position = renderBox.localToGlobal(Offset.zero);
         return videoPlayerController?.enablePictureInPicture(
           left: position.dx,
           top: position.dy,
