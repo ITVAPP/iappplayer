@@ -168,6 +168,8 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   static const Color kPlaylistBackgroundColor = Color(0xFF1A1A1A); // 深色背景
   static const Color kPlaylistSurfaceColor = Color(0xFF2A2A2A); // 表面颜色
   static const double kPlaylistItemRadius = 12.0; // 列表项圆角
+  // 列表项上下间距
+  static const double kPlaylistItemVerticalMargin = 1.0; // 原来是 2.0
 
 
   // 定义图标阴影
@@ -561,17 +563,10 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: kPlaylistPrimaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.playlist_play_rounded,
-                    color: kPlaylistPrimaryColor,
-                    size: 20,
-                  ),
+                Icon(
+                  Icons.playlist_play_rounded,
+                  color: kPlaylistPrimaryColor,
+                  size: 22,
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -635,7 +630,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.symmetric(horizontal: kSpacingUnit, vertical: 2),
+        margin: EdgeInsets.symmetric(horizontal: kSpacingUnit, vertical: kPlaylistItemVerticalMargin),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isCurrentItem 
@@ -710,30 +705,6 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
               ),
             ),
             const SizedBox(width: 12),
-            // 正在播放动画
-            if (isCurrentItem)
-              Container(
-                width: 20,
-                height: 20,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(seconds: 1),
-                      curve: Curves.easeInOut,
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: kPlaylistPrimaryColor.withOpacity(0.3),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
           ],
         ),
       ),
@@ -1080,9 +1051,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         _wasLoading || 
         isLoading(newValue);
     
-    // 只在必要时调用setState
     if (positionSecondsChanged || otherStateChanged || specialCaseUpdate) {
-      // 更新缓存状态
       if (positionSecondsChanged) {
         _lastPositionInSeconds = currentPositionInSeconds;
       }
