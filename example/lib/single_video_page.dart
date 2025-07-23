@@ -96,8 +96,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     if (mounted) {
       setState(() {
         _controller = result.activeController;
-        // 注意：不需要调用 setIAppPlayerGlobalKey，这个 API 不存在
-        // GlobalKey 应该通过 Widget 的 key 参数绑定
+        // 关键修改：设置GlobalKey到控制器，确保画中画功能正常工作
+        _controller?.setIAppPlayerGlobalKey(_playerGlobalKey!);
       });
     }
   }
