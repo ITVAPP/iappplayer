@@ -120,9 +120,6 @@ class IAppPlayerPlaylistController {
     if (nextDataSourceId == -1) {
       return;
     }
-    if (_iappPlayerController!.isFullScreen) {
-      _iappPlayerController!.exitFullScreen();
-    }
 
     _changingToNextVideo = true;
     setupDataSource(nextDataSourceId);
@@ -244,9 +241,6 @@ class IAppPlayerPlaylistController {
     if (previousDataSourceId == -1) {
       return;
     }
-    if (_iappPlayerController!.isFullScreen) {
-      _iappPlayerController!.exitFullScreen();
-    }
   
     _changingToNextVideo = true;
     setupDataSource(previousDataSourceId);
@@ -261,9 +255,6 @@ class IAppPlayerPlaylistController {
     final int nextDataSourceId = _getNextDataSourceIndex();
     if (nextDataSourceId == -1) {
       return;
-    }
-    if (_iappPlayerController!.isFullScreen) {
-      _iappPlayerController!.exitFullScreen();
     }
   
     _changingToNextVideo = true;
