@@ -53,7 +53,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
             _isPlaying = _controller?.isPlaying() ?? false;
           });
           // 初始化后检查方向
-          _handleOrientationChange();
+          handleOrientationChange();
         } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
           final index = event.parameters?['index'] as int?;
           if (index != null) {
