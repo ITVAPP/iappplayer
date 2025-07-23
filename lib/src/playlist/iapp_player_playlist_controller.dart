@@ -265,7 +265,6 @@ class IAppPlayerPlaylistController {
   /// 切换随机播放模式
   void toggleShuffleMode() {
     _shuffleMode = !_shuffleMode;
-    // 发送事件通知UI更新，携带当前状态
     _iappPlayerController?.postEvent(
       IAppPlayerEvent(
         IAppPlayerEventType.changedPlaylistShuffle,
