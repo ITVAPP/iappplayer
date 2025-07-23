@@ -92,12 +92,12 @@ final result = await IAppPlayerConfig.createPlayer(
 ### 🎵 3. Music Player (with LRC Lyrics)
 
 ```dart
-// Single audio file playback - Square mode
+// Single audio file playback - Poster Mode
 final squareMusicPlayer = await IAppPlayerConfig.createPlayer(
   url: 'https://example.com/song.mp3',
   title: 'Song Name',
   audioOnly: true,
-  aspectRatio: 1.0,  // Square mode
+  aspectRatio: 1.0,  // Poster Mode
   subtitleContent:     '''[00:02.05]愿得一人心
 [00:08.64]词：胡小健 曲：罗俊霖
 [00:27.48]曾在我背包小小夹层里的那个人''',  // LRC lyrics content
@@ -461,11 +461,11 @@ final result = await IAppPlayerConfig.createPlayer(
 ### 🎵 14. Audio Player Display Mode Examples
 
 ```dart
-// Square mode (1:1) - Suitable for single track display
+// Poster Mode (1:1) - Suitable for single track display
 final squarePlayer = await IAppPlayerConfig.createPlayer(
   url: 'music.mp3',
   audioOnly: true,
-  aspectRatio: 1.0,  // Triggers square mode
+  aspectRatio: 1.0,  // Triggers Poster Mode
   title: 'Song Name',
   imageUrl: 'album_cover.jpg',
   subtitleContent: lrcContent,
