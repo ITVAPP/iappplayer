@@ -27,6 +27,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   bool _isLoading = true;
   DecoderState _currentDecoder = DecoderState.hardware;
   bool _isPlaying = false; // 添加播放状态跟踪
+  bool _isPipMode = false; // 添加画中画状态跟踪
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -66,6 +67,16 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
           // 监听暂停事件
           setState(() {
             _isPlaying = false;
+          });
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStart) {
+          // 监听进入画中画
+          setState(() {
+            _isPipMode = true;
+          });
+        } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStop) {
+          // 监听退出画中画
+          setState(() {
+            _isPipMode = false;
           });
         }
       },
@@ -294,6 +305,23 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                       label: _controller?.isFullScreen ?? false 
                           ? l10n.exitFullscreen 
                           : l10n.fullscreen,
+                    ),
+                    SizedBox(height: UIConstants.spaceMD),
+                    // 画中画按钮
+                    ModernControlButton(
+                      onPressed: _controller != null && !_isLoading
+                          ? () {
+                              if (_isPipMode) {
+                                _controller!.disablePictureInPicture();
+                              } else {
+                                _controller!.enablePictureInPicture();
+                              }
+                            }
+                          : null,
+                      icon: _isPipMode
+                          ? Icons.picture_in_picture_alt_outlined
+                          : Icons.picture_in_picture_alt_rounded,
+                      label: _isPipMode ? '退出画中画' : '画中画',
                     ),
                   ],
                 ),
