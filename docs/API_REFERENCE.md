@@ -972,13 +972,13 @@ Audio controls automatically switch display modes based on player dimensions for
 
 | Mode | Conditions | Description |
 |:---:|:---|:---|
-| **Square Mode** | `aspectRatio = 1.0` (1% tolerance) | Cover fills + centered play button |
+| **Poster Mode** | `aspectRatio = 1.0` (1% tolerance) | Cover fills + centered play button |
 | **Compact Mode** | `aspectRatio = 2.0` (1% tolerance) or height ≤ 200px | Horizontal layout, left cover + right controls |
 | **Extended Mode** | All other cases | Vinyl animation + full control bar |
 
 ### 🎨 Mode Features
 
-#### 📦 Square Mode
+#### 📦 Poster Mode
 - Cover image fills entire area
 - Cover scaled 10% to avoid black edges
 - Semi-transparent black overlay
@@ -1005,11 +1005,11 @@ Audio controls automatically switch display modes based on player dimensions for
 ### 💡 Usage Suggestions
 
 ```dart
-// Square mode example (1:1 ratio)
+// Poster Mode example (1:1 ratio)
 IAppPlayerConfig.createPlayer(
   url: 'music.mp3',
   audioOnly: true,
-  aspectRatio: 1.0,  // Triggers square mode
+  aspectRatio: 1.0,  // Triggers Poster Mode
 );
 
 // Compact mode example (2:1 ratio)
@@ -1030,7 +1030,7 @@ IAppPlayerConfig.createPlayer(
 ### 🎵 Lyrics Display Support
 
 All modes support LRC lyrics display:
-- Square mode: Lyrics processed internally, not shown in UI
+- Poster Mode: Lyrics processed internally, not shown in UI
 - Compact mode: Lyrics processed internally, not shown in UI
 - Extended mode: Lyrics shown above progress bar
 
