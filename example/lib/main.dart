@@ -1,6 +1,248 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:iapp_player/iapp_player.dart';
+
+// 国际化支持类
+class AppLocalizations {
+  final Locale locale;
+  
+  AppLocalizations(this.locale);
+  
+  static AppLocalizations of(BuildContext context) {
+    final localizations = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    assert(localizations != null, 'AppLocalizations not found in context');
+    return localizations!;
+  }
+  
+  // 定义支持的语言
+  static const List<Locale> supportedLocales = [
+    Locale('en', 'US'),
+    Locale('zh', 'CN'),
+  ];
+  
+  // 根据语言返回对应的翻译
+  String get appTitle {
+    switch (locale.languageCode) {
+      case 'zh':
+        return 'IApp Player 示例';
+      default:
+        return 'IApp Player Example';
+    }
+  }
+  
+  String get videoPlayer {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '视频播放器';
+      default:
+        return 'Video Player';
+    }
+  }
+  
+  String get videoPlayerSubtitle {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '支持切换软硬件解码';
+      default:
+        return 'Support hardware/software decoding';
+    }
+  }
+  
+  String get videoList {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '视频列表';
+      default:
+        return 'Video Playlist';
+    }
+  }
+  
+  String get videoListSubtitle {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '支持随机和顺序播放';
+      default:
+        return 'Support shuffle and sequential play';
+    }
+  }
+  
+  String get musicPlayer {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '音乐播放器';
+      default:
+        return 'Music Player';
+    }
+  }
+  
+  String get musicPlayerSubtitle {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '支持LRC歌词显示';
+      default:
+        return 'Support LRC lyrics display';
+    }
+  }
+  
+  String get musicList {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '音乐列表';
+      default:
+        return 'Music Playlist';
+    }
+  }
+  
+  String get musicListSubtitle {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '另一种播放UI的展示';
+      default:
+        return 'Alternative playback UI';
+    }
+  }
+  
+  String get decoderSelection {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '解码器选择';
+      default:
+        return 'Decoder Selection';
+    }
+  }
+  
+  String get hardwareDecoder {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '硬件解码';
+      default:
+        return 'Hardware';
+    }
+  }
+  
+  String get softwareDecoder {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '软件解码';
+      default:
+        return 'Software';
+    }
+  }
+  
+  String get autoSelect {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '自动选择';
+      default:
+        return 'Auto';
+    }
+  }
+  
+  String get pausePlay {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '暂停播放';
+      default:
+        return 'Pause';
+    }
+  }
+  
+  String get continuePlay {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '继续播放';
+      default:
+        return 'Play';
+    }
+  }
+  
+  String get fullscreen {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '全屏观看';
+      default:
+        return 'Fullscreen';
+    }
+  }
+  
+  String get exitFullscreen {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '退出全屏';
+      default:
+        return 'Exit Fullscreen';
+    }
+  }
+  
+  String get playlist {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '播放列表';
+      default:
+        return 'Playlist';
+    }
+  }
+  
+  String videoNumber(int number) {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '视频 $number';
+      default:
+        return 'Video $number';
+    }
+  }
+  
+  String get shufflePlay {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '随机播放';
+      default:
+        return 'Shuffle';
+    }
+  }
+  
+  String get sequentialPlay {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '顺序播放';
+      default:
+        return 'Sequential';
+    }
+  }
+  
+  String playlistStatus(int current, int total, bool shuffleMode) {
+    final mode = shuffleMode ? shufflePlay : sequentialPlay;
+    return '$current / $total • $mode';
+  }
+  
+  String get fullscreenPlay {
+    switch (locale.languageCode) {
+      case 'zh':
+        return '全屏播放';
+      default:
+        return 'Fullscreen Play';
+    }
+  }
+}
+
+// 本地化委托
+class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const AppLocalizationsDelegate();
+  
+  @override
+  bool isSupported(Locale locale) {
+    return ['en', 'zh'].contains(locale.languageCode);
+  }
+  
+  @override
+  Future<AppLocalizations> load(Locale locale) async {
+    return AppLocalizations(locale);
+  }
+  
+  @override
+  bool shouldReload(AppLocalizationsDelegate old) => false;
+}
 
 void main() {
   runApp(const MyApp());
@@ -66,6 +308,14 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF0A0E21),
       ),
+      // 添加国际化支持
+      localizationsDelegates: const [
+        AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const HomePage(),
     );
   }
@@ -76,6 +326,8 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -132,8 +384,8 @@ class HomePage extends StatelessWidget {
                     _buildModernCard(
                       context,
                       icon: Icons.movie_outlined,
-                      title: '视频播放器',
-                      subtitle: '支持切换软硬件解码',
+                      title: l10n.videoPlayer,
+                      subtitle: l10n.videoPlayerSubtitle,
                       gradient: [
                         const Color(0xFF667eea),
                         const Color(0xFF764ba2),
@@ -147,8 +399,8 @@ class HomePage extends StatelessWidget {
                     _buildModernCard(
                       context,
                       icon: Icons.playlist_play,
-                      title: '视频列表',
-                      subtitle: '支持随机和顺序播放',
+                      title: l10n.videoList,
+                      subtitle: l10n.videoListSubtitle,
                       gradient: [
                         const Color(0xFFf093fb),
                         const Color(0xFFf5576c),
@@ -162,8 +414,8 @@ class HomePage extends StatelessWidget {
                     _buildModernCard(
                       context,
                       icon: Icons.music_note_outlined,
-                      title: '音乐播放器',
-                      subtitle: '支持LRC歌词显示',
+                      title: l10n.musicPlayer,
+                      subtitle: l10n.musicPlayerSubtitle,
                       gradient: [
                         const Color(0xFF4facfe),
                         const Color(0xFF00f2fe),
@@ -177,8 +429,8 @@ class HomePage extends StatelessWidget {
                     _buildModernCard(
                       context,
                       icon: Icons.queue_music,
-                      title: '音乐列表',
-                      subtitle: '另一种播放UI的展示',
+                      title: l10n.musicList,
+                      subtitle: l10n.musicListSubtitle,
                       gradient: [
                         const Color(0xFFfa709a),
                         const Color(0xFFfee140),
@@ -557,6 +809,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -566,7 +820,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
           icon: const Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('视频播放器'),
+        title: Text(l10n.videoPlayer),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -629,7 +883,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                         child: Column(
                           children: [
                             Text(
-                              '解码器选择',
+                              l10n.decoderSelection,
                               style: TextStyle(
                                 fontSize: UIConstants.fontMD,
                                 color: Colors.white.withOpacity(0.8),
@@ -640,17 +894,17 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _buildDecoderOption(
-                                  '硬件解码',
+                                  l10n.hardwareDecoder,
                                   DecoderState.hardware,
                                   Icons.memory,
                                 ),
                                 _buildDecoderOption(
-                                  '软件解码',
+                                  l10n.softwareDecoder,
                                   DecoderState.software,
                                   Icons.computer,
                                 ),
                                 _buildDecoderOption(
-                                  '自动选择',
+                                  l10n.autoSelect,
                                   DecoderState.auto,
                                   Icons.auto_mode,
                                 ),
@@ -689,7 +943,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                       icon: _isPlaying
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
-                      label: _isPlaying ? '暂停播放' : '继续播放',
+                      label: _isPlaying ? l10n.pausePlay : l10n.continuePlay,
                       isPrimary: true,
                     ),
                     SizedBox(height: UIConstants.spaceMD),
@@ -707,7 +961,9 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                       icon: _controller?.isFullScreen ?? false
                           ? Icons.fullscreen_exit_rounded
                           : Icons.fullscreen_rounded,
-                      label: '全屏观看',
+                      label: _controller?.isFullScreen ?? false 
+                          ? l10n.exitFullscreen 
+                          : l10n.fullscreen,
                     ),
                   ],
                 ),
@@ -866,12 +1122,12 @@ class _PlaylistExampleState extends State<PlaylistExample>
   }
 
   // 获取当前视频标题
-  String _getCurrentVideoTitle() {
+  String _getCurrentVideoTitle(BuildContext context) {
     final titles = ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'];
     if (_currentIndex >= 0 && _currentIndex < titles.length) {
       return titles[_currentIndex];
     }
-    return '视频 ${_currentIndex + 1}';
+    return AppLocalizations.of(context).videoNumber(_currentIndex + 1);
   }
 
   // 修复：添加更新当前索引的方法
@@ -905,6 +1161,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final totalVideos = _playlistController?.dataSourceList.length ?? 0;
 
     return Scaffold(
@@ -916,7 +1173,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
           icon: const Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('视频列表'),
+        title: Text(l10n.videoList),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -1016,7 +1273,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _getCurrentVideoTitle(), // 显示当前视频标题
+                                    _getCurrentVideoTitle(context), // 显示当前视频标题
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: UIConstants.fontLG,
@@ -1104,7 +1361,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ? () => _playlistController!.toggleShuffleMode()
                           : null,
                       icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                      label: _shuffleMode ? '随机播放' : '顺序播放',
+                      label: _shuffleMode ? l10n.shufflePlay : l10n.sequentialPlay,
                     ),
                     SizedBox(height: UIConstants.spaceMD),
                     // 全屏播放按钮
@@ -1121,7 +1378,9 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       icon: _controller?.isFullScreen ?? false
                           ? Icons.fullscreen_exit_rounded
                           : Icons.fullscreen_rounded,
-                      label: '全屏观看',
+                      label: _controller?.isFullScreen ?? false 
+                          ? l10n.exitFullscreen 
+                          : l10n.fullscreen,
                     ),
                   ],
                 ),
@@ -1135,6 +1394,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
 
   // 显示播放列表菜单
   void _showPlaylistMenu() {
+    final l10n = AppLocalizations.of(context);
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1177,7 +1438,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                   ),
                   SizedBox(width: UIConstants.spaceSM),
                   Text(
-                    '播放列表',
+                    l10n.playlist,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: UIConstants.fontLG,
@@ -1218,7 +1479,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       ),
                     ),
                     subtitle: Text(
-                      '视频 ${index + 1}',
+                      l10n.videoNumber(index + 1),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.6),
                         fontSize: UIConstants.fontSM,
@@ -1424,6 +1685,8 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -1433,7 +1696,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
           icon: const Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('音乐播放器'),
+        title: Text(l10n.musicPlayer),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -1587,7 +1850,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                       icon: _isPlaying
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
-                      label: _isPlaying ? '暂停播放' : '继续播放',
+                      label: _isPlaying ? l10n.pausePlay : l10n.continuePlay,
                       isPrimary: true,
                     ),
                     SizedBox(height: UIConstants.spaceMD),
@@ -1605,7 +1868,9 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                       icon: _controller?.isFullScreen ?? false
                           ? Icons.fullscreen_exit_rounded
                           : Icons.fullscreen_rounded,
-                      label: '全屏播放',
+                      label: _controller?.isFullScreen ?? false 
+                          ? l10n.exitFullscreen 
+                          : l10n.fullscreenPlay,
                     ),
                   ],
                 ),
@@ -1788,6 +2053,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final totalSongs = _playlistController?.dataSourceList.length ?? 0;
     final titles = ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'];
     final artists = ['Unknown Artist', 'Unknown Artist', 'Unknown Artist']; // 修复：添加歌手信息
@@ -1801,7 +2067,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
           icon: const Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('音乐列表'),
+        title: Text(l10n.musicList),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -1988,7 +2254,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                           ? () => _playlistController!.toggleShuffleMode()
                           : null,
                       icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                      label: '${_currentIndex + 1} / $totalSongs • ${_shuffleMode ? "随机播放" : "顺序播放"}',
+                      label: l10n.playlistStatus(_currentIndex + 1, totalSongs, _shuffleMode),
                     ),
                     SizedBox(height: UIConstants.spaceMD),
                     // 全屏播放按钮
@@ -2005,7 +2271,9 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                       icon: _controller?.isFullScreen ?? false
                           ? Icons.fullscreen_exit_rounded
                           : Icons.fullscreen_rounded,
-                      label: '全屏播放',
+                      label: _controller?.isFullScreen ?? false 
+                          ? l10n.exitFullscreen 
+                          : l10n.fullscreenPlay,
                     ),
                   ],
                 ),
