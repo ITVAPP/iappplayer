@@ -40,8 +40,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     with TickerProviderStateMixin {
   // 基础间距单位
   static const double kSpacingUnit = 8.0;
-  // 半间距
-  static const double kSpacingHalf = 4.0;
+  // 半间距 - 修改：从 4.0 改为 2.0，减小播放按钮与进度条的距离
+  static const double kSpacingHalf = 2.0;
   // 双倍间距
   static const double kSpacingDouble = 16.0;
 
@@ -141,7 +141,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 正方形模式相关常量
   static const double kSquareModePlayButtonSize = 60.0; // 正方形模式播放按钮尺寸
-  static const double kSquareModeButtonOpacity = 0.3; // 正方形模式按钮透明度（更低的透明度，黑色更明显）
+  // 修改：从 0.3 改为 0.5，提高透明度使黑色更明显
+  static const double kSquareModeButtonOpacity = 0.5; // 正方形模式按钮透明度
 
   // 常量样式定义
   static const List<Shadow> _textShadows = [
@@ -307,24 +308,24 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     ));
   }
 
-  // 计算当前显示模式
+  // 计算当前显示模式 - 修改：使用精确的aspectRatio值判断
   PlayerDisplayMode _calculateDisplayMode(BoxConstraints constraints) {
     // 计算宽高比
     final double aspectRatio = constraints.maxWidth / constraints.maxHeight;
-    final bool isSquareRatio = (aspectRatio - 1.0).abs() < 0.1; // 允许10%的误差
     
-    // 正方形模式：宽高比接近1:1
-    if (isSquareRatio) {
+    // 正方形模式：aspectRatio = 1.0（精确值，允许1%误差）
+    if ((aspectRatio - 1.0).abs() < 0.01) {
       return PlayerDisplayMode.square;
     }
     
-    // 紧凑模式：高度 < 200px 且非正方形
-    if (constraints.maxHeight != double.infinity && 
-        constraints.maxHeight < kExpandedModeThreshold) {
+    // 紧凑模式：aspectRatio = 2.0（精确值，允许1%误差）或高度 <= 200px
+    if ((aspectRatio - 2.0).abs() < 0.01 || 
+        (constraints.maxHeight != double.infinity && 
+         constraints.maxHeight <= kExpandedModeThreshold)) {
       return PlayerDisplayMode.compact;
     }
     
-    // 扩展模式：高度 ≥ 200px 且非正方形
+    // 扩展模式：其他所有情况
     return PlayerDisplayMode.expanded;
   }
 
@@ -605,7 +606,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   }
 
   // ============== 正方形模式 ==============
-  // 正方形模式：封面铺满 + 居中播放按钮
+  // 正方形模式：封面铺满 + 居中播放按钮 - 修改：使用 _buildCoverImage 方法
   Widget _buildSquareMode() {
     final imageUrl = _getImageUrl();
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
@@ -616,29 +617,13 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       children: [
         // 黑色背景（作为图片加载失败的后备）
         Container(color: Colors.black),
-        // 封面图片 - 使用Container包装确保填充
-        if (placeholder != null)
-          placeholder
-        else if (imageUrl != null && imageUrl.isNotEmpty)
-          Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: imageUrl.startsWith('http://') || imageUrl.startsWith('https://')
-                    ? NetworkImage(imageUrl) as ImageProvider
-                    : AssetImage(imageUrl),
-                fit: BoxFit.cover,
-              ),
-            ),
-          )
-        else
-          Container(
-            color: Colors.grey[900],
-            child: Icon(
-              Icons.music_note,
-              size: 60,
-              color: Colors.grey[600],
-            ),
-          ),
+        // 封面图片 - 修改：使用 _buildCoverImage 方法，添加10%放大
+        _buildCoverImage(
+          placeholder, 
+          imageUrl, 
+          fit: BoxFit.cover,
+          scaleFactor: 1.1,  // 放大10%
+        ),
         // 半透明遮罩
         Container(
           color: Colors.black.withOpacity(0.4),
@@ -764,7 +749,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建紧凑模式左侧封面区域
+  // 构建紧凑模式左侧封面区域 - 修改：添加10%放大
   Widget _buildCompactCoverSection(Widget? placeholder, String? imageUrl, double size, {bool showGradient = false}) {
     return SizedBox(
       width: size,
@@ -772,9 +757,14 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 修改：使用 ClipRect 确保图片不会溢出
+          // 修改：使用 ClipRect 确保图片不会溢出，添加10%放大
           ClipRect(
-            child: _buildCoverImage(placeholder, imageUrl, fit: BoxFit.cover),
+            child: _buildCoverImage(
+              placeholder, 
+              imageUrl, 
+              fit: BoxFit.cover,
+              scaleFactor: 1.1,  // 统一放大10%
+            ),
           ),
           // 右侧渐变遮罩（仅在需要时显示）
           if (showGradient)
@@ -1067,15 +1057,20 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return _iappPlayerController?.iappPlayerDataSource?.notificationConfiguration?.imageUrl;
   }
 
-  // 构建封面图片 - 修改：添加可选的 fit 参数
-  Widget _buildCoverImage(Widget? placeholder, String? imageUrl, {BoxFit? fit}) {
+  // 构建封面图片 - 修改：添加缩放支持
+  Widget _buildCoverImage(Widget? placeholder, String? imageUrl, {
+    BoxFit? fit,
+    double scaleFactor = 1.0,  // 添加缩放因子参数
+  }) {
     final effectiveFit = fit ?? BoxFit.cover;
     
+    Widget imageWidget;
+    
     if (placeholder != null) {
-      return placeholder;
+      imageWidget = placeholder;
     } else if (imageUrl != null && imageUrl.isNotEmpty) {
       if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-        return Image.network(
+        imageWidget = Image.network(
           imageUrl,
           fit: effectiveFit,
           errorBuilder: (context, error, stackTrace) => Container(
@@ -1088,7 +1083,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           ),
         );
       } else {
-        return Image.asset(
+        imageWidget = Image.asset(
           imageUrl,
           fit: effectiveFit,
           errorBuilder: (context, error, stackTrace) => Container(
@@ -1101,15 +1096,28 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           ),
         );
       }
+    } else {
+      imageWidget = Container(
+        color: Colors.grey[900],
+        child: Icon(
+          Icons.music_note,
+          size: 60,
+          color: Colors.grey[600],
+        ),
+      );
     }
-    return Container(
-      color: Colors.grey[900],
-      child: Icon(
-        Icons.music_note,
-        size: 60,
-        color: Colors.grey[600],
-      ),
-    );
+    
+    // 应用缩放
+    if (scaleFactor != 1.0) {
+      return ClipRect(
+        child: Transform.scale(
+          scale: scaleFactor,
+          child: imageWidget,
+        ),
+      );
+    }
+    
+    return imageWidget;
   }
 
   // 获取当前歌手信息
