@@ -328,6 +328,46 @@ eventListener: (IAppPlayerEvent event) {
 | `setVolume(double volume)` | Set volume (0.0 - 1.0) | `controller.setVolume(0.8)` |
 | `setSpeed(double speed)` | Set playback speed (>0 and ≤2.0) | `controller.setSpeed(1.5)` |
 
+### Usage Examples:
+
+```dart
+// Mix with other audio (e.g., background music)
+controller.setMixWithOthers(true);
+
+// Enable Picture-in-Picture
+final GlobalKey playerKey = GlobalKey();
+controller.setIAppPlayerGlobalKey(playerKey);
+controller.enablePictureInPicture(playerKey);
+
+// Disable controls for kiosk mode
+controller.setControlsEnabled(false);
+
+// Keep controls visible for tutorials
+controller.setControlsAlwaysVisible(true);
+
+// Retry on network error
+if (event.iappPlayerEventType == IAppPlayerEventType.exception) {
+  controller.retryDataSource();
+}
+
+// Clear cache to free storage
+await controller.clearCache();
+
+// Pre-cache next video
+final nextVideo = IAppPlayerDataSource.network('https://example.com/video2.mp4');
+await controller.preCache(nextVideo);
+
+// Adjust buffering sensitivity
+controller.setBufferingDebounceTime(1000); // 1 second
+
+// Clean up when done
+@override
+void dispose() {
+  controller.dispose();
+  super.dispose();
+}
+```
+
 #### Fullscreen Control
 
 | Method | Description |
@@ -346,19 +386,21 @@ eventListener: (IAppPlayerEvent event) {
 
 #### Advanced Features
 
-| Method | Description |
-|:---:|:---|
-| `setMixWithOthers(bool)` | Set whether to mix with other audio |
-| `enablePictureInPicture()` | Enable PiP |
-| `disablePictureInPicture()` | Disable PiP |
-| `setControlsEnabled(bool)` | Enable/disable controls |
-| `setControlsAlwaysVisible(bool)` | Set controls always visible |
-| `retryDataSource()` | Retry current data source |
-| `clearCache()` | Clear cache |
-| `preCache(IAppPlayerDataSource)` | Pre-cache video |
-| `stopPreCache(IAppPlayerDataSource)` | Stop pre-caching |
-| `setBufferingDebounceTime(int)` | Set buffering state debounce time (ms) |
-| `dispose()` | Release resources |
+### 🎛️ Controller Methods
+
+| Method | Description | Example |
+|:---:|:---|:---|
+| `setMixWithOthers(bool)` | Set whether to mix with other audio | `controller.setMixWithOthers(true)` |
+| `enablePictureInPicture(GlobalKey)` | Enable PiP (requires GlobalKey) | `controller.enablePictureInPicture(playerKey)` |
+| `disablePictureInPicture()` | Disable PiP | `controller.disablePictureInPicture()` |
+| `setControlsEnabled(bool)` | Enable/disable controls | `controller.setControlsEnabled(false)` |
+| `setControlsAlwaysVisible(bool)` | Set controls always visible | `controller.setControlsAlwaysVisible(true)` |
+| `retryDataSource()` | Retry current data source | `controller.retryDataSource()` |
+| `clearCache()` | Clear cache | `await controller.clearCache()` |
+| `preCache(IAppPlayerDataSource)` | Pre-cache video | `await controller.preCache(dataSource)` |
+| `stopPreCache(IAppPlayerDataSource)` | Stop pre-caching | `await controller.stopPreCache(dataSource)` |
+| `setBufferingDebounceTime(int)` | Set buffering state debounce time (ms) | `controller.setBufferingDebounceTime(500)` |
+| `dispose()` | Release resources | `controller.dispose()` |
 
 ### 📊 Property Getters
 
