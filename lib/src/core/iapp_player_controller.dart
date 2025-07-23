@@ -998,15 +998,37 @@ class IAppPlayerController {
     if (currentValue.isPip) {
       _wasInPipMode = true;
     } else if (_wasInPipMode) {
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+      // 退出画中画模式
       _wasInPipMode = false;
-      if (!_wasInFullScreenBeforePiP) {
-        exitFullScreen();
+      
+      // 暂停播放（用户关闭画中画时的预期行为）
+      if (isPlaying() == true) {
+        pause();
       }
+      
+      // 恢复全屏状态
+      if (_wasInFullScreenBeforePiP) {
+        // 如果进入画中画前是全屏，保持全屏
+        if (!_isFullScreen) {
+          enterFullScreen();
+        }
+      } else {
+        // 如果进入画中画前不是全屏，确保退出全屏
+        if (_isFullScreen) {
+          exitFullScreen();
+        }
+      }
+      
+      // 恢复控件状态
       if (_wasControlsEnabledBeforePiP) {
         setControlsEnabled(true);
       }
+      
+      // 刷新播放器
       videoPlayerController?.refresh();
+      
+      // 发送画中画停止事件
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     }
 
     if (_iappPlayerSubtitlesSource?.asmsIsSegmented == true) {
@@ -1346,7 +1368,7 @@ class IAppPlayerController {
       final Offset position = renderBox.localToGlobal(Offset.zero);
       
       if (Platform.isAndroid) {
-        // 统一Android和iOS的实现方式
+        // 使用实际的位置和尺寸
         await videoPlayerController?.enablePictureInPicture(
           left: position.dx,
           top: position.dy,
@@ -1358,12 +1380,14 @@ class IAppPlayerController {
       }
       
       if (Platform.isIOS) {
-        return videoPlayerController?.enablePictureInPicture(
+        await videoPlayerController?.enablePictureInPicture(
           left: position.dx,
           top: position.dy,
           width: renderBox.size.width,
           height: renderBox.size.height,
         );
+        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
+        return;
       } else {
         IAppPlayerUtils.log("当前平台不支持画中画");
       }
