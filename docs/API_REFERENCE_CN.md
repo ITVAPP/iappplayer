@@ -346,19 +346,54 @@ eventListener: (IAppPlayerEvent event) {
 
 #### 高级功能
 
-| 方法 | 说明 |
-|:---:|:---|
-| `setMixWithOthers(bool)` | 设置是否与其他音频混合播放 |
-| `enablePictureInPicture()` | 启用画中画 |
-| `disablePictureInPicture()` | 禁用画中画 |
-| `setControlsEnabled(bool)` | 启用/禁用控件 |
-| `setControlsAlwaysVisible(bool)` | 设置控件始终可见 |
-| `retryDataSource()` | 重试当前数据源 |
-| `clearCache()` | 清除缓存 |
-| `preCache(IAppPlayerDataSource)` | 预缓存视频 |
-| `stopPreCache(IAppPlayerDataSource)` | 停止预缓存 |
-| `setBufferingDebounceTime(int)` | 设置缓冲状态防抖时间（毫秒） |
-| `dispose()` | 释放资源 |
+### 🚦 控制器方法
+
+| 方法 | 描述 | 示例 |
+|:---:|:---|:---|
+| `setMixWithOthers(bool)` | 设置是否与其他音频混合播放 | `controller.setMixWithOthers(true)` |
+| `enablePictureInPicture(GlobalKey)` | 启用画中画（需要 GlobalKey） | `controller.enablePictureInPicture(playerKey)` |
+| `disablePictureInPicture()` | 禁用画中画 | `controller.disablePictureInPicture()` |
+| `setControlsEnabled(bool)` | 启用/禁用控件 | `controller.setControlsEnabled(false)` |
+| `setControlsAlwaysVisible(bool)` | 设置控件始终可见 | `controller.setControlsAlwaysVisible(true)` |
+| `retryDataSource()` | 重试当前数据源 | `controller.retryDataSource()` |
+| `clearCache()` | 清除缓存 | `await controller.clearCache()` |
+| `preCache(IAppPlayerDataSource)` | 预缓存视频 | `await controller.preCache(dataSource)` |
+| `stopPreCache(IAppPlayerDataSource)` | 停止预缓存 | `await controller.stopPreCache(dataSource)` |
+| `setBufferingDebounceTime(int)` | 设置缓冲防抖时间（毫秒） | `controller.setBufferingDebounceTime(500)` |
+| `dispose()` | 释放资源 | `controller.dispose()` |
+
+### 使用示例：
+
+```dart
+// 与其他音频混合播放（如背景音乐）
+controller.setMixWithOthers(true);
+
+// 启用画中画功能
+final GlobalKey playerKey = GlobalKey();
+controller.setIAppPlayerGlobalKey(playerKey);
+controller.enablePictureInPicture(playerKey);
+
+// 禁用控件（如展示模式）
+controller.setControlsEnabled(false);
+
+// 保持控件可见（如教程视频）
+controller.setControlsAlwaysVisible(true);
+
+// 网络错误时重试
+if (event.iappPlayerEventType == IAppPlayerEventType.exception) {
+  controller.retryDataSource();
+}
+
+// 清除缓存释放存储空间
+await controller.clearCache();
+
+// 预缓存下一个视频
+final nextVideo = IAppPlayerDataSource.network('https://example.com/video2.mp4');
+await controller.preCache(nextVideo);
+
+// 调整缓冲灵敏度
+controller.setBufferingDebounceTime(1000); // 1秒
+```
 
 ### 📊 属性获取
 
