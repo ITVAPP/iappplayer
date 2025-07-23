@@ -84,10 +84,10 @@ The player automatically detects video format and whether it's a live stream bas
 |:---:|:---:|:---:|:---|
 | `autoPlay` | `bool` | `true` | Auto-play. **Note**: This setting is ignored when switching videos in playlist mode, always auto-plays |
 | `loopVideos` | `bool` | `true` | Whether playlist loops |
-| `looping` | `bool?` | `null` | Single video loop (null auto-sets based on live stream: non-live default true, live default false). **Note**: Forced to false in playlist mode |
+| `looping` | `bool?` | `null` | Single video loop (null uses configuration default value false). **Note**: Forced to false in playlist mode |
 | `startAt` | `Duration?` | `null` | Start playback position |
 | `shuffleMode` | `bool?` | `null` | Enable shuffle play mode |
-| `nextVideoDelay` | `Duration?` | `null` | Playlist video switch delay time |
+| `nextVideoDelay` | `Duration?` | `null` | Playlist video switch delay time (default 1 second) |
 | `initialStartIndex` | `int?` | `null` | Playlist initial play index |
 
 ### ⚙️ Advanced Parameters
@@ -98,7 +98,7 @@ The player automatically detects video format and whether it's a live stream bas
 | `headers` | `Map<String, String>?` | `null` | HTTP request headers for authenticated video resources |
 | `preferredDecoderType` | `IAppPlayerDecoderType?` | `null` | Preferred decoder type (hardware/software/auto) |
 | `liveStream` | `bool?` | `null` | Whether live stream (null auto-detects based on URL format) |
-| `audioOnly` | `bool?` | `null` | Audio-only mode (convenience parameter, can also set via controlsConfiguration) |
+| `audioOnly` | `bool?` | `null` | Audio-only mode |
 
 ### 🎥 Video Configuration Parameters
 
@@ -139,13 +139,13 @@ The player automatically detects video format and whether it's a live stream bas
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `enableSubtitles` | `bool?` | `null` | Enable subtitle feature |
-| `enableQualities` | `bool?` | `null` | Enable quality selection |
-| `enableAudioTracks` | `bool?` | `null` | Enable audio track selection |
-| `enableFullscreen` | `bool?` | `null` | Enable fullscreen feature |
-| `enableOverflowMenu` | `bool?` | `null` | Enable overflow menu |
-| `handleAllGestures` | `bool?` | `null` | Handle all gestures |
-| `showNotification` | `bool?` | `null` | Show notification control (invalid in TV mode) |
+| `enableSubtitles` | `bool?` | `true` | Enable subtitle feature |
+| `enableQualities` | `bool?` | `false` | Enable quality selection |
+| `enableAudioTracks` | `bool?` | `false` | Enable audio track selection |
+| `enableFullscreen` | `bool?` | `true` | Enable fullscreen feature |
+| `enableOverflowMenu` | `bool?` | `false` | Enable overflow menu |
+| `handleAllGestures` | `bool?` | `true` | Handle all gestures |
+| `showNotification` | `bool?` | `true` | Show notification control (TV mode forces false) |
 
 ### 📱 Fullscreen Related Parameters
 
@@ -530,7 +530,7 @@ static IAppPlayerConfiguration createPlayerConfig({
   List<DeviceOrientation>? deviceOrientationsAfterFullScreen,
   bool? handleLifecycle,
   bool? autoDispose,
-  bool? looping,
+  bool? looping,  // Dynamically set based on liveStream (non-live default true, live default false)
   Duration? startAt,
   bool? allowedScreenSleep,
   bool? expandToFill,
@@ -560,7 +560,7 @@ static IAppPlayerPlaylistConfiguration createPlaylistConfig({
 ```
 
 **Note**:
-- `IAppPlayerPlaylistConfiguration` class default switch delay is 3 seconds, but `createPlaylistConfig` method uses 1 second as default
+- `IAppPlayerPlaylistConfiguration` class itself has a default switch delay of 3 seconds, but `createPlaylistConfig` method uses 1 second as default
 - Playlist shows countdown UI after video ends, users can skip wait time to play next video immediately
 
 ### 🎵 createPlaylistPlayer Method
@@ -612,12 +612,11 @@ preferredDecoderType: IAppPlayerDecoderType.auto,
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `autoPlay` | `bool` | `false` | Auto-play. **Note**: Ignored when switching videos in playlist mode |
+| `autoPlay` | `bool` | `true` | Auto-play. **Note**: Ignored when switching videos in playlist mode, always auto-plays |
 | `startAt` | `Duration?` | `null` | Video start playback position |
 | `looping` | `bool` | `false` | Single video loop. **Note**:<br>1. `createPlayerConfig()` dynamically sets based on `liveStream` (non-live default true, live default false)<br>2. Forced to false in playlist mode |
 | `handleLifecycle` | `bool` | `true` | Auto-handle app lifecycle (pause in background) |
-| `autoDispose` | `bool` | `true` | Auto-release resources. Set false to manually call `dispose()`, useful for complex UI to avoid early release |
-| `showControlsOnInitialize` | `bool` | `true` | Show controls on initialization |
+| `autoDispose` | `bool` | `false` | Auto-release resources. Set to false requires manual `dispose()` call, useful for complex UI to avoid early release |
 
 ### 🎨 Display Parameters
 
@@ -653,14 +652,13 @@ preferredDecoderType: IAppPlayerDecoderType.auto,
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
 | `fullScreenByDefault` | `bool` | `false` | Default fullscreen playback |
-| `allowedScreenSleep` | `bool` | `true` | Allow screen sleep in fullscreen |
+| `allowedScreenSleep` | `bool` | `false` | Allow screen sleep in fullscreen |
 | `fullScreenAspectRatio` | `double?` | `null` | Fullscreen aspect ratio |
 | `autoDetectFullscreenDeviceOrientation` | `bool` | `false` | Auto-detect fullscreen orientation |
 | `autoDetectFullscreenAspectRatio` | `bool` | `false` | Auto-detect fullscreen aspect ratio |
 | `deviceOrientationsOnFullScreen` | `List<DeviceOrientation>` | `[landscapeLeft, landscapeRight]` | Allowed device orientations in fullscreen |
-| `deviceOrientationsAfterFullScreen` | `List<DeviceOrientation>` | `[landscapeLeft, landscapeRight, portraitUp]` | Device orientations after fullscreen |
+| `deviceOrientationsAfterFullScreen` | `List<DeviceOrientation>` | `[portraitUp, portraitDown, landscapeLeft, landscapeRight]` | Device orientations after fullscreen |
 | `systemOverlaysAfterFullScreen` | `List<SystemUiOverlay>` | `SystemUiOverlay.values` | System UI after fullscreen |
-| `fullscreenOrientationLocker` | `Function?` | `null` | Custom fullscreen orientation lock logic |
 
 ### 🎯 Other Parameters
 
@@ -902,7 +900,7 @@ overflowMenuCustomItems: [
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `controlsHideTime` | `Duration` | `Duration(milliseconds: 1000)` | Controls auto-hide time. **Note**: Audio controls don't auto-hide |
+| `controlsHideTime` | `Duration` | `Duration(seconds: 3)` | Controls auto-hide time. **Note**: Audio controls don't auto-hide |
 | `controlBarHeight` | `double` | `30.0` | Control bar height |
 | `forwardSkipTimeInMilliseconds` | `int` | `10000` | Forward skip time (ms) |
 | `backwardSkipTimeInMilliseconds` | `int` | `10000` | Backward skip time (ms) |
@@ -1189,7 +1187,7 @@ resolutions: {
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `useCache` | `bool` | Based on stream type | Enable cache. Default:<br>• Non-live stream: `true`<br>• Live stream: `false` |
+| `useCache` | `bool` | `true`(VOD) / `false`(live) | Enable cache (auto-set based on live/VOD) |
 | `preCacheSize` | `int` | 10MB | Pre-cache size (10 * 1024 * 1024 bytes) |
 | `maxCacheSize` | `int` | 300MB | Max cache size (300 * 1024 * 1024 bytes) |
 | `maxCacheFileSize` | `int` | 50MB | Max single file cache size (50 * 1024 * 1024 bytes) |
@@ -1234,10 +1232,12 @@ Notification configuration object for controlling player notification bar displa
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `showNotification` | `bool` | `false` | Show notification (non-TV mode default true) |
-| `activityName` | `String?` | `"MainActivity"` | Android Activity name |
+| `showNotification` | `bool?` | `null` | Show notification |
+| `activityName` | `String?` | `MainActivity` | Android Activity name |
 
-**Note**: Notification configuration is not created in TV mode, even if parameters are set.
+**Note**:
+- Notification configuration is not created in TV mode, even if parameters are set
+- Default is `showNotification: false` when created in `IAppPlayerDataSource`
 
 ### 🔐 DRM Configuration
 
@@ -1314,10 +1314,10 @@ drmConfiguration: IAppPlayerDrmConfiguration(
 
 | Parameter | Type | Default | Description | Platform |
 |:---:|:---:|:---:|:---|:---|
-| `minBufferMs` | `int?` | Based on stream type | Min buffer time (ms) | Android |
-| `maxBufferMs` | `int?` | Based on stream type | Max buffer time (ms) | Android |
-| `bufferForPlaybackMs` | `int?` | - | Buffer needed for playback | Android |
-| `bufferForPlaybackAfterRebufferMs` | `int?` | - | Buffer needed after rebuffering | Android |
+| `minBufferMs` | `int` | 15000(live) / 20000(VOD) | Min buffer time (ms) | Android |
+| `maxBufferMs` | `int` | 15000(live) / 30000(VOD) | Max buffer time (ms) | Android |
+| `bufferForPlaybackMs` | `int` | 3000 | Buffer needed for playback | Android |
+| `bufferForPlaybackAfterRebufferMs` | `int` | 5000 | Buffer needed after rebuffering | Android |
 
 **Note**: If no buffering configuration is provided, system automatically creates appropriate default configuration based on whether it's a live stream.
 
@@ -1334,8 +1334,8 @@ drmConfiguration: IAppPlayerDrmConfiguration(
 
 | Parameter | Type | Default | Description |
 |:---:|:---:|:---:|:---|
-| `type` | `IAppPlayerSubtitlesSourceType` | - | Subtitle source type |
-| `name` | `String` | `"Default subtitles"` | Subtitle name |
+| `type` | `IAppPlayerSubtitlesSourceType` | - | Subtitle source type (required) |
+| `name` | `String` | `"Default subtitles"` | Subtitle name (required) |
 | `urls` | `List<String>?` | `null` | Subtitle file URL list |
 | `content` | `String?` | `null` | Subtitle content string |
 | `selectedByDefault` | `bool?` | `null` | Selected by default |

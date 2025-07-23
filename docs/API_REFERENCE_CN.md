@@ -84,10 +84,10 @@
 |:---:|:---:|:---:|:---|
 | `autoPlay` | `bool` | `true` | 是否自动播放。**注意**：播放列表模式下切换视频时会忽略此设置，始终自动播放 |
 | `loopVideos` | `bool` | `true` | 播放列表是否循环 |
-| `looping` | `bool?` | `null` | 单个视频是否循环播放（null时根据是否为直播流自动设置：非直播流默认true，直播流默认false）。**注意**：播放列表模式下此参数会被强制设置为false |
+| `looping` | `bool?` | `null` | 单个视频是否循环播放（null时使用配置默认值false）。**注意**：播放列表模式下强制设置为false |
 | `startAt` | `Duration?` | `null` | 起始播放位置 |
 | `shuffleMode` | `bool?` | `null` | 是否开启随机播放模式 |
-| `nextVideoDelay` | `Duration?` | `null` | 播放列表视频切换延迟时间 |
+| `nextVideoDelay` | `Duration?` | `null` | 播放列表视频切换延迟时间（默认1秒） |
 | `initialStartIndex` | `int?` | `null` | 播放列表起始播放索引 |
 
 ### ⚙️ 高级参数
@@ -98,7 +98,6 @@
 | `headers` | `Map<String, String>?` | `null` | HTTP请求头，用于需要认证的视频资源 |
 | `preferredDecoderType` | `IAppPlayerDecoderType?` | `null` | 首选解码器类型（硬件/软件/自动） |
 | `liveStream` | `bool?` | `null` | 是否为直播流（null时根据URL格式自动检测） |
-| `audioOnly` | `bool?` | `null` | 是否纯音频模式（便捷参数，也可通过controlsConfiguration设置） |
 
 ### 🎥 视频配置参数
 
@@ -139,13 +138,13 @@
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `enableSubtitles` | `bool?` | `null` | 启用字幕功能 |
-| `enableQualities` | `bool?` | `null` | 启用画质选择 |
-| `enableAudioTracks` | `bool?` | `null` | 启用音轨选择 |
-| `enableFullscreen` | `bool?` | `null` | 启用全屏功能 |
-| `enableOverflowMenu` | `bool?` | `null` | 启用更多菜单 |
-| `handleAllGestures` | `bool?` | `null` | 处理所有手势 |
-| `showNotification` | `bool?` | `null` | 显示通知栏控制（TV模式下无效） |
+| `enableSubtitles` | `bool?` | `true` | 启用字幕功能 |
+| `enableQualities` | `bool?` | `false` | 启用画质选择 |
+| `enableAudioTracks` | `bool?` | `false` | 启用音轨选择 |
+| `enableFullscreen` | `bool?` | `true` | 启用全屏功能 |
+| `enableOverflowMenu` | `bool?` | `false` | 启用更多菜单 |
+| `handleAllGestures` | `bool?` | `true` | 处理所有手势 |
+| `showNotification` | `bool?` | `true` | 显示通知栏控制（TV模式下强制为false） |
 
 ### 📱 全屏相关参数
 
@@ -179,6 +178,7 @@
 | `translations` | `List<IAppPlayerTranslations>?` | `null` | 多语言翻译配置 |
 | `useRootNavigator` | `bool?` | `null` | 是否使用根导航器 |
 | `playerVisibilityChangedBehavior` | `Function(double)?` | `null` | 播放器可见性变化回调 |
+| `audioOnly` | `bool?` | `null` | 是否纯音频模式 |
 
 ### 💡 通知参数使用示例
 
@@ -419,7 +419,7 @@ eventListener: (IAppPlayerEvent event) {
 ```dart
 static Future<void> playSource({
   required IAppPlayerController controller,
-  required dynamic source,  // 实际必须是 String 类型
+  required dynamic source,
   bool? liveStream,
   String? title,
   String? imageUrl,
@@ -612,12 +612,11 @@ preferredDecoderType: IAppPlayerDecoderType.auto,
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `autoPlay` | `bool` | `false` | 是否自动播放。**注意**：播放列表模式下切换视频时会忽略此设置 |
+| `autoPlay` | `bool` | `true` | 是否自动播放。**注意**：播放列表模式下切换视频时会忽略此设置 |
 | `startAt` | `Duration?` | `null` | 视频起始播放位置 |
-| `looping` | `bool` | `false` | 是否单个视频循环播放。**注意**：<br>1. 使用 `createPlayerConfig()` 时会根据 `liveStream` 参数动态设置（非直播流默认true，直播流默认false）<br>2. 播放列表模式下此参数会被强制设置为false |
+| `looping` | `bool` | `false` | 是否单个视频循环播放。**注意**：播放列表模式下此参数会被强制设置为false |
 | `handleLifecycle` | `bool` | `true` | 是否自动处理应用生命周期（后台暂停等） |
-| `autoDispose` | `bool` | `true` | 是否自动释放资源。设为`false`时需手动调用`dispose()`，适用于复杂UI避免过早释放 |
-| `showControlsOnInitialize` | `bool` | `true` | 初始化时是否显示控件 |
+| `autoDispose` | `bool` | `false` | 是否自动释放资源。设为`false`时需手动调用`dispose()`，适用于复杂UI避免过早释放 |
 
 ### 🎨 显示参数
 
@@ -653,14 +652,13 @@ preferredDecoderType: IAppPlayerDecoderType.auto,
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
 | `fullScreenByDefault` | `bool` | `false` | 是否默认全屏播放 |
-| `allowedScreenSleep` | `bool` | `true` | 全屏时是否允许屏幕休眠 |
+| `allowedScreenSleep` | `bool` | `false` | 全屏时是否允许屏幕休眠 |
 | `fullScreenAspectRatio` | `double?` | `null` | 全屏时的宽高比 |
 | `autoDetectFullscreenDeviceOrientation` | `bool` | `false` | 是否自动检测全屏方向 |
 | `autoDetectFullscreenAspectRatio` | `bool` | `false` | 是否自动检测全屏宽高比 |
 | `deviceOrientationsOnFullScreen` | `List<DeviceOrientation>` | `[landscapeLeft, landscapeRight]` | 全屏时允许的设备方向 |
-| `deviceOrientationsAfterFullScreen` | `List<DeviceOrientation>` | `[landscapeLeft, landscapeRight, portraitUp]` | 退出全屏后的设备方向 |
+| `deviceOrientationsAfterFullScreen` | `List<DeviceOrientation>` | `[portraitUp, portraitDown, landscapeLeft, landscapeRight]` | 退出全屏后的设备方向 |
 | `systemOverlaysAfterFullScreen` | `List<SystemUiOverlay>` | `SystemUiOverlay.values` | 退出全屏后的系统UI |
-| `fullscreenOrientationLocker` | `Function?` | `null` | 自定义全屏方向锁定逻辑 |
 
 ### 🎯 其他参数
 
@@ -902,7 +900,7 @@ overflowMenuCustomItems: [
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `controlsHideTime` | `Duration` | `Duration(milliseconds: 1000)` | 控件自动隐藏时间。**注意**：音频控件不会自动隐藏 |
+| `controlsHideTime` | `Duration` | `Duration(seconds: 3)` | 控件自动隐藏时间。**注意**：音频控件不会自动隐藏 |
 | `controlBarHeight` | `double` | `30.0` | 控制栏高度 |
 | `forwardSkipTimeInMilliseconds` | `int` | `10000` | 快进时间（毫秒） |
 | `backwardSkipTimeInMilliseconds` | `int` | `10000` | 快退时间（毫秒） |
@@ -1189,7 +1187,7 @@ resolutions: {
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `useCache` | `bool` | 根据流类型 | 是否启用缓存。默认值：<br>• 非直播流：`true`<br>• 直播流：`false` |
+| `useCache` | `bool` | `true`(点播) / `false`(直播) | 是否启用缓存（根据直播/点播自动设置） |
 | `preCacheSize` | `int` | 10MB | 预缓存大小（10 * 1024 * 1024 字节） |
 | `maxCacheSize` | `int` | 300MB | 最大缓存大小（300 * 1024 * 1024 字节） |
 | `maxCacheFileSize` | `int` | 50MB | 单个文件最大缓存大小（50 * 1024 * 1024 字节） |
@@ -1234,10 +1232,12 @@ cacheConfiguration: IAppPlayerCacheConfiguration(
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `showNotification` | `bool` | `false` | 是否显示通知（非TV模式默认true） |
-| `activityName` | `String?` | `"MainActivity"` | Android Activity名称 |
+| `showNotification` | `bool?` | `null` | 是否显示通知 |
+| `activityName` | `String?` | `MainActivity` | Android Activity名称 |
 
-**注意**：TV模式下不会创建通知配置，即使设置了相关参数。
+**注意**：
+- TV模式下不会创建通知配置，即使设置了相关参数
+- 在 `IAppPlayerDataSource` 中创建时默认为 `showNotification: false`
 
 ### 🔐 DRM配置
 
@@ -1314,10 +1314,10 @@ drmConfiguration: IAppPlayerDrmConfiguration(
 
 | 参数 | 类型 | 默认值 | 说明 | 平台 |
 |:---:|:---:|:---:|:---|:---|
-| `minBufferMs` | `int?` | 根据流类型 | 最小缓冲时间（毫秒） | Android |
-| `maxBufferMs` | `int?` | 根据流类型 | 最大缓冲时间（毫秒） | Android |
-| `bufferForPlaybackMs` | `int?` | - | 播放所需缓冲时间 | Android |
-| `bufferForPlaybackAfterRebufferMs` | `int?` | - | 重新缓冲后播放所需时间 | Android |
+| `minBufferMs` | `int` | 15000(直播) / 20000(点播) | 最小缓冲时间（毫秒） | Android |
+| `maxBufferMs` | `int` | 15000(直播) / 30000(点播) | 最大缓冲时间（毫秒） | Android |
+| `bufferForPlaybackMs` | `int` | 3000 | 播放所需缓冲时间 | Android |
+| `bufferForPlaybackAfterRebufferMs` | `int` | 5000 | 重新缓冲后播放所需时间 | Android |
 
 **注意**：如果不提供缓冲配置，系统会根据是否是直播流自动创建合适的默认配置。
 
@@ -1334,8 +1334,8 @@ drmConfiguration: IAppPlayerDrmConfiguration(
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `type` | `IAppPlayerSubtitlesSourceType` | - | 字幕源类型 |
-| `name` | `String` | `"Default subtitles"` | 字幕名称 |
+| `type` | `IAppPlayerSubtitlesSourceType` | - | 字幕源类型（必需） |
+| `name` | `String` | `"Default subtitles"` | 字幕名称（必需） |
 | `urls` | `List<String>?` | `null` | 字幕文件URL列表 |
 | `content` | `String?` | `null` | 字幕内容字符串 |
 | `selectedByDefault` | `bool?` | `null` | 是否默认选中 |
