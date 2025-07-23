@@ -1666,6 +1666,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                 final author = dataSource.notificationConfiguration?.author;
 
                 return _buildPlaylistItem(
+                  index: index,
                   title: title,
                   author: author,
                   isCurrentItem: isCurrentItem,
