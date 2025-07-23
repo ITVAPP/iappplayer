@@ -12,6 +12,9 @@ class DrmInitData {
   /// DRM方案类型
   final String? schemeType;
 
+  /// 缓存hashCode，避免重复计算
+  int? _cachedHashCode;
+
   /// 比较对象是否相等
   @override
   bool operator ==(dynamic other) {
@@ -24,5 +27,9 @@ class DrmInitData {
 
   /// 计算哈希值
   @override
-  int get hashCode => Object.hash(schemeType, schemeData);
+  int get hashCode {
+    // 如果已缓存，直接返回
+    _cachedHashCode ??= Object.hash(schemeType, schemeData);
+    return _cachedHashCode!;
+  }
 }

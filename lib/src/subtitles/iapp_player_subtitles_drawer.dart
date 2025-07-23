@@ -151,16 +151,24 @@ class _IAppPlayerSubtitlesDrawerState extends State<IAppPlayerSubtitlesDrawer> {
       final newPosition = newValue.position;
 
       if (_lastPosition != null && newPosition != null && (newPosition - _lastPosition!).abs() < const Duration(milliseconds: 50)) {
-        return;
+        // 如果当前有字幕且位置仍在范围内，直接返回
+        if (_currentSubtitle != null && 
+            _currentSubtitle!.start != null && 
+            _currentSubtitle!.end != null &&
+            _currentSubtitle!.start! <= newPosition && 
+            _currentSubtitle!.end! >= newPosition) {
+          return;
+        }
       }
 
       bool needUpdate = false;
       if (_currentSubtitle != null && newPosition != null) {
-        if (_currentSubtitle!.start != null && _currentSubtitle!.end != null &&
-            _currentSubtitle!.start! <= newPosition && _currentSubtitle!.end! >= newPosition) {
-          return;
+        if (_currentSubtitle!.start == null || 
+            _currentSubtitle!.end == null ||
+            _currentSubtitle!.start! > newPosition || 
+            _currentSubtitle!.end! < newPosition) {
+          needUpdate = true;
         }
-        needUpdate = true;
       } else if (_currentSubtitle == null && newPosition != null) {
         needUpdate = true;
       }
@@ -169,7 +177,9 @@ class _IAppPlayerSubtitlesDrawerState extends State<IAppPlayerSubtitlesDrawer> {
         setState(() {
           _latestValue = newValue;
           _lastPosition = newPosition;
-          _currentSubtitle = null;
+          if (needUpdate) {
+            _currentSubtitle = null;
+          }
         });
       }
     }
@@ -232,17 +242,39 @@ class _IAppPlayerSubtitlesDrawerState extends State<IAppPlayerSubtitlesDrawer> {
     return _subtitlesSorted ? _getSubtitleOptimized(position, subtitles) : _getSubtitleLinear(position, subtitles);
   }
 
-  /// 查找当前字幕（已排序）
+  /// 查找当前字幕
   IAppPlayerSubtitle? _getSubtitleOptimized(Duration position, List<IAppPlayerSubtitle> subtitles) {
     try {
+      // 首先检查缓存的索引
       if (_lastSubtitleIndex >= 0 && _lastSubtitleIndex < subtitles.length) {
         final lastSubtitle = subtitles[_lastSubtitleIndex];
         if (lastSubtitle.start != null && lastSubtitle.end != null &&
             lastSubtitle.start! <= position && lastSubtitle.end! >= position) {
           return lastSubtitle;
         }
+        
+        // 检查下一个字幕
+        if (_lastSubtitleIndex + 1 < subtitles.length) {
+          final nextSubtitle = subtitles[_lastSubtitleIndex + 1];
+          if (nextSubtitle.start != null && nextSubtitle.end != null &&
+              nextSubtitle.start! <= position && nextSubtitle.end! >= position) {
+            _lastSubtitleIndex = _lastSubtitleIndex + 1;
+            return nextSubtitle;
+          }
+        }
+        
+        // 检查前一个字幕
+        if (_lastSubtitleIndex > 0) {
+          final prevSubtitle = subtitles[_lastSubtitleIndex - 1];
+          if (prevSubtitle.start != null && prevSubtitle.end != null &&
+              prevSubtitle.start! <= position && prevSubtitle.end! >= position) {
+            _lastSubtitleIndex = _lastSubtitleIndex - 1;
+            return prevSubtitle;
+          }
+        }
       }
 
+      // 二分查找
       int left = 0;
       int right = subtitles.length - 1;
 
@@ -276,6 +308,24 @@ class _IAppPlayerSubtitlesDrawerState extends State<IAppPlayerSubtitlesDrawer> {
   /// 线性查找当前字幕
   IAppPlayerSubtitle? _getSubtitleLinear(Duration position, List<IAppPlayerSubtitle> subtitles) {
     try {
+      // 从上次位置附近开始查找
+      if (_lastSubtitleIndex >= 0 && _lastSubtitleIndex < subtitles.length) {
+        // 先检查附近的字幕
+        final searchRadius = 5;
+        final start = (_lastSubtitleIndex - searchRadius).clamp(0, subtitles.length - 1);
+        final end = (_lastSubtitleIndex + searchRadius).clamp(0, subtitles.length - 1);
+        
+        for (int i = start; i <= end; i++) {
+          final subtitle = subtitles[i];
+          if (subtitle.start != null && subtitle.end != null &&
+              subtitle.start! <= position && subtitle.end! >= position) {
+            _lastSubtitleIndex = i;
+            return subtitle;
+          }
+        }
+      }
+      
+      // 如果附近没找到，进行完整搜索
       for (int i = 0; i < subtitles.length; i++) {
         final subtitle = subtitles[i];
         if (subtitle.start != null && subtitle.end != null &&

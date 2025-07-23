@@ -7,6 +7,10 @@ class IAppPlayerSubtitle {
   final Duration? start;
   final Duration? end;
   final List<String>? texts;
+  
+  // 预编译正则表达式
+  static final RegExp _timeComponentPattern = RegExp(r'^(\d{1,2}):(\d{2}):(\d{2})(?:[,.](\d{1,3}))?');
+  static final RegExp _shortTimePattern = RegExp(r'^(\d{1,2}):(\d{2})(?:[,.](\d{1,3}))?');
 
   IAppPlayerSubtitle._({this.index, this.start, this.end, this.texts});
 
@@ -83,43 +87,58 @@ class IAppPlayerSubtitle {
   static Duration _stringToDuration(String value) {
     try {
       final trimmedValue = value.trim();
-      final componentValue = trimmedValue.contains(' ') ? trimmedValue.substring(0, trimmedValue.indexOf(' ')) : trimmedValue;
-      final component = componentValue.split(':');
-
-      if (component.length == 2) {
-        component.insert(0, "00");
-      } else if (component.length != 3) {
-        return const Duration();
-      }
-
-      final secondsComponent = component[2];
-      final int separatorIndex = secondsComponent.indexOf(',');
-      final String secsStr;
-      final String millisStr;
-
-      if (separatorIndex != -1) {
-        secsStr = secondsComponent.substring(0, separatorIndex);
-        millisStr = secondsComponent.substring(separatorIndex + 1);
-      } else {
-        final dotIndex = secondsComponent.indexOf('.');
-        if (dotIndex != -1) {
-          secsStr = secondsComponent.substring(0, dotIndex);
-          millisStr = secondsComponent.substring(dotIndex + 1);
-        } else {
-          return const Duration();
+      
+      // 处理可能的额外信息（如WebVTT的位置信息）
+      final spaceIndex = trimmedValue.indexOf(' ');
+      final timeValue = spaceIndex != -1 ? trimmedValue.substring(0, spaceIndex) : trimmedValue;
+      
+      // 尝试匹配完整时间格式 HH:MM:SS,mmm 或 HH:MM:SS.mmm
+      Match? match = _timeComponentPattern.firstMatch(timeValue);
+      if (match != null) {
+        final hours = int.parse(match.group(1)!);
+        final minutes = int.parse(match.group(2)!);
+        final seconds = int.parse(match.group(3)!);
+        final millisecondsStr = match.group(4) ?? '0';
+        
+        // 标准化毫秒值
+        int milliseconds = int.parse(millisecondsStr);
+        if (millisecondsStr.length == 1) {
+          milliseconds *= 100;
+        } else if (millisecondsStr.length == 2) {
+          milliseconds *= 10;
         }
+        
+        return Duration(
+          hours: hours,
+          minutes: minutes,
+          seconds: seconds,
+          milliseconds: milliseconds
+        );
       }
-
-      final hours = int.tryParse(component[0]);
-      final minutes = int.tryParse(component[1]);
-      final seconds = int.tryParse(secsStr);
-      final milliseconds = int.tryParse(millisStr);
-
-      if (hours == null || minutes == null || seconds == null || milliseconds == null) {
-        return const Duration();
+      
+      // 尝试匹配短时间格式 MM:SS,mmm 或 MM:SS.mmm
+      match = _shortTimePattern.firstMatch(timeValue);
+      if (match != null) {
+        final minutes = int.parse(match.group(1)!);
+        final seconds = int.parse(match.group(2)!);
+        final millisecondsStr = match.group(3) ?? '0';
+        
+        // 标准化毫秒值
+        int milliseconds = int.parse(millisecondsStr);
+        if (millisecondsStr.length == 1) {
+          milliseconds *= 100;
+        } else if (millisecondsStr.length == 2) {
+          milliseconds *= 10;
+        }
+        
+        return Duration(
+          minutes: minutes,
+          seconds: seconds,
+          milliseconds: milliseconds
+        );
       }
-
-      return Duration(hours: hours, minutes: minutes, seconds: seconds, milliseconds: milliseconds);
+      
+      return const Duration();
     } catch (exception) {
       return const Duration();
     }

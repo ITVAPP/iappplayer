@@ -149,6 +149,45 @@ class HlsPlaylistParser {
   static final String regexpDefault = _compileBooleanAttrPattern('DEFAULT');
   static final String regexpForced = _compileBooleanAttrPattern('FORCED');
 
+  // 使用Map缓存正则表达式
+  static final Map<String, RegExp> _regexpCache = {
+    regexpAverageBandwidth: regexpAverageBandwidthPattern,
+    regexpVideo: regexpVideoPattern,
+    regexpAudio: regexpAudioPattern,
+    regexpSubtitles: regexpSubtitlesPattern,
+    regexpClosedCaptions: regexpClosedCaptionsPattern,
+    regexpBandwidth: regexpBandwidthPattern,
+    regexpChannels: regexpChannelsPattern,
+    regexpCodecs: regexpCodecsPattern,
+    regexpResolutions: regexpResolutionsPattern,
+    regexpFrameRate: regexpFrameRatePattern,
+    regexpTargetDuration: regexpTargetDurationPattern,
+    regexpVersion: regexpVersionPattern,
+    regexpPlaylistType: regexpPlaylistTypePattern,
+    regexpMediaSequence: regexpMediaSequencePattern,
+    regexpMediaDuration: regexpMediaDurationPattern,
+    regexpMediaTitle: regexpMediaTitlePattern,
+    regexpTimeOffset: regexpTimeOffsetPattern,
+    regexpByteRange: regexpByteRangePattern,
+    regexpAttrByteRange: regexpAttrByteRangePattern,
+    regexpMethod: regexpMethodPattern,
+    regexpKeyFormat: regexpKeyFormatPattern,
+    regexpKeyFormatVersions: regexpKeyFormatVersionsPattern,
+    regexpUri: regexpUriPattern,
+    regexpIv: regexpIvPattern,
+    regexpType: regexpTypePattern,
+    regexpLanguage: regexpLanguagePattern,
+    regexpName: regexpNamePattern,
+    regexpGroupId: regexpGroupIdPattern,
+    regexpCharacteristics: regexpCharacteristicsPattern,
+    regexpInStreamId: regexpInStreamIdPattern,
+    regexpAutoSelect: regexpAutoSelectPattern,
+    regexpDefault: regexpDefaultPattern,
+    regexpForced: regexpForcedPattern,
+    regexpValue: regexpValuePattern,
+    regexpImport: regexpImportPattern,
+  };
+
   final HlsMasterPlaylist masterPlaylist;
 
   // 解析字符串形式的播放列表
@@ -603,76 +642,15 @@ class HlsPlaylistParser {
             value!.substring(match.start, match.end));
   }
 
-  // 获取预编译正则表达式
+  // 使用Map查找
   static RegExp _getCompiledRegex(String pattern) {
-    switch (pattern) {
-      case regexpAverageBandwidth:
-        return regexpAverageBandwidthPattern;
-      case regexpVideo:
-        return regexpVideoPattern;
-      case regexpAudio:
-        return regexpAudioPattern;
-      case regexpSubtitles:
-        return regexpSubtitlesPattern;
-      case regexpClosedCaptions:
-        return regexpClosedCaptionsPattern;
-      case regexpBandwidth:
-        return regexpBandwidthPattern;
-      case regexpChannels:
-        return regexpChannelsPattern;
-      case regexpCodecs:
-        return regexpCodecsPattern;
-      case regexpResolutions:
-        return regexpResolutionsPattern;
-      case regexpFrameRate:
-        return regexpFrameRatePattern;
-      case regexpTargetDuration:
-        return regexpTargetDurationPattern;
-      case regexpVersion:
-        return regexpVersionPattern;
-      case regexpPlaylistType:
-        return regexpPlaylistTypePattern;
-      case regexpMediaSequence:
-        return regexpMediaSequencePattern;
-      case regexpMediaDuration:
-        return regexpMediaDurationPattern;
-      case regexpMediaTitle:
-        return regexpMediaTitlePattern;
-      case regexpTimeOffset:
-        return regexpTimeOffsetPattern;
-      case regexpByteRange:
-        return regexpByteRangePattern;
-      case regexpAttrByteRange:
-        return regexpAttrByteRangePattern;
-      case regexpMethod:
-        return regexpMethodPattern;
-      case regexpKeyFormat:
-        return regexpKeyFormatPattern;
-      case regexpKeyFormatVersions:
-        return regexpKeyFormatVersionsPattern;
-      case regexpUri:
-        return regexpUriPattern;
-      case regexpIv:
-        return regexpIvPattern;
-      case regexpType:
-        return regexpTypePattern;
-      case regexpLanguage:
-        return regexpLanguagePattern;
-      case regexpName:
-        return regexpNamePattern;
-      case regexpGroupId:
-        return regexpGroupIdPattern;
-      case regexpCharacteristics:
-        return regexpCharacteristicsPattern;
-      case regexpInStreamId:
-        return regexpInStreamIdPattern;
-      case regexpValue:
-        return regexpValuePattern;
-      case regexpImport:
-        return regexpImportPattern;
-      default:
-        return RegExp(pattern);
+    // 先尝试从缓存中获取
+    final cached = _regexpCache[pattern];
+    if (cached != null) {
+      return cached;
     }
+    // 对于动态正则或未缓存的正则，动态编译
+    return RegExp(pattern);
   }
 
   // 解析DRM方案数据

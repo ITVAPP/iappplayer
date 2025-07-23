@@ -86,9 +86,28 @@ class IAppPlayerPlaylistController {
   /// 设置新数据源列表，暂停当前视频并初始化新列表
   void setupDataSourceList(List<IAppPlayerDataSource> dataSourceList) {
     assert(dataSourceList.isNotEmpty, "播放列表数据源不能为空");
+    
+    // 1. 暂停当前播放
     _iappPlayerController?.pause();
+    
+    // 2. 取消现有订阅（同步方式）
+    _nextVideoTimeStreamSubscription?.cancel();
+    _nextVideoTimeStreamSubscription = null;
+    
+    // 3. 如果有现有控制器，先移除监听器
+    if (_iappPlayerController != null) {
+      _iappPlayerController!.removeEventsListener(_handleEvent);
+    }
+    
+    // 4. 清理并更新数据源列表
     _iappPlayerDataSourceList.clear();
     _iappPlayerDataSourceList.addAll(dataSourceList);
+    
+    // 5. 重置状态
+    _currentDataSourceIndex = 0;
+    _changingToNextVideo = false;
+    
+    // 6. 重新初始化
     _setup();
   }
   
@@ -283,6 +302,9 @@ class IAppPlayerPlaylistController {
     if (_iappPlayerController != null) {
       // 先移除事件监听器
       _iappPlayerController!.removeEventsListener(_handleEvent);
+      
+      // 清除播放列表控制器引用，避免循环引用
+      _iappPlayerController!.playlistController = null;
       
       // 释放播放器控制器
       await _iappPlayerController!.dispose(forceDispose: true);
