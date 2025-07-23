@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:iapp_player/src/configuration/iapp_player_controls_configuration.dart';
 import 'package:iapp_player/src/controls/iapp_player_clickable_widget.dart';
@@ -34,6 +35,7 @@ class _TimerManager {
   Timer? _initTimer;
   Timer? _showAfterExpandCollapseTimer;
   Timer? _doubleTapTimer;
+  Timer? _fullscreenDebounceTimer;  // 新增：全屏防抖定时器
 
   // 取消隐藏定时器
   void cancelHideTimer() {
@@ -57,6 +59,12 @@ class _TimerManager {
   void cancelDoubleTapTimer() {
     _doubleTapTimer?.cancel();
     _doubleTapTimer = null;
+  }
+
+  // 取消全屏防抖定时器
+  void cancelFullscreenDebounceTimer() {
+    _fullscreenDebounceTimer?.cancel();
+    _fullscreenDebounceTimer = null;
   }
 
   // 设置隐藏定时器
@@ -83,12 +91,19 @@ class _TimerManager {
     _doubleTapTimer = timer;
   }
 
+  // 设置全屏防抖定时器
+  void setFullscreenDebounceTimer(Timer timer) {
+    cancelFullscreenDebounceTimer();
+    _fullscreenDebounceTimer = timer;
+  }
+
   // 清理所有定时器
   void dispose() {
     cancelHideTimer();
     cancelInitTimer();
     cancelShowAfterExpandCollapseTimer();
     cancelDoubleTapTimer();
+    cancelFullscreenDebounceTimer();
   }
 }
 
@@ -147,6 +162,16 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   static const double kTimeTextSizeDecrease = 1.0;
   // 定义双击检测超时时间
   static const Duration kDoubleTapTimeout = Duration(milliseconds: 300);
+  // 定义全屏切换防抖时间
+  static const Duration kFullscreenDebounceTimeout = Duration(milliseconds: 500);
+
+  // 播放列表
+  static const Color kPlaylistPrimaryColor = Color(0xFFFF0000); // 红色主题色
+  static const Color kPlaylistBackgroundColor = Color(0xFF1A1A1A); // 深色背景
+  static const Color kPlaylistSurfaceColor = Color(0xFF2A2A2A); // 表面颜色
+  static const double kPlaylistItemRadius = 12.0; // 列表项圆角
+  static const double kPlaylistBlurRadius = 10.0; // 模糊效果半径
+
   // 定义图标阴影
   static const List<Shadow> _iconShadows = [
     Shadow(blurRadius: 3.0, color: Colors.black45, offset: Offset(0.0, 1.0)),
@@ -204,6 +229,8 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   bool? _lastIsBuffering;
   // 缓存音量
   double? _lastVolume;
+  // 标记是否正在全屏切换中
+  bool _isFullscreenTransitioning = false;
 
   // 获取控件配置
   IAppPlayerControlsConfiguration get _controlsConfiguration => widget.controlsConfiguration;
@@ -451,14 +478,35 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
       top: false,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: kSpacingDouble),
-        decoration: BoxDecoration(
-          color: _controlsConfiguration.overflowModalColor.withOpacity(kModalBackgroundOpacity),
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(kModalBorderRadius), topRight: Radius.circular(kModalBorderRadius)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, -5))],
-        ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(kModalBorderRadius), topRight: Radius.circular(kModalBorderRadius)),
-          child: _buildPlaylistMenuContent(),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(kModalBorderRadius), 
+            topRight: Radius.circular(kModalBorderRadius)
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: kPlaylistBlurRadius, sigmaY: kPlaylistBlurRadius),
+            child: Container(
+              decoration: BoxDecoration(
+                color: kPlaylistBackgroundColor.withOpacity(kModalBackgroundOpacity),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(kModalBorderRadius), 
+                  topRight: Radius.circular(kModalBorderRadius)
+                ),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: _buildPlaylistMenuContent(),
+            ),
+          ),
         ),
       ),
     );
@@ -474,7 +522,10 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
         child: Center(
           child: Text(
             translations.playlistUnavailable,
-            style: TextStyle(color: _controlsConfiguration.overflowModalTextColor, fontSize: kModalItemFontSize),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: kModalItemFontSize,
+            ),
           ),
         ),
       );
@@ -486,28 +537,56 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 标题栏
           Container(
             height: kModalHeaderHeight,
             padding: const EdgeInsets.only(left: kSpacingDouble, right: kSpacingUnit),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: _controlsConfiguration.overflowModalTextColor.withOpacity(0.1), width: 1)),
+              color: kPlaylistSurfaceColor.withOpacity(0.5),
+              border: Border(
+                bottom: BorderSide(
+                  color: kPlaylistPrimaryColor.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
             ),
             child: Row(
               children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: kPlaylistPrimaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.playlist_play_rounded,
+                    color: kPlaylistPrimaryColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Text(
                   translations.playlistTitle,
-                  style: TextStyle(color: _controlsConfiguration.overflowModalTextColor, fontSize: kModalTitleFontSize, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: kModalTitleFontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   padding: const EdgeInsets.all(kSpacingUnit),
                   constraints: const BoxConstraints(),
-                  icon: Icon(Icons.close, color: _controlsConfiguration.overflowModalTextColor),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
+          // 列表内容
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
@@ -516,9 +595,12 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
               itemBuilder: (context, index) {
                 final dataSource = dataSourceList[index];
                 final isCurrentItem = index == currentIndex;
-                final title = dataSource.notificationConfiguration?.title ?? translations.videoItem.replaceAll('{index}', '${index + 1}');
+                final title = dataSource.notificationConfiguration?.title ?? 
+                  translations.videoItem.replaceAll('{index}', '${index + 1}');
+                
                 return _buildPlaylistItem(
                   title: title,
+                  index: index,
                   isCurrentItem: isCurrentItem,
                   onTap: () {
                     _playAtIndex(index);
@@ -534,40 +616,115 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   }
 
   // 构建播放列表项
-  Widget _buildPlaylistItem({required String title, required bool isCurrentItem, required VoidCallback onTap}) {
+  Widget _buildPlaylistItem({
+    required String title, 
+    required int index,
+    required bool isCurrentItem, 
+    required VoidCallback onTap
+  }) {
     return IAppPlayerClickableWidget(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
-        height: kModalItemHeight,
+        duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: kSpacingUnit, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isCurrentItem ? _controlsConfiguration.overflowModalTextColor.withOpacity(kModalItemHoverOpacity) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: isCurrentItem 
+            ? kPlaylistPrimaryColor.withOpacity(0.15)
+            : Colors.transparent,
+          borderRadius: BorderRadius.circular(kPlaylistItemRadius),
+          border: Border.all(
+            color: isCurrentItem 
+              ? kPlaylistPrimaryColor.withOpacity(0.3)
+              : Colors.transparent,
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
+            // 播放指示器
             Container(
-              width: kPlayIndicatorWidth,
+              width: 40,
               alignment: Alignment.center,
               child: isCurrentItem
-                ? Icon(Icons.play_arrow_rounded, color: _controlsConfiguration.overflowModalTextColor, size: kPlayIndicatorIconSize)
-                : null,
+                ? Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: kPlaylistPrimaryColor.withOpacity(0.15),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: kPlaylistPrimaryColor,
+                      size: kPlayIndicatorIconSize,
+                    ),
+                  )
+                : Text(
+                    '${index + 1}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 14,
+                    ),
+                  ),
             ),
+            const SizedBox(width: 8),
+            // 视频标题
             Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: _controlsConfiguration.overflowModalTextColor,
-                  fontSize: kModalItemFontSize,
-                  fontWeight: isCurrentItem ? FontWeight.w600 : FontWeight.normal,
-                  height: 1.4,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isCurrentItem ? Colors.white : Colors.white.withOpacity(0.9),
+                      fontSize: kModalItemFontSize,
+                      fontWeight: isCurrentItem ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_iappPlayerController!.translations.videoItem.replaceAll("{index}", "${index + 1}")}',
+                    style: TextStyle(
+                      color: isCurrentItem 
+                        ? kPlaylistPrimaryColor.withOpacity(0.8)
+                        : Colors.white.withOpacity(0.5),
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: kSpacingDouble),
+            const SizedBox(width: 12),
+            // 正在播放动画
+            if (isCurrentItem)
+              Container(
+                width: 20,
+                height: 20,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(seconds: 1),
+                      curve: Curves.easeInOut,
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: kPlaylistPrimaryColor.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -828,8 +985,18 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
 
   // 切换全屏模式
   void _onExpandCollapse() {
+    // 防抖：如果正在切换中，忽略新的请求
+    if (_isFullscreenTransitioning) return;
+    
+    _isFullscreenTransitioning = true;
     changePlayerControlsNotVisible(true);
     _iappPlayerController!.toggleFullScreen();
+    
+    // 设置防抖定时器
+    _timerManager.setFullscreenDebounceTimer(Timer(kFullscreenDebounceTimeout, () {
+      _isFullscreenTransitioning = false;
+    }));
+    
     _timerManager.setShowAfterExpandCollapseTimer(Timer(_controlsConfiguration.controlsHideTime, () {
       setState(() => cancelAndRestartTimer());
     }));
