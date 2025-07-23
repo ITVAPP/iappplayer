@@ -194,8 +194,8 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   Future<bool>? _pipSupportedFuture;
   // 缓存播放状态
   bool? _lastIsPlaying;
-  // 缓存播放位置
-  Duration? _lastPosition;
+  // 缓存播放位置（秒级）
+  int? _lastPositionInSeconds;
   // 缓存视频时长
   Duration? _lastDuration;
   // 缓存错误状态
@@ -865,33 +865,48 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   // 更新播放状态
   void _updateState() {
     if (!mounted) return;
+    
     final newValue = _controller!.value;
-    final shouldUpdate = !controlsNotVisible || isVideoFinished(newValue) || _wasLoading || isLoading(newValue);
-    if (shouldUpdate) {
-      // 比较状态以减少不必要的setState
-      final needsUpdate = _lastIsPlaying != newValue.isPlaying ||
-          _lastPosition != newValue.position ||
-          _lastDuration != newValue.duration ||
-          _lastHasError != newValue.hasError ||
-          _lastIsBuffering != newValue.isBuffering ||
-          _lastVolume != newValue.volume;
-      
-      if (needsUpdate) {
-        // 更新状态缓存
-        _lastIsPlaying = newValue.isPlaying;
-        _lastPosition = newValue.position;
-        _lastDuration = newValue.duration;
-        _lastHasError = newValue.hasError;
-        _lastIsBuffering = newValue.isBuffering;
-        _lastVolume = newValue.volume;
-        
-        setState(() {
-          _latestValue = newValue;
-          if (isVideoFinished(_latestValue) && _iappPlayerController?.isLiveStream() == false) {
-            changePlayerControlsNotVisible(false);
-          }
-        });
+    
+    // 始终更新_latestValue，确保UI能获取最新数据
+    _latestValue = newValue;
+    
+    // 计算是否需要触发setState
+    final currentPositionInSeconds = newValue.position.inSeconds;
+    final bool positionSecondsChanged = _lastPositionInSeconds != currentPositionInSeconds;
+    
+    // 检查其他状态变化
+    final bool otherStateChanged = 
+        _lastIsPlaying != newValue.isPlaying ||
+        _lastDuration != newValue.duration ||
+        _lastHasError != newValue.hasError ||
+        _lastIsBuffering != newValue.isBuffering ||
+        (_lastVolume != newValue.volume && (_lastVolume == null || (newValue.volume - _lastVolume!).abs() > 0.01));
+    
+    // 特殊情况：视频结束或加载状态变化时总是更新
+    final bool specialCaseUpdate = 
+        isVideoFinished(newValue) || 
+        _wasLoading || 
+        isLoading(newValue);
+    
+    // 只在必要时调用setState
+    if (positionSecondsChanged || otherStateChanged || specialCaseUpdate) {
+      // 更新缓存状态
+      if (positionSecondsChanged) {
+        _lastPositionInSeconds = currentPositionInSeconds;
       }
+      _lastIsPlaying = newValue.isPlaying;
+      _lastDuration = newValue.duration;
+      _lastHasError = newValue.hasError;
+      _lastIsBuffering = newValue.isBuffering;
+      _lastVolume = newValue.volume;
+      
+      setState(() {
+        // 视频结束时显示控件
+        if (isVideoFinished(_latestValue) && _iappPlayerController?.isLiveStream() == false) {
+          changePlayerControlsNotVisible(false);
+        }
+      });
     }
   }
 
