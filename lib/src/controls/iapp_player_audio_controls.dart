@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:iapp_player/src/configuration/iapp_player_controls_configuration.dart';
 import 'package:iapp_player/src/controls/iapp_player_clickable_widget.dart';
 import 'package:iapp_player/src/controls/iapp_player_controls_state.dart';
+import 'package:iapp_player/src/controls/iapp_player_multiple_gesture_detector.dart';
 import 'package:iapp_player/src/controls/iapp_player_progress_bar.dart';
 import 'package:iapp_player/src/controls/iapp_player_progress_colors.dart';
 import 'package:iapp_player/src/core/iapp_player_controller.dart';
@@ -134,9 +135,12 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kCompactPlayPauseIconSize = 22.0; // 紧凑模式播放按钮图标大小
 
   // 正方形模式相关常量
-  static const double kSquareModePlayButtonSize = 60.0; // 正方形模式播放按钮尺寸
+  static const double kSquareModePlayButtonSize = 50.0; // 正方形模式播放按钮尺寸
   // 透明度使黑色更明显
-  static const double kSquareModeButtonOpacity = 0.7; // 正方形模式按钮透明度
+  static const double kSquareModeButtonOpacity = 0.3; // 正方形模式按钮透明度
+
+  // 双击检测超时时间（与视频控件保持一致）
+  static const Duration kDoubleTapTimeout = Duration(milliseconds: 300);
 
   // 常量样式定义
   static const List<Shadow> _textShadows = [
@@ -210,6 +214,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 【性能优化】缓存的显示模式和约束
   BoxConstraints? _cachedConstraints;
   PlayerDisplayMode? _cachedDisplayMode;
+
+  // 手势相关变量（仅扩展模式handleAllGestures需要）
+  DateTime? _lastTapTime;
+  Timer? _doubleTapTimer;
 
   // 获取控件配置
   IAppPlayerControlsConfiguration get _controlsConfiguration => widget.controlsConfiguration;
@@ -372,6 +380,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   void dispose() {
     _dispose();
     _rotationController?.dispose();
+    _doubleTapTimer?.cancel(); // 清理手势相关定时器
     // 修改：重置动画初始化标志，确保组件重新创建时状态正确
     _animationsInitialized = false;
     super.dispose();
@@ -380,6 +389,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 清理控制器监听
   void _dispose() {
     _controller?.removeListener(_updateState);
+    _doubleTapTimer?.cancel();
   }
 
   @override
@@ -427,7 +437,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // ============== 扩展模式 ==============
   // 扩展模式：显示唱片动画 + 完整控制栏
   Widget _buildExpandedMode() {
-    return Container(
+    Widget content = Container(
       color: Colors.transparent,
       child: Stack(
         children: [
@@ -441,6 +451,65 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         ],
       ),
     );
+
+    // 仅在扩展模式下处理 handleAllGestures
+    final gestureDetector = IAppPlayerMultipleGestureDetector.of(context);
+    
+    if (!_controlsConfiguration.handleAllGestures) {
+      // 使用 Listener 手动管理单击/双击逻辑
+      return Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerUp: (_) {
+          final now = DateTime.now();
+          if (_lastTapTime != null && now.difference(_lastTapTime!) < kDoubleTapTimeout) {
+            // 处理双击事件
+            _doubleTapTimer?.cancel();
+            _lastTapTime = null;
+            // 双击切换全屏
+            gestureDetector?.onDoubleTap?.call();
+            if (_controlsConfiguration.enableFullscreen) {
+              if (_iappPlayerController!.isFullScreen) {
+                _iappPlayerController!.exitFullScreen();
+              } else {
+                _iappPlayerController!.enterFullScreen();
+              }
+            }
+          } else {
+            // 处理单击或超时
+            _lastTapTime = now;
+            _doubleTapTimer?.cancel();
+            _doubleTapTimer = Timer(kDoubleTapTimeout, () {
+              _lastTapTime = null;
+              // 单击回调（音频控件保持始终可见，不需要切换可见性）
+              gestureDetector?.onTap?.call();
+            });
+          }
+        },
+        child: content,
+      );
+    } else {
+      // 使用 GestureDetector 处理所有手势
+      return GestureDetector(
+        onTap: () {
+          gestureDetector?.onTap?.call();
+        },
+        onDoubleTap: () {
+          gestureDetector?.onDoubleTap?.call();
+          // 双击切换全屏
+          if (_controlsConfiguration.enableFullscreen) {
+            if (_iappPlayerController!.isFullScreen) {
+              _iappPlayerController!.exitFullScreen();
+            } else {
+              _iappPlayerController!.enterFullScreen();
+            }
+          }
+        },
+        onLongPress: () {
+          gestureDetector?.onLongPress?.call();
+        },
+        child: content,
+      );
+    }
   }
 
   // 构建渐变背景
