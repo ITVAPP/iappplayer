@@ -92,12 +92,12 @@ final result = await IAppPlayerConfig.createPlayer(
 ### 🎵 3. 音乐播放器（支持LRC歌词）
 
 ```dart
-// 单个音频文件播放 - 正方形模式
+// 单个音频文件播放 - 封面模式
 final squareMusicPlayer = await IAppPlayerConfig.createPlayer(
   url: 'https://example.com/song.mp3',
   title: '歌曲名称',
   audioOnly: true,
-  aspectRatio: 1.0,  // 正方形模式
+  aspectRatio: 1.0,  // 封面模式
   subtitleContent: '''[00:02.05]愿得一人心
 [00:08.64]词：胡小健 曲：罗俊霖
 [00:27.48]曾在我背包小小夹层里的那个人''',  // LRC歌词内容
@@ -461,11 +461,11 @@ final result = await IAppPlayerConfig.createPlayer(
 ### 🎵 14. 音频播放器显示模式示例
 
 ```dart
-// 正方形模式（1:1） - 适合单曲展示
+// 封面模式（1:1） - 适合单曲展示
 final squarePlayer = await IAppPlayerConfig.createPlayer(
   url: 'music.mp3',
   audioOnly: true,
-  aspectRatio: 1.0,  // 触发正方形模式
+  aspectRatio: 1.0,  // 触发封面模式
   title: '歌曲名称',
   imageUrl: 'album_cover.jpg',
   subtitleContent: lrcContent,
