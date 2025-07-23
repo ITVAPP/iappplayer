@@ -328,6 +328,40 @@ eventListener: (IAppPlayerEvent event) {
 | `setVolume(double volume)` | Set volume (0.0 - 1.0) | `controller.setVolume(0.8)` |
 | `setSpeed(double speed)` | Set playback speed (>0 and ≤2.0) | `controller.setSpeed(1.5)` |
 
+#### Fullscreen Control
+
+| Method | Description |
+|:---:|:---|
+| `enterFullScreen()` | Enter fullscreen |
+| `exitFullScreen()` | Exit fullscreen |
+| `toggleFullScreen()` | Toggle fullscreen state |
+
+#### Subtitles and Tracks
+
+| Method | Description |
+|:---:|:---|
+| `setupSubtitleSource(IAppPlayerSubtitlesSource)` | Switch subtitle source |
+| `setTrack(IAppPlayerAsmsTrack)` | Set video track (HLS multi-bitrate) |
+| `setAudioTrack(IAppPlayerAsmsAudioTrack)` | Set audio track |
+
+#### Advanced Features
+
+### 🚦 Controller Methods
+
+| Method | Description | Example |
+|:---:|:---|:---|
+| `setMixWithOthers(bool)` | Set whether to mix with other audio | `controller.setMixWithOthers(true)` |
+| `enablePictureInPicture(GlobalKey)` | Enable PiP (requires GlobalKey) | `controller.enablePictureInPicture(playerKey)` |
+| `disablePictureInPicture()` | Disable PiP | `controller.disablePictureInPicture()` |
+| `setControlsEnabled(bool)` | Enable/disable controls | `controller.setControlsEnabled(false)` |
+| `setControlsAlwaysVisible(bool)` | Set controls always visible | `controller.setControlsAlwaysVisible(true)` |
+| `retryDataSource()` | Retry current data source | `controller.retryDataSource()` |
+| `clearCache()` | Clear cache | `await controller.clearCache()` |
+| `preCache(IAppPlayerDataSource)` | Pre-cache video | `await controller.preCache(dataSource)` |
+| `stopPreCache(IAppPlayerDataSource)` | Stop pre-caching | `await controller.stopPreCache(dataSource)` |
+| `setBufferingDebounceTime(int)` | Set buffering state debounce time (ms) | `controller.setBufferingDebounceTime(500)` |
+| `dispose()` | Release resources | `controller.dispose()` |
+
 ### Usage Examples:
 
 ```dart
@@ -367,40 +401,6 @@ void dispose() {
   super.dispose();
 }
 ```
-
-#### Fullscreen Control
-
-| Method | Description |
-|:---:|:---|
-| `enterFullScreen()` | Enter fullscreen |
-| `exitFullScreen()` | Exit fullscreen |
-| `toggleFullScreen()` | Toggle fullscreen state |
-
-#### Subtitles and Tracks
-
-| Method | Description |
-|:---:|:---|
-| `setupSubtitleSource(IAppPlayerSubtitlesSource)` | Switch subtitle source |
-| `setTrack(IAppPlayerAsmsTrack)` | Set video track (HLS multi-bitrate) |
-| `setAudioTrack(IAppPlayerAsmsAudioTrack)` | Set audio track |
-
-#### Advanced Features
-
-### 🎛️ Controller Methods
-
-| Method | Description | Example |
-|:---:|:---|:---|
-| `setMixWithOthers(bool)` | Set whether to mix with other audio | `controller.setMixWithOthers(true)` |
-| `enablePictureInPicture(GlobalKey)` | Enable PiP (requires GlobalKey) | `controller.enablePictureInPicture(playerKey)` |
-| `disablePictureInPicture()` | Disable PiP | `controller.disablePictureInPicture()` |
-| `setControlsEnabled(bool)` | Enable/disable controls | `controller.setControlsEnabled(false)` |
-| `setControlsAlwaysVisible(bool)` | Set controls always visible | `controller.setControlsAlwaysVisible(true)` |
-| `retryDataSource()` | Retry current data source | `controller.retryDataSource()` |
-| `clearCache()` | Clear cache | `await controller.clearCache()` |
-| `preCache(IAppPlayerDataSource)` | Pre-cache video | `await controller.preCache(dataSource)` |
-| `stopPreCache(IAppPlayerDataSource)` | Stop pre-caching | `await controller.stopPreCache(dataSource)` |
-| `setBufferingDebounceTime(int)` | Set buffering state debounce time (ms) | `controller.setBufferingDebounceTime(500)` |
-| `dispose()` | Release resources | `controller.dispose()` |
 
 ### 📊 Property Getters
 
