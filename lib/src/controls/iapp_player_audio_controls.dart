@@ -90,7 +90,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const Color kPlaylistBackgroundColor = Color(0xFF1A1A1A); // 深色背景
   static const Color kPlaylistSurfaceColor = Color(0xFF2A2A2A); // 表面颜色
   static const double kPlaylistItemRadius = 12.0; // 列表项圆角
-  static const double kPlaylistBlurRadius = 10.0; // 模糊效果半径
+
 
   // 禁用按钮透明度
   static const double kDisabledButtonOpacity = 0.3;
@@ -152,6 +152,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 全屏切换防抖时间
   static const Duration kFullscreenDebounceTimeout = Duration(milliseconds: 500);
 
+  // 图片缓存尺寸限制
+  static const int kImageCacheMaxWidth = 512;
+  static const int kImageCacheMaxHeight = 512;
+
   // 常量样式定义
   static const List<Shadow> _textShadows = [
     Shadow(blurRadius: kTextShadowBlurRadius, color: Colors.black54, offset: Offset(kShadowOffsetX, kShadowOffsetY)),
@@ -196,6 +200,17 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const SizedBox _spacingDoubleWidthBox = SizedBox(width: kSpacingDouble);
   static const SizedBox _timeSpacingBox = SizedBox(width: kTimeProgressSpacing);
 
+  // 【性能优化】静态Widget缓存
+  static final Widget _musicNoteIcon = Icon(
+    Icons.music_note,
+    size: 60,
+    color: Colors.grey[600],
+  );
+  static final Widget _musicNoteBackground = Container(
+    color: Colors.grey[900],
+    child: _musicNoteIcon,
+  );
+
   // 最新播放值
   VideoPlayerValue? _latestValue;
   // 最新音量，用于静音恢复
@@ -207,7 +222,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 唱片旋转动画控制器（扩展模式需要）
   AnimationController? _rotationController;
-  // 唱片旋转动画（扩展模式需要）
+  // 【性能优化】使用RotationTransition替代Transform.rotate
   Animation<double>? _rotationAnimation;
 
   // 随机渐变色生成器（扩展模式需要）
@@ -232,6 +247,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 全屏切换防抖相关
   Timer? _fullscreenDebounceTimer;
   bool _isFullscreenTransitioning = false;
+
+  // 【性能优化】缓存播放列表状态
+  int? _cachedPlaylistIndex;
+  bool? _cachedShuffleMode;
 
   // 获取控件配置
   IAppPlayerControlsConfiguration get _controlsConfiguration => widget.controlsConfiguration;
@@ -318,13 +337,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       duration: kRotationDuration,
       vsync: this,
     );
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _rotationController!,
-      curve: Curves.linear,
-    ));
+    // 【性能优化】使用0到1的值，配合RotationTransition使用
+    _rotationAnimation = _rotationController!.drive(
+      Tween<double>(begin: 0.0, end: 1.0),
+    );
   }
 
   // 【性能优化】计算当前显示模式 - 添加缓存机制
@@ -522,27 +538,17 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 构建渐变背景
   Widget _buildGradientBackground() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // 渐变背景
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: _gradientColors!,
-            ),
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _gradientColors!,
         ),
-        // 玻璃效果
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            color: Colors.black.withOpacity(0.3),
-          ),
-        ),
-      ],
+      ),
+      child: Container(
+        color: Colors.black.withOpacity(0.3),
+      ),
     );
   }
 
@@ -586,7 +592,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 【性能优化】构建唱片区域 - 使用RepaintBoundary隔离动画
+  // 【性能优化】构建唱片区域 - 使用RotationTransition替代Transform.rotate
   Widget _buildDiscSection() {
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
     final imageUrl = _getImageUrl();
@@ -608,15 +614,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ),
             ],
           ),
-          child: AnimatedBuilder(
-            animation: _rotationAnimation ?? const AlwaysStoppedAnimation(0.0),
-            builder: (context, child) {
-              return Transform.rotate(
-                angle: (_rotationAnimation?.value ?? 0.0) * kFullRotation,
-                child: child,  // 【性能优化】使用child参数避免重建静态内容
-              );
-            },
-            child: ClipOval(  // 【性能优化】将静态内容作为child，避免每帧重建
+          child: ClipOval(
+            // 【性能优化】使用RotationTransition替代AnimatedBuilder + Transform.rotate
+            child: RotationTransition(
+              turns: _rotationAnimation ?? const AlwaysStoppedAnimation(0.0),
               child: Stack(
                 children: [
                   // 唱片纹理
@@ -1136,7 +1137,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return _iappPlayerController?.iappPlayerDataSource?.notificationConfiguration?.imageUrl;
   }
 
-  // 构建封面图片 - 修改：移除scaleFactor参数，简化实现
+  // 【性能优化】构建封面图片 - 添加内存缓存限制
   Widget _buildCoverImage(Widget? placeholder, String? imageUrl, {
     BoxFit? fit,
   }) {
@@ -1152,39 +1153,24 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           imageUrl,
           fit: effectiveFit,
           alignment: Alignment.center,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: Colors.grey[900],
-            child: Icon(
-              Icons.music_note,
-              size: 60,
-              color: Colors.grey[600],
-            ),
-          ),
+          // 【性能优化】限制缓存图片尺寸，减少内存占用
+          cacheWidth: kImageCacheMaxWidth,
+          cacheHeight: kImageCacheMaxHeight,
+          errorBuilder: (context, error, stackTrace) => _musicNoteBackground,
         );
       } else {
         imageWidget = Image.asset(
           imageUrl,
           fit: effectiveFit,
           alignment: Alignment.center,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: Colors.grey[900],
-            child: Icon(
-              Icons.music_note,
-              size: 60,
-              color: Colors.grey[600],
-            ),
-          ),
+          // 【性能优化】限制缓存图片尺寸
+          cacheWidth: kImageCacheMaxWidth,
+          cacheHeight: kImageCacheMaxHeight,
+          errorBuilder: (context, error, stackTrace) => _musicNoteBackground,
         );
       }
     } else {
-      imageWidget = Container(
-        color: Colors.grey[900],
-        child: Icon(
-          Icons.music_note,
-          size: 60,
-          color: Colors.grey[600],
-        ),
-      );
+      imageWidget = _musicNoteBackground;
     }
     
     return imageWidget;
@@ -1556,7 +1542,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建播放列表模态框 - 美化版本
+  // 构建播放列表模态框
   Widget _buildPlaylistModal() {
     return SafeArea(
       top: false,
@@ -1564,26 +1550,23 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         margin: const EdgeInsets.symmetric(horizontal: kSpacingDouble),
         child: ClipRRect(
           borderRadius: _modalTopBorderRadius,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: kPlaylistBlurRadius, sigmaY: kPlaylistBlurRadius),
-            child: Container(
-              decoration: BoxDecoration(
-                color: kPlaylistBackgroundColor.withOpacity(kModalBackgroundOpacity),
-                borderRadius: _modalTopBorderRadius,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
+          child: Container(
+            decoration: BoxDecoration(
+              color: kPlaylistBackgroundColor.withOpacity(kModalBackgroundOpacity),
+              borderRadius: _modalTopBorderRadius,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1,
               ),
-              child: _buildPlaylistMenuContent(),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
             ),
+            child: _buildPlaylistMenuContent(),
           ),
         ),
       ),
@@ -1897,12 +1880,28 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final currentPositionInSeconds = newValue.position.inSeconds;
     final bool positionChanged = _lastUpdatedPositionInSeconds != currentPositionInSeconds;
     
+    // 【性能优化】播放列表状态检测
+    bool playlistStateChanged = false;
+    if (_iappPlayerController?.isPlaylistMode == true) {
+      final currentIndex = _iappPlayerController!.playlistController?.currentDataSourceIndex;
+      final currentShuffleMode = _iappPlayerController!.playlistShuffleMode;
+      
+      playlistStateChanged = _cachedPlaylistIndex != currentIndex || 
+                            _cachedShuffleMode != currentShuffleMode;
+      
+      if (playlistStateChanged) {
+        _cachedPlaylistIndex = currentIndex;
+        _cachedShuffleMode = currentShuffleMode;
+      }
+    }
+    
     // 其他状态变化检查
     final bool otherStateChanged = _latestValue == null || (
         _latestValue!.isPlaying != newValue.isPlaying ||
         _latestValue!.duration?.inMilliseconds != newValue.duration?.inMilliseconds ||
         _latestValue!.hasError != newValue.hasError ||
-        (_latestValue!.volume - newValue.volume).abs() > 0.01
+        (_latestValue!.volume - newValue.volume).abs() > 0.01 ||
+        playlistStateChanged
     );
     
     // 只有在position变化到秒级或其他状态变化时才更新
