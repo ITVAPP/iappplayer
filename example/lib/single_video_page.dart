@@ -35,6 +35,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   @override
   void initState() {
     super.initState();
+    _playerGlobalKey = GlobalKey(); // 初始化全局键
     _initializePlayer();
   }
 
@@ -95,6 +96,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     if (mounted) {
       setState(() {
         _controller = result.activeController;
+        // 设置全局键到控制器
+        _controller?.setIAppPlayerGlobalKey(_playerGlobalKey!);
       });
     }
   }
@@ -121,12 +124,14 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     
     // 重新初始化播放器
     await _releasePlayer();
+    _playerGlobalKey = GlobalKey(); // 重新创建全局键
     await _initializePlayer();
   }
 
   @override
   void dispose() {
     _releasePlayer();
+    _playerGlobalKey = null; // 清理全局键
     super.dispose();
   }
 
@@ -308,13 +313,14 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                     ),
                     SizedBox(height: UIConstants.spaceMD),
                     // 画中画按钮
+                    // 修改：正确使用画中画API
                     ModernControlButton(
-                      onPressed: _controller != null && !_isLoading
+                      onPressed: _controller != null && !_isLoading && _playerGlobalKey != null
                           ? () {
                               if (_isPipMode) {
                                 _controller!.disablePictureInPicture();
                               } else {
-                                _controller!.enablePictureInPicture();
+                                _controller!.enablePictureInPicture(_playerGlobalKey!);
                               }
                             }
                           : null,
