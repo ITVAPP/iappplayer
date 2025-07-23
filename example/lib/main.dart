@@ -968,10 +968,10 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ),
                         ),
                       ),
-                      // 播放信息卡片 - 显示当前视频标题（修改：移除模式切换按钮）
+                      // 播放信息卡片 - 显示当前视频标题（修改：移除模式切换按钮）spaceMD
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
-                        padding: EdgeInsets.all(UIConstants.spaceMD),
+                        padding: EdgeInsets.all(UIConstants.spaceSM),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -1044,7 +1044,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
               ),
               // 控制按钮区域 - 固定在底部
               Container(
-                padding: EdgeInsets.all(UIConstants.spaceLG),
+                padding: EdgeInsets.all(UIConstants.spaceMD),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.vertical(
@@ -1097,7 +1097,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                         ),
                       ],
                     ),
-                    SizedBox(height: UIConstants.spaceLG - 4), // 20
+                    SizedBox(height: UIConstants.spaceMD),
                     // 修改：添加播放模式切换按钮
                     ModernControlButton(
                       onPressed: _playlistController != null
