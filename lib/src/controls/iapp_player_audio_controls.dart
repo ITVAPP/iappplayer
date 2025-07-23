@@ -107,11 +107,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 紧凑模式相关常量
   static const double kCompactModeMinHeight = 120.0;
   static const double kCompactModeMaxHeight = 180.0;
-  static const double kCompactDiscSize = 80.0;
 
   // 唱片相关常量 - 修改以减少纹理，增大封面
-  static const double kDiscGrooveWidth = 2.0; // 线条宽度
-  static const double kDiscGrooveSpacing = 10.0; // 修改：增加间距
+  static const double kDiscGrooveWidth = 1.0; // 线条宽度
+  static const double kDiscGrooveSpacing = 11.0; // 修改：增加间距
   static const double kDiscCenterRatio = 0.25; // 中心标签比例
   static const double kDiscInnerCircleRatio = 0.75; // 修改：增大内圈封面比例
 
@@ -206,6 +205,12 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 动画是否已初始化
   bool _animationsInitialized = false;
 
+  // 【性能优化】缓存上次更新的位置（秒级）
+  int? _lastUpdatedPositionInSeconds;
+  // 【性能优化】缓存的显示模式和约束
+  BoxConstraints? _cachedConstraints;
+  PlayerDisplayMode? _cachedDisplayMode;
+
   // 获取控件配置
   IAppPlayerControlsConfiguration get _controlsConfiguration => widget.controlsConfiguration;
 
@@ -230,8 +235,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   late double _responsiveTextSize;
   // 响应式错误图标尺寸
   late double _responsiveErrorIconSize;
-  // 响应式封面尺寸
-  late double _responsiveCoverSize;
   // 响应式标题字体尺寸
   late double _responsiveTitleFontSize;
 
@@ -260,7 +263,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     _responsivePlayPauseIconSize = _getResponsiveSize(context, kPlayPauseIconSize);
     _responsiveTextSize = _getResponsiveSize(context, kTextSizeBase);
     _responsiveErrorIconSize = _getResponsiveSize(context, kErrorIconSize);
-    _responsiveCoverSize = _getResponsiveSize(context, kCoverSize);
     _responsiveTitleFontSize = _getResponsiveSize(context, kTitleFontSize);
   }
 
@@ -303,25 +305,34 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     ));
   }
 
-  // 计算当前显示模式 - 修改：使用精确的aspectRatio值判断
+  // 【性能优化】计算当前显示模式 - 添加缓存机制
   PlayerDisplayMode _calculateDisplayMode(BoxConstraints constraints) {
+    // 如果约束没有变化，直接返回缓存的结果
+    if (_cachedConstraints == constraints && _cachedDisplayMode != null) {
+      return _cachedDisplayMode!;
+    }
+    
+    _cachedConstraints = constraints;
+    
     // 计算宽高比
     final double aspectRatio = constraints.maxWidth / constraints.maxHeight;
     
     // 正方形模式：aspectRatio = 1.0（精确值，允许1%误差）
     if ((aspectRatio - 1.0).abs() < 0.01) {
-      return PlayerDisplayMode.square;
+      _cachedDisplayMode = PlayerDisplayMode.square;
     }
-    
     // 紧凑模式：aspectRatio = 2.0（精确值，允许1%误差）或高度 <= 200px
-    if ((aspectRatio - 2.0).abs() < 0.01 || 
+    else if ((aspectRatio - 2.0).abs() < 0.01 || 
         (constraints.maxHeight != double.infinity && 
          constraints.maxHeight <= kExpandedModeThreshold)) {
-      return PlayerDisplayMode.compact;
+      _cachedDisplayMode = PlayerDisplayMode.compact;
+    }
+    // 扩展模式：其他所有情况
+    else {
+      _cachedDisplayMode = PlayerDisplayMode.expanded;
     }
     
-    // 扩展模式：其他所有情况
-    return PlayerDisplayMode.expanded;
+    return _cachedDisplayMode!;
   }
 
   @override
@@ -498,7 +509,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建唱片区域
+  // 【性能优化】构建唱片区域 - 使用RepaintBoundary隔离动画
   Widget _buildDiscSection() {
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
     final imageUrl = _getImageUrl();
@@ -506,98 +517,101 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final singer = _getCurrentSinger();
     
     return Center(
-      child: Container(
-        width: kExpandedDiscSize,
-        height: kExpandedDiscSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 20,
-              spreadRadius: 5,
-            ),
-          ],
-        ),
-        child: AnimatedBuilder(
-          animation: _rotationAnimation ?? const AlwaysStoppedAnimation(0.0),
-          builder: (context, child) {
-            return Transform.rotate(
-              angle: (_rotationAnimation?.value ?? 0.0) * kFullRotation,
-              child: ClipOval(
-                child: Stack(
-                  children: [
-                    // 唱片纹理
-                    CustomPaint(
-                      size: const Size(kExpandedDiscSize, kExpandedDiscSize),
-                      painter: _DiscPainter(isCompact: false),
-                    ),
-                    // 中心封面
-                    Center(
-                      child: Container(
-                        width: kExpandedDiscSize * kDiscInnerCircleRatio,
-                        height: kExpandedDiscSize * kDiscInnerCircleRatio,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.transparent,
-                        ),
-                        child: ClipOval(
-                          child: _buildCoverImage(placeholder, imageUrl),
-                        ),
+      child: RepaintBoundary(  // 【性能优化】隔离动画区域，防止影响其他部分
+        child: Container(
+          width: kExpandedDiscSize,
+          height: kExpandedDiscSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: AnimatedBuilder(
+            animation: _rotationAnimation ?? const AlwaysStoppedAnimation(0.0),
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: (_rotationAnimation?.value ?? 0.0) * kFullRotation,
+                child: child,  // 【性能优化】使用child参数避免重建静态内容
+              );
+            },
+            child: ClipOval(  // 【性能优化】将静态内容作为child，避免每帧重建
+              child: Stack(
+                children: [
+                  // 唱片纹理
+                  CustomPaint(
+                    size: const Size(kExpandedDiscSize, kExpandedDiscSize),
+                    painter: _DiscPainter(isCompact: false),
+                  ),
+                  // 中心封面
+                  Center(
+                    child: Container(
+                      width: kExpandedDiscSize * kDiscInnerCircleRatio,
+                      height: kExpandedDiscSize * kDiscInnerCircleRatio,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                      ),
+                      child: ClipOval(
+                        child: _buildCoverImage(placeholder, imageUrl),
                       ),
                     ),
-                    // 中心白色标签
-                    Center(
-                      child: Container(
-                        width: kExpandedDiscSize * kDiscCenterRatio,
-                        height: kExpandedDiscSize * kDiscCenterRatio,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                  ),
+                  // 中心白色标签
+                  Center(
+                    child: Container(
+                      width: kExpandedDiscSize * kDiscCenterRatio,
+                      height: kExpandedDiscSize * kDiscCenterRatio,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (singer != null)
                             Text(
-                              title,
+                              singer,
                               style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                                fontSize: 8,
+                                color: Colors.black54,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            if (singer != null)
-                              Text(
-                                singer,
-                                style: const TextStyle(
-                                  fontSize: 8,
-                                  color: Colors.black54,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
-                    // 中心孔
-                    Center(
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[800],
-                          shape: BoxShape.circle,
-                        ),
+                  ),
+                  // 中心孔
+                  Center(
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        shape: BoxShape.circle,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
@@ -615,12 +629,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       children: [
         // 黑色背景（作为图片加载失败的后备）
         Container(color: Colors.black),
-        // 封面图片 - 修改：使用 _buildCoverImage 方法，添加10%放大
+        // 封面图片 - 修改：移除Transform.scale，直接使用BoxFit.cover
         _buildCoverImage(
           placeholder, 
           imageUrl, 
           fit: BoxFit.cover,
-          scaleFactor: 1.1,  // 放大10%
         ),
         // 半透明遮罩
         Container(
@@ -747,7 +760,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建紧凑模式左侧封面区域 - 修改：添加10%放大
+  // 构建紧凑模式左侧封面区域 - 修改：移除Transform.scale和ClipRect
   Widget _buildCompactCoverSection(Widget? placeholder, String? imageUrl, double size, {bool showGradient = false}) {
     return SizedBox(
       width: size,
@@ -755,14 +768,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 修改：使用 ClipRect 确保图片不会溢出，添加10%放大
-          ClipRect(
-            child: _buildCoverImage(
-              placeholder, 
-              imageUrl, 
-              fit: BoxFit.cover,
-              scaleFactor: 1.1,  // 统一放大10%
-            ),
+          // 修改：直接使用图片，移除ClipRect和Transform
+          _buildCoverImage(
+            placeholder, 
+            imageUrl, 
+            fit: BoxFit.cover,
           ),
           // 右侧渐变遮罩（仅在需要时显示）
           if (showGradient)
@@ -1055,10 +1065,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return _iappPlayerController?.iappPlayerDataSource?.notificationConfiguration?.imageUrl;
   }
 
-  // 构建封面图片 - 修改：添加缩放支持
+  // 构建封面图片 - 修改：移除scaleFactor参数，简化实现
   Widget _buildCoverImage(Widget? placeholder, String? imageUrl, {
     BoxFit? fit,
-    double scaleFactor = 1.0,  // 添加缩放因子参数
   }) {
     final effectiveFit = fit ?? BoxFit.cover;
     
@@ -1071,6 +1080,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         imageWidget = Image.network(
           imageUrl,
           fit: effectiveFit,
+          alignment: Alignment.center,
           errorBuilder: (context, error, stackTrace) => Container(
             color: Colors.grey[900],
             child: Icon(
@@ -1084,6 +1094,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         imageWidget = Image.asset(
           imageUrl,
           fit: effectiveFit,
+          alignment: Alignment.center,
           errorBuilder: (context, error, stackTrace) => Container(
             color: Colors.grey[900],
             child: Icon(
@@ -1101,16 +1112,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           Icons.music_note,
           size: 60,
           color: Colors.grey[600],
-        ),
-      );
-    }
-    
-    // 应用缩放
-    if (scaleFactor != 1.0) {
-      return ClipRect(
-        child: Transform.scale(
-          scale: scaleFactor,
-          child: imageWidget,
         ),
       );
     }
@@ -1702,24 +1703,31 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     }
   }
 
-  // 更新播放状态
+  // 【性能优化核心】更新播放状态
   void _updateState() {
     if (!mounted) return;
     
     final newValue = _controller!.value;
     
-    // 修改：优化更新条件判断，提高精确性
-    final needsUpdate = _latestValue == null || (
+    // 【性能优化】将position比较精度从毫秒改为秒级
+    final currentPositionInSeconds = newValue.position.inSeconds;
+    final bool positionChanged = _lastUpdatedPositionInSeconds != currentPositionInSeconds;
+    
+    // 其他状态变化检查
+    final bool otherStateChanged = _latestValue == null || (
         _latestValue!.isPlaying != newValue.isPlaying ||
-        _latestValue!.position.inMilliseconds != newValue.position.inMilliseconds ||
         _latestValue!.duration?.inMilliseconds != newValue.duration?.inMilliseconds ||
         _latestValue!.hasError != newValue.hasError ||
         (_latestValue!.volume - newValue.volume).abs() > 0.01
     );
     
-    if (needsUpdate) {
+    // 只有在position变化到秒级或其他状态变化时才更新
+    if (positionChanged || otherStateChanged) {
       setState(() {
         _latestValue = newValue;
+        if (positionChanged) {
+          _lastUpdatedPositionInSeconds = currentPositionInSeconds;
+        }
       });
       
       // 根据播放状态控制动画
