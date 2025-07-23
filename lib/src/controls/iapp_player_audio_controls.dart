@@ -111,7 +111,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 唱片相关常量 - 修改以减少纹理，增大封面
   static const double kDiscGrooveWidth = 2.0; // 线条宽度
-  static const double kDiscGrooveSpacing = 12.0; // 修改：增加间距
+  static const double kDiscGrooveSpacing = 10.0; // 修改：增加间距
   static const double kDiscCenterRatio = 0.25; // 中心标签比例
   static const double kDiscInnerCircleRatio = 0.75; // 修改：增大内圈封面比例
 
@@ -136,8 +136,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 正方形模式相关常量
   static const double kSquareModePlayButtonSize = 60.0; // 正方形模式播放按钮尺寸
-  // 修改：从 0.3 改为 0.5，提高透明度使黑色更明显
-  static const double kSquareModeButtonOpacity = 0.5; // 正方形模式按钮透明度
+  // 透明度使黑色更明显
+  static const double kSquareModeButtonOpacity = 0.7; // 正方形模式按钮透明度
 
   // 常量样式定义
   static const List<Shadow> _textShadows = [
@@ -1786,18 +1786,18 @@ class _DiscPainter extends CustomPainter {
         canvas.drawCircle(center, r, groovePaint);
       }
     } else {
-      // 修改：扩展模式精确绘制3条纹理线
+      // 修改：扩展模式精确绘制4条纹理线
       groovePaint.color = Colors.white.withOpacity(0.3);
       
       // 计算封面边缘位置
       final coverRadius = radius * _IAppPlayerAudioControlsState.kDiscInnerCircleRatio;
       // 可用空间
       final availableSpace = radius - coverRadius;
-      // 将可用空间分为4份（3条线 + 4个间隔）
-      final spacing = availableSpace / 4;
+      // 将可用空间分为5份（4条线 + 5个间隔）
+      final spacing = availableSpace / 5;
       
-      // 从封面边缘开始，绘制3条纹理线
-      for (int i = 1; i <= 3; i++) {
+      // 从封面边缘开始，绘制4条纹理线
+      for (int i = 1; i <= 4; i++) {
         final r = coverRadius + spacing * i;
         canvas.drawCircle(center, r, groovePaint);
       }
