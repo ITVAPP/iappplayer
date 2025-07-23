@@ -13,9 +13,7 @@ class UIConstants {
   static const double spaceSM = 8.0;
   static const double spaceMD = 16.0;
   static const double spaceLG = 24.0;
-  static const double spaceXL = 32.0;
-  static const double spaceXXL = 40.0;
-  static const double spaceXXXL = 60.0;
+  static const double spaceXL = 38.0;
   
   // 圆角常量
   static const double radiusSM = 12.0;
@@ -26,7 +24,6 @@ class UIConstants {
   // 按钮尺寸
   static const double buttonSizeSmall = 48.0;  // 新增：小尺寸按钮
   static const double buttonSizeNormal = 60.0;
-  static const double buttonSizeLarge = 80.0;
   
   // 图标尺寸
   static const double iconXS = 16.0;
@@ -34,7 +31,6 @@ class UIConstants {
   static const double iconMD = 24.0;
   static const double iconLG = 28.0;
   static const double iconXL = 32.0;
-  static const double iconXXL = 36.0;
   static const double iconLogo = 64.0;
   
   // 字体大小
@@ -972,7 +968,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ),
                         ),
                       ),
-                      // 播放信息卡片 - 显示当前视频标题
+                      // 播放信息卡片 - 显示当前视频标题（修改：移除模式切换按钮）
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
                         padding: EdgeInsets.all(UIConstants.spaceMD),
@@ -1036,43 +1032,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                     ),
                                   ),
                                 ],
-                              ),
-                            ),
-                            // 模式切换按钮
-                            Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: _playlistController != null
-                                    ? () => _playlistController!.toggleShuffleMode()
-                                    : null,
-                                borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: UIConstants.spaceMD,
-                                    vertical: UIConstants.spaceSM,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
-                                        color: Colors.white,
-                                        size: UIConstants.iconXS,
-                                      ),
-                                      SizedBox(width: UIConstants.spaceXS),
-                                      Text(
-                                        _shuffleMode ? '随机' : '顺序',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: UIConstants.fontSM,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ),
                             ),
                           ],
@@ -1139,6 +1098,15 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       ],
                     ),
                     SizedBox(height: UIConstants.spaceLG - 4), // 20
+                    // 修改：添加播放模式切换按钮
+                    ModernControlButton(
+                      onPressed: _playlistController != null
+                          ? () => _playlistController!.toggleShuffleMode()
+                          : null,
+                      icon: _shuffleMode ? Icons.shuffle_rounded : Icons.repeat_rounded,
+                      label: _shuffleMode ? '随机播放' : '顺序播放',
+                    ),
+                    SizedBox(height: UIConstants.spaceMD),
                     // 全屏播放按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
@@ -1366,7 +1334,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
       title: 'Creative Design',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
       audioOnly: true,
-      aspectRatio: 1.0,
+      aspectRatio: 1.0,   // 传递比例显示正方形播放器
       subtitleContent: lrcContent,
       enableFullscreen: true, // 添加全屏功能
       eventListener: (event) {
@@ -1491,7 +1459,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                       Container(
                         width: UIConstants.musicPlayerSquareSize,
                         height: UIConstants.musicPlayerSquareSize,
-                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXL),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(UIConstants.radiusSM),
                           color: Colors.black,
@@ -1511,9 +1479,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                          child: AspectRatio(
-                            aspectRatio: 1.0,  // 传递比例显示正方形播放器
-                            child: Container(
+                          child: Container(
                               color: Colors.black,
                               child: _controller != null
                                   ? IAppPlayer(controller: _controller!)
@@ -1523,14 +1489,13 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                                         strokeWidth: 2,
                                       ),
                                     ),
-                            ),
                           ),
                         ),
                       ),
                       SizedBox(height: UIConstants.spaceLG),
                       // 歌曲信息
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXL),
                         child: Column(
                           children: [
                             Text(
@@ -1549,18 +1514,39 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                                 color: Colors.white.withOpacity(0.6),
                               ),
                             ),
-                            // 显示当前歌词
+                            // 显示当前歌词（修改：增强动画效果）
                             if (_currentLyric != null && _currentLyric!.isNotEmpty) ...[
                               SizedBox(height: UIConstants.spaceSM),
                               AnimatedSwitcher(
-                                duration: Duration(milliseconds: 300),
+                                duration: Duration(milliseconds: 500),
+                                switchInCurve: Curves.easeIn,
+                                switchOutCurve: Curves.easeOut,
+                                transitionBuilder: (Widget child, Animation<double> animation) {
+                                  // 组合淡入淡出和缩放动画
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: ScaleTransition(
+                                      scale: Tween<double>(
+                                        begin: 0.95,
+                                        end: 1.0,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutCubic,
+                                        ),
+                                      ),
+                                      child: child,
+                                    ),
+                                  );
+                                },
                                 child: Text(
                                   _currentLyric!,
                                   key: ValueKey(_currentLyric),
                                   style: TextStyle(
                                     fontSize: UIConstants.fontMD,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withOpacity(0.9),
                                     fontStyle: FontStyle.italic,
+                                    height: 1.5, // 增加行高
                                   ),
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
@@ -1873,7 +1859,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                       SizedBox(height: UIConstants.spaceMD - 1), // 15 - 减少间距
                       // 当前歌曲信息 - 添加歌词显示
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXXL),
+                        padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXL),
                         child: Column(
                           children: [
                             Text(
@@ -1892,18 +1878,39 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                                 color: Colors.white.withOpacity(0.6),
                               ),
                             ),
-                            // 显示当前歌词
+                            // 显示当前歌词（修改：增强动画效果）
                             if (_currentLyric != null && _currentLyric!.isNotEmpty) ...[
                               SizedBox(height: UIConstants.spaceSM),
                               AnimatedSwitcher(
-                                duration: Duration(milliseconds: 300),
+                                duration: Duration(milliseconds: 500),
+                                switchInCurve: Curves.easeIn,
+                                switchOutCurve: Curves.easeOut,
+                                transitionBuilder: (Widget child, Animation<double> animation) {
+                                  // 组合淡入淡出和缩放动画
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: ScaleTransition(
+                                      scale: Tween<double>(
+                                        begin: 0.95,
+                                        end: 1.0,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutCubic,
+                                        ),
+                                      ),
+                                      child: child,
+                                    ),
+                                  );
+                                },
                                 child: Text(
                                   _currentLyric!,
                                   key: ValueKey(_currentLyric),
                                   style: TextStyle(
                                     fontSize: UIConstants.fontMD,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withOpacity(0.9),
                                     fontStyle: FontStyle.italic,
+                                    height: 1.5, // 增加行高
                                   ),
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
