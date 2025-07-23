@@ -67,10 +67,10 @@ mixin PlayerOrientationMixin<T extends StatefulWidget> on State<T>, WidgetsBindi
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    _handleOrientationChange();
+    handleOrientationChange();
   }
 
-  void _handleOrientationChange() {
+  void handleOrientationChange() {
     if (controller == null || !mounted) return;
     
     // 延迟执行以确保 MediaQuery 可用
