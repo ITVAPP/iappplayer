@@ -1656,19 +1656,17 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
-              padding: _modalListPadding,
+              padding: const EdgeInsets.symmetric(vertical: kSpacingUnit),
               itemCount: dataSourceList.length,
               itemBuilder: (context, index) {
                 final dataSource = dataSourceList[index];
                 final isCurrentItem = index == currentIndex;
                 final title = dataSource.notificationConfiguration?.title ?? 
-                  translations.trackItem.replaceAll('{index}', '${index + 1}');
-                final author = dataSource.notificationConfiguration?.author;
-
+                  translations.videoItem.replaceAll('{index}', '${index + 1}');
+                
                 return _buildPlaylistItem(
-                  index: index,
                   title: title,
-                  author: author,
+                  index: index,
                   isCurrentItem: isCurrentItem,
                   onTap: () {
                     _playAtIndex(index);
