@@ -10,7 +10,6 @@ import 'common_utils.dart';
 enum DecoderState {
   hardware,
   software,
-  auto,
 }
 
 // 单视频播放示例
@@ -109,8 +108,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
         return IAppPlayerDecoderType.hardwareFirst;
       case DecoderState.software:
         return IAppPlayerDecoderType.softwareFirst;
-      case DecoderState.auto:
-        return IAppPlayerDecoderType.auto;
     }
   }
 
@@ -250,11 +247,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                                   DecoderState.software,
                                   Icons.computer,
                                 ),
-                                _buildDecoderOption(
-                                  l10n.autoSelect,
-                                  DecoderState.auto,
-                                  Icons.auto_mode,
-                                ),
+                                _buildPipOption(),
                               ],
                             ),
                           ],
@@ -312,24 +305,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           ? l10n.exitFullscreen 
                           : l10n.fullscreen,
                     ),
-                    SizedBox(height: UIConstants.spaceMD),
-                    // 画中画按钮
-                    // 修改：正确使用画中画API
-                    ModernControlButton(
-                      onPressed: _controller != null && !_isLoading && _playerGlobalKey != null
-                          ? () {
-                              if (_isPipMode) {
-                                _controller!.disablePictureInPicture();
-                              } else {
-                                _controller!.enablePictureInPicture(_playerGlobalKey!);
-                              }
-                            }
-                          : null,
-                      icon: _isPipMode
-                          ? Icons.picture_in_picture_alt_outlined
-                          : Icons.picture_in_picture_alt_rounded,
-                      label: _isPipMode ? '退出画中画' : '画中画',
-                    ),
                   ],
                 ),
               ),
@@ -380,6 +355,63 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                     ? const Color(0xFF667eea) 
                     : Colors.white.withOpacity(0.6),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 画中画选项按钮
+  Widget _buildPipOption() {
+    return GestureDetector(
+      onTap: _controller != null && !_isLoading && _playerGlobalKey != null
+          ? () {
+              if (_isPipMode) {
+                _controller!.disablePictureInPicture();
+              } else {
+                _controller!.enablePictureInPicture(_playerGlobalKey!);
+              }
+            }
+          : null,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: UIConstants.spaceMD,
+          vertical: UIConstants.spaceSM,
+        ),
+        decoration: BoxDecoration(
+          color: _isPipMode 
+              ? const Color(0xFF667eea).withOpacity(0.3)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
+          border: Border.all(
+            color: _isPipMode 
+                ? const Color(0xFF667eea)
+                : Colors.white.withOpacity(0.1),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              _isPipMode
+                  ? Icons.picture_in_picture_alt_outlined
+                  : Icons.picture_in_picture_alt_rounded,
+              color: _isPipMode 
+                  ? const Color(0xFF667eea) 
+                  : Colors.white.withOpacity(0.6),
+              size: UIConstants.iconMD,
+            ),
+            SizedBox(height: UIConstants.spaceXS),
+            Text(
+              _isPipMode ? '退出画中画' : '画中画',
+              style: TextStyle(
+                fontSize: UIConstants.fontSM,
+                color: _isPipMode 
+                    ? const Color(0xFF667eea) 
+                    : Colors.white.withOpacity(0.6),
+                fontWeight: _isPipMode ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
