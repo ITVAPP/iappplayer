@@ -56,7 +56,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
             _isPlaying = _controller?.isPlaying() ?? false;
           });
           // 初始化后检查方向
-          _handleOrientationChange();
+          handleOrientationChange();
         } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
           // 监听播放事件
           setState(() {
