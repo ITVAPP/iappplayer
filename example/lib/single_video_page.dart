@@ -96,8 +96,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     if (mounted) {
       setState(() {
         _controller = result.activeController;
-        // 设置全局键到控制器
-        _controller?.setIAppPlayerGlobalKey(_playerGlobalKey!);
+        // 注意：不需要调用 setIAppPlayerGlobalKey，这个 API 不存在
+        // GlobalKey 应该通过 Widget 的 key 参数绑定
       });
     }
   }
@@ -205,7 +205,10 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                             child: Container(
                               color: Colors.black,
                               child: _controller != null
-                                  ? IAppPlayer(controller: _controller!)
+                                  ? IAppPlayer(
+                                      key: _playerGlobalKey, // 关键修改：绑定 GlobalKey 到 Widget
+                                      controller: _controller!,
+                                    )
                                   : const Center(
                                       child: CircularProgressIndicator(
                                         color: Colors.white,
