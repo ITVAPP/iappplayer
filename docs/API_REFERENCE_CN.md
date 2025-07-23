@@ -393,6 +393,13 @@ await controller.preCache(nextVideo);
 
 // 调整缓冲灵敏度
 controller.setBufferingDebounceTime(1000); // 1秒
+
+// 完成后清理资源
+@override
+void dispose() {
+  controller.dispose();
+  super.dispose();
+}
 ```
 
 ### 📊 属性获取
