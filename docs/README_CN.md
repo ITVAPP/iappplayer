@@ -6,7 +6,15 @@
 [![GitHub Forks](https://img.shields.io/github/forks/ITVAPP/IAppPlayer?style=for-the-badge)](https://github.com/ITVAPP/IAppPlayer/network)
 [![Stars](https://img.shields.io/github/stars/ITVAPP/IAppPlayer?style=for-the-badge&logo=github&label=⭐%20Stars)](https://github.com/ITVAPP/IAppPlayer/stargazers)
 
-> 🎥 **IAppPlayer** 是基于 Flutter 开发的高性能视频和音频播放器，支持优先软件或硬件解码和多种流媒体格式！
+> 🎥 **IAppPlayer** - Flutter生态强大的播放器解决方案！专为OTT/IPTV、音乐播放器、视频平台等专业应用打造的高性能播放器。
+
+## 💡 为什么选择 IAppPlayer？
+
+🚀 **流媒体支持** - 完整支持HLS、DASH、RTMP、RTSP等主流协议  
+⚡ **性能优化** - 针对TV、车机等低配设备深度优化  
+🛡️ **企业级DRM** - 内置Widevine、FairPlay等版权保护方案  
+🎵 **音乐播放专家** - 原生LRC歌词支持，3种音频UI模式  
+📱 **多平台覆盖** -  iOS/Android原生适配，安全可靠
 
 ## 📖 文档导航
 
@@ -16,30 +24,39 @@
 | 📖 **详细文档** | [📚 参数说明](./API_REFERENCE_CN.md) | 完整API参数文档 |
 | 🎯 **常用示例** | [📚 常用示例](./API_CODE_CN.md) | 常用示例说明文档 |
 
-## ✨ 功能特性
+## ✨ 核心功能特性
 
-- 修复常见错误
-- 针对低配置设备（如果TV和车机系统）做了大量优化适配
-- 高级配置选项（支持设置优先软件或硬件解码，音频支持仅显示播放控件）
-- 支持使用 Cronet 数据源和自动降级 Http 数据源（仅在安卓系统）
-- 支持 FFmpeg 软件解码器，增强媒体格式支持
-- 支持 RTMP 协议（包括分段字幕、音轨切换）
-- 支持 RTSP 协议（包括轨道选择、分段字幕、音轨切换）
-- 支持 HLS 协议（包括轨道选择、分段字幕、音轨切换）
-- 支持 DASH 协议（包括轨道选择、字幕、音轨切换）
-- 支持 SmoothStreaming 协议（包括轨道选择、字幕、音轨切换）
-- 支持播放列表功能
-- 支持字幕和歌词功能（支持 LRC、SRT、WEBVTT 格式及 HTML 标签，HLS 字幕，多字幕切换）
-- 支持 ListView 视频播放
-- 支持HTTP头部设置
-- 支持视频适配（BoxFit）
-- 支持播放速度调节
-- 支持多种分辨率切换
-- 支持缓存功能
-- 支持通知功能
-- 支持画中画模式
-- 支持DRM保护（包括令牌、Widevine、FairPlay EZDRM）
-- ……更多功能待体验！
+### 🎯 基础功能
+- ✅ **完整播放控制** - 播放/暂停/快进/音量/速度等全套控制
+- ✅ **智能播放列表** - 连播/随机播放/循环模式，内存优化
+- ✅ **多格式字幕** - SRT/LRC/WebVTT/HLS分段字幕，HTML标签支持
+- ✅ **音频专用UI** - 3种显示模式（正方形/紧凑/扩展）
+- ✅ **歌词完美呈现** - 专为音乐播放优化的LRC歌词引擎
+- ✅ **系统级控制** - 通知栏控制、锁屏控制、画中画模式
+- ✅ **智能缓存** - 预加载、缓存管理、离线播放
+
+### 🔥 专业级特性
+
+#### 📡 流媒体协议全家桶
+```
+• HLS - 完整的m3u8支持，包括轨道选择、分段字幕、音轨切换
+• DASH - MPD解析，自适应码率，字幕/音轨切换  
+• RTMP/RTSP - 低延迟直播，实时流媒体
+• SmoothStreaming - 微软流媒体协议支持
+• HTTP/HTTPS - 标准流媒体，支持断点续传
+• FLV - 低延迟直播流
+```
+
+#### 🛠️ 高级技术特性
+```
+• 硬件/软件解码智能切换 - 自动选择最佳解码方案
+• FFmpeg软解码器 - 支持几乎所有媒体格式
+• Cronet网络栈 - Google高性能网络（Android）
+• 自动降级机制 - 网络异常时智能切换数据源
+• DRM保护 - Widevine L1/L3、FairPlay、ClearKey
+• 低配设备专项优化 - TV/车机系统流畅运行
+• 完整事件系统 - 23种事件类型，精确控制
+```
 
 ## 🚀 快速开始
 
@@ -128,7 +145,7 @@ import 'package:iapp_player/iapp_player.dart';
 
 ### 🎬 播放单个视频
 
-如果你的音视频播放有问题，可以指定优先的解码器（如果没有指定，使用硬件解码优先），使用硬件解码优先 preferredDecoderType: IAppPlayerDecoderType.hardwareFirst，使用软件解码优先 preferredDecoderType: IAppPlayerDecoderType.softwareFirst
+智能解码器选择，自动适配不同设备和视频格式：
 
 ```dart
 final player = IAppPlayerConfig.createPlayer(
@@ -147,7 +164,7 @@ _playerController = player.activeController;
 
 ### 🎵 播放列表
 
-你可以通过 shuffleMode 来为播放列表设定播放模式：true=随机播放，false=顺序播放，设定 loopVideos 来决定是否循环播放整个播放列表
+支持智能连播、随机播放和循环模式：
 
 ```dart
 final player = IAppPlayerConfig.createPlayer(
@@ -169,7 +186,7 @@ _playerController = player.activeController;
 
 ### 🎤 音乐播放器（带歌词）
 
-支持传入LRC歌词，播放音频时建议设置 audioOnly: true ，将显示音频控件而不是视频控件
+专业的音频播放体验，支持LRC歌词同步显示：
 
 ```dart
 final musicPlayer = IAppPlayerConfig.createPlayer(
@@ -198,7 +215,7 @@ _playerController = musicPlayer.activeController;
 
 ### 🧹 资源释放
 
-**重要**：为了避免内存泄漏，必须在页面销毁时正确释放播放器资源。以下是推荐的释放方式：
+**重要**：为了避免内存泄漏，必须在页面销毁时正确释放播放器资源：
 
 ```dart
 Future<void> _releasePlayer() async {
@@ -237,7 +254,7 @@ void dispose() {
 }
 ```
 
-## 🔧 高级功能
+## 🔧 高级功能速览
 
 > 💡 **更多高级功能和详细配置请查看：**
 > 
@@ -246,12 +263,12 @@ void dispose() {
 ### 🎯 主要高级功能
 
 - **多语言字幕** - 支持多种字幕格式和语言切换
-- **DRM保护** - 支持 Widevine、FairPlay 等DRM方案
-- **缓存控制** - 智能缓存策略和缓存管理
-- **网络配置** - HTTP头部设置和网络优化
-- **播放控制** - 精确的播放控制和事件监听
+- **DRM保护** - 企业级版权保护方案
+- **智能缓存** - 预加载和离线播放
+- **网络优化** - HTTP头部设置和自适应码率
+- **精确控制** - 完整的播放控制和事件监听
 - **UI自定义** - 完全自定义播放器界面
-- **画中画模式** - 支持Android和iOS画中画
+- **画中画模式** - 系统级画中画支持
 - **通知集成** - 媒体通知和锁屏控制
 
 ## 📚 更多文档资源
@@ -301,12 +318,6 @@ void dispose() {
 
 ### 版权信息
 
-**原项目版权：**
-```
-Copyright 2020 Jakub Homlala and Better Player / Chewie / Video Player contributors
-```
-
-**本项目版权：**
 ```
 Copyright [WWW.ITVAPP.NET] 2025 for modifications
 ```
@@ -317,11 +328,10 @@ Copyright [WWW.ITVAPP.NET] 2025 for modifications
 
 - 特别感谢 [Better Player / Chewie / Video Player] 项目提供的优秀开源代码基础。
 - 感谢所有为IAppPlayer项目贡献代码、反馈问题和建议的开发者们。
-- 感谢Flutter社区和开源社区的支持。
 
 ## 📞 联系方式
 
-- 🌍 **官方网站**：[电视宝应用商店](https://www.itvapp.net)
+- 🌍 **官方网站**：[电视应用商店](https://www.itvapp.net)
 - 🐛 **问题反馈**：[GitHub Issues](https://github.com/ITVAPP/IAppPlayer/issues)
 - 📧 **邮箱联系**：service # itvapp.net（#替换为@）
 
@@ -330,6 +340,8 @@ Copyright [WWW.ITVAPP.NET] 2025 for modifications
 <div align="center">
 
 **如果这个项目对你有帮助，请给个 ⭐ Star 支持一下！**
+
+**IAppPlayer - 让视频播放变得简单而强大！**
 
 [⬆ 回到顶部](#IAppPlayer)
 

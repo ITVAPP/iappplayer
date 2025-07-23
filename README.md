@@ -6,65 +6,81 @@
 [![GitHub Forks](https://img.shields.io/github/forks/ITVAPP/IAppPlayer?style=for-the-badge)](https://github.com/ITVAPP/IAppPlayer/network)
 [![Stars](https://img.shields.io/github/stars/ITVAPP/IAppPlayer?style=for-the-badge&logo=github&label=⭐%20Stars)](https://github.com/ITVAPP/IAppPlayer/stargazers)
 
+> 🎥 **IAppPlayer** - A powerful player solution for the Flutter ecosystem! High-performance player designed for professional applications like OTT/IPTV, music players, and video platforms.
 
-> 🎥 **IAppPlayer** is a high-performance video and audio player developed with Flutter, supporting prioritized software or hardware decoding and multiple streaming formats!
+## 💡 Why Choose IAppPlayer?
+
+🚀 **Streaming Support** - Complete support for mainstream protocols like HLS, DASH, RTMP, RTSP  
+⚡ **Performance Optimization** - Deep optimization for low-spec devices like TVs and car systems  
+🛡️ **Enterprise DRM** - Built-in copyright protection solutions like Widevine and FairPlay  
+🎵 **Music Player Expert** - Native LRC lyrics support, 3 audio UI modes  
+📱 **Multi-platform Coverage** - Native adaptation for iOS/Android, safe and reliable
 
 ## 📖 Documentation Navigation
 
 | 📋 Document Type | 🔗 Link | 📝 Description |
 |:---:|:---:|:---|
 | 🚀 **Quick Start** | [👇 Content Below](#-quick-start) | Basic usage and simple examples |
-| 📖 **Detailed Documentation** | [📚 Parameter Reference](docs/API_REFERENCE.md) | Complete API parameter documentation |
-| 🎯 **Common Examples** | [📚 Common Examples](docs/API_CODE.md) | Common examples documentation |
+| 📖 **Detailed Documentation** | [📚 API Reference](docs/API_REFERENCE.md) | Complete API parameter documentation |
+| 🎯 **Common Examples** | [📚 Code Examples](docs/API_CODE.md) | Common usage examples documentation |
 
-## ✨ Features
+## ✨ Core Features
 
-- Fixed common bugs
-- Extensively optimized and adapted for low-end devices (such as TV boxes and car systems)
-- Advanced configuration options (support for prioritizing software or hardware decoding, audio support for displaying playback controls only)
-- Support for Cronet data source and automatic degradation to Http data source (Android only)
-- Support for FFmpeg software decoder, enhanced media format support
-- Support for RTMP protocol (including segmented subtitles, audio track switching)
-- Support for RTSP protocol (including track selection, segmented subtitles, audio track switching)
-- Support for HLS protocol (including track selection, segmented subtitles, audio track switching)
-- Support for DASH protocol (including track selection, subtitles, audio track switching)
-- Support for SmoothStreaming protocol (including track selection, subtitles, audio track switching)
-- Support for playlist functionality
-- Support for subtitles and lyrics (supporting LRC, SRT, WEBVTT formats and HTML tags, HLS subtitles, multiple subtitle switching)
-- Support for ListView video playback
-- Support for HTTP header settings
-- Support for video fitting (BoxFit)
-- Support for playback speed adjustment
-- Support for multiple resolution switching
-- Support for caching functionality
-- Support for notification functionality
-- Support for Picture-in-Picture mode
-- Support for DRM protection (including tokens, Widevine, FairPlay EZDRM)
-- ...More features to explore!
+### 🎯 Basic Features
+- ✅ **Complete Playback Control** - Full control suite including play/pause/seek/volume/speed
+- ✅ **Smart Playlist** - Continuous play/shuffle/loop modes, memory optimized
+- ✅ **Multi-format Subtitles** - SRT/LRC/WebVTT/HLS segmented subtitles, HTML tag support
+- ✅ **Dedicated Audio UI** - 3 display modes (square/compact/extended)
+- ✅ **Perfect Lyrics Display** - LRC lyrics engine optimized for music playback
+- ✅ **System-level Control** - Notification control, lock screen control, picture-in-picture
+- ✅ **Smart Caching** - Preload, cache management, offline playback
+
+### 🔥 Professional Features
+
+#### 📡 Complete Streaming Protocol Suite
+```
+• HLS - Complete m3u8 support, including track selection, segmented subtitles, audio track switching
+• DASH - MPD parsing, adaptive bitrate, subtitle/audio track switching  
+• RTMP/RTSP - Low-latency live streaming, real-time media streaming
+• SmoothStreaming - Microsoft streaming protocol support
+• HTTP/HTTPS - Standard streaming, supports resume
+• FLV - Low-latency live streaming
+```
+
+#### 🛠️ Advanced Technical Features
+```
+• Hardware/Software Decoder Smart Switching - Auto-select optimal decoding solution
+• FFmpeg Software Decoder - Supports almost all media formats
+• Cronet Network Stack - Google high-performance network (Android)
+• Auto-fallback Mechanism - Smart source switching on network failures
+• DRM Protection - Widevine L1/L3, FairPlay, ClearKey
+• Low-spec Device Optimization - Smooth running on TV/car systems
+• Complete Event System - 23 event types for precise control
+```
 
 ## 🚀 Quick Start
 
-### 📋 Requirements
+### 📋 Environment Requirements
 
 #### Flutter Environment
 - **Flutter**: 3.3.0 or higher
 - **Dart**: 2.17.0 or higher
 
 #### Platform Requirements
-- **Android**: API 21+ (Android 5.0+)、compileSdkVersion 35+
+- **Android**: API 21+ (Android 5.0+), compileSdkVersion 35+
 - **iOS**: 11.0 or higher
 
 ### 📦 Installation Steps
 
 #### 1. **Add Dependency**
 
-Add the dependency to your `pubspec.yaml` file:
+Add dependency in your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
   flutter:
     sdk: flutter
-  iapp_player: ^1.0.0  # or use local path
+  iapp_player: ^1.0.0  # Or use local path
   # If using local version
   # iapp_player:
   #   path: ./path/iapp_player
@@ -74,7 +90,7 @@ dev_dependencies:
     sdk: flutter
 ```
 
-#### 2. **Platform-Specific Configuration**
+#### 2. **Platform-specific Configuration**
 
 ##### Android Configuration
 
@@ -129,7 +145,7 @@ import 'package:iapp_player/iapp_player.dart';
 
 ### 🎬 Play Single Video
 
-If you experience issues with audio or video playback, you can specify the preferred decoder type. (If not specified, hardware decoding is used by default.), To prioritize hardware decoding: preferredDecoderType: IAppPlayerDecoderType.hardwareFirst, To prioritize software decoding: preferredDecoderType: IAppPlayerDecoderType.softwareFirst
+Smart decoder selection, automatically adapts to different devices and video formats:
 
 ```dart
 final player = IAppPlayerConfig.createPlayer(
@@ -137,7 +153,7 @@ final player = IAppPlayerConfig.createPlayer(
   eventListener: (event) {
     print('Player event: ${event.iappPlayerEventType}');
   },
-  // Optional parameter: Specify the preferred decoder type
+  // Optional: specify preferred decoder type
   // IAppPlayerDecoderType.hardwareFirst - Hardware decoding priority (default)
   // IAppPlayerDecoderType.softwareFirst - Software decoding priority
   preferredDecoderType: IAppPlayerDecoderType.hardwareFirst,
@@ -148,7 +164,7 @@ _playerController = player.activeController;
 
 ### 🎵 Playlist
 
-You can use shuffleMode to set the playback mode for the playlist: true = shuffle playback ,  false = sequential playback , Set loopVideos to determine whether the entire playlist should loop.
+Supports smart continuous play, shuffle, and loop modes:
 
 ```dart
 final player = IAppPlayerConfig.createPlayer(
@@ -160,9 +176,9 @@ final player = IAppPlayerConfig.createPlayer(
   eventListener: (event) {
     print('Player event: ${event.iappPlayerEventType}');
   },
-  // Optional parameters: Set playback mode
-  shuffleMode: false,  // true=shuffle playback, false=sequential playback (default)
-  loopVideos: true,    // true=loop entire playlist (default), false=stop after playing all
+  // Optional: set playback mode
+  shuffleMode: false,  // true=shuffle, false=sequential (default)
+  loopVideos: true,    // true=loop playlist (default), false=stop after completion
 );
 
 _playerController = player.activeController;
@@ -170,7 +186,7 @@ _playerController = player.activeController;
 
 ### 🎤 Music Player (with Lyrics)
 
-LRC lyrics are supported. When playing audio, it is recommended to set audioOnly: true, which will display audio controls instead of video controls.
+Professional audio playback experience with LRC lyrics sync display support:
 
 ```dart
 final musicPlayer = IAppPlayerConfig.createPlayer(
@@ -180,9 +196,9 @@ final musicPlayer = IAppPlayerConfig.createPlayer(
   ],
   titles: ['Song 1', 'Song 2'],
   subtitleContents: [  // LRC lyrics format
-    '''[00:02.05]Wish to have someone's heart
+    '''[00:02.05]May I have your heart
 [00:08.64]Lyrics: Hu Xiaojian Music: Luo Junlin
-[00:27.48]The person who was in the small compartment of my backpack''',
+[00:27.48]The person in my backpack's small compartment''',
     '''[00:00.00]About Love
 [00:05.00]Beautiful melody
 [00:10.00]Love is in the air''',
@@ -190,8 +206,8 @@ final musicPlayer = IAppPlayerConfig.createPlayer(
   eventListener: (event) {
     print('Music player event: ${event.iappPlayerEventType}');
   },
-  // Optional parameter: Enable audio mode
-  audioOnly: true,  // true=display audio controls, false=display video controls (default)
+  // Optional: enable audio mode
+  audioOnly: true,  // true=show audio controls, false=show video controls (default)
 );
 
 _playerController = musicPlayer.activeController;
@@ -199,16 +215,16 @@ _playerController = musicPlayer.activeController;
 
 ### 🧹 Resource Release
 
-**Important**: To avoid memory leaks, you must properly release player resources when the page is destroyed. Here is the recommended release method:
+**Important**: To avoid memory leaks, you must properly release player resources when the page is destroyed:
 
 ```dart
 Future<void> _releasePlayer() async {
     try {
-      // 1. Clear player caches
+      // 1. Clear player cache
       IAppPlayerConfig.clearAllCaches();
       if (_playerController != null) {
         try {
-          // 2. Remove event listeners
+          // 2. Remove event listener
           _playerController!.removeEventsListener(_videoListener);
           // 3. If playing, pause and mute first
           if (_playerController!.isPlaying() ?? false) {
@@ -238,52 +254,52 @@ void dispose() {
 }
 ```
 
-## 🔧 Advanced Features
+## 🔧 Advanced Features Overview
 
 > 💡 **For more advanced features and detailed configuration, please see:**
 > 
-> 📚 **[Complete API Parameter Documentation](docs/API_REFERENCE.md)** - Contains detailed explanations of all parameters
+> 📚 **[Complete API Documentation](docs/API_REFERENCE.md)** - Contains all parameter details
 
 ### 🎯 Main Advanced Features
 
 - **Multi-language Subtitles** - Support for multiple subtitle formats and language switching
-- **DRM Protection** - Support for Widevine, FairPlay and other DRM solutions
-- **Cache Control** - Intelligent caching strategies and cache management
-- **Network Configuration** - HTTP header settings and network optimization
-- **Playback Control** - Precise playback control and event listening
+- **DRM Protection** - Enterprise-level copyright protection solutions
+- **Smart Caching** - Preload and offline playback
+- **Network Optimization** - HTTP header settings and adaptive bitrate
+- **Precise Control** - Complete playback control and event listening
 - **UI Customization** - Fully customizable player interface
-- **Picture-in-Picture Mode** - Support for Android and iOS PiP
+- **Picture-in-Picture** - System-level PiP support
 - **Notification Integration** - Media notifications and lock screen controls
 
 ## 📚 More Documentation Resources
 
-> 💡 **If this documentation is not comprehensive enough, please check the detailed comments in the source code** - We provide rich comments in the code, covering the usage, parameter descriptions, and examples of each API.
+> 💡 **If this documentation is not comprehensive enough, please check the detailed comments in the source code** - We provide rich comments in the code, covering usage, parameter descriptions, and examples for each API.
 
 ## 🚨 Important Notice
 
-This library is not responsible for issues caused by the video_player library, it only serves as a UI wrapper on top of it.
+This library is not responsible for issues caused by the video_player library, as it only serves as a UI wrapper on top of it.
 
-That is: PlatformExceptions (platform exceptions) caused by video playback in the application are all caused by the video_player library.
+That is: PlatformExceptions caused by video playback in the application are all caused by the video_player library.
 
 Please submit related issues to the Flutter team.
 
 ## 🔀 Flutter Version Compatibility
 
-This library strives to support at least the second-to-last version of Flutter (N-1 support).
+This library strives to support at least the second-to-last Flutter version (N-1 support).
 
-However, due to major changes in Flutter versions, compatibility cannot be fully guaranteed, and major or minor version updates will be released when necessary.
+However, due to major changes in Flutter versions, complete compatibility cannot be fully guaranteed. Major or minor version updates will be released when necessary.
 
 ## 🤝 Open Source Contribution
 
 > 💡 **This plugin is under active development, and community participation is welcome!**
 > 
-> 🔄 **Version Update Notice** - Due to the rapid iteration of the project, you may encounter incompatible changes in each version, and we will try to provide detailed explanations in the changelog.
+> 🔄 **Version Update Notes** - As the project is in rapid iteration, you may encounter incompatible changes in each version. We will try to detail them in the changelog.
 > 
-> 💪 **How to Contribute** - This plugin is developed and maintained for free by [TV Treasure App Store (www.itvapp.net)]. We warmly welcome your participation through the following ways:
-> - 🐛 **Submit Bug Reports** - Please provide timely feedback through GitHub Issues when you find issues
+> 💪 **How to Contribute** - This plugin is freely developed and maintained by [TV Treasure App Store (www.itvapp.net)]. We warmly welcome your participation through:
+> - 🐛 **Submit Bug Reports** - Report issues promptly through GitHub Issues
 > - ✨ **Feature Suggestions** - Propose your needs and improvement ideas  
-> - 🔧 **Code Contributions** - Directly submit Pull Requests to fix issues or add new features
-> - 📝 **Documentation Improvements** - Help improve and refine project documentation
+> - 🔧 **Code Contributions** - Submit Pull Requests directly to fix issues or add new features
+> - 📝 **Documentation Improvements** - Help improve and enhance project documentation
 > 
 > 🌟 **All valuable contributions will be carefully reviewed. Let's build a better player together!**
 
@@ -295,42 +311,37 @@ This project follows the **Apache License, Version 2.0** open source license.
 
 According to Apache 2.0 License:
 
-- ✅ **Free to use, modify and distribute**
+- ✅ **Free to use, modify, and distribute**
 - ✅ **Can be used for commercial purposes**
-- ✅ **Can privately modify**
+- ✅ **Can privatize modifications**
 - ⚠️ **Must retain copyright notice and license**
 
 ### Copyright Information
 
-**Original Project Copyright:**
-```
-Copyright 2020 Jakub Homlala and Better Player / Chewie / Video Player contributors
-```
-
-**This Project Copyright:**
 ```
 Copyright [WWW.ITVAPP.NET] 2025 for modifications
 ```
 
-For the full license text, please see the [LICENSE](LICENSE) file.
+For complete license text, see [LICENSE](LICENSE) file.
 
 ## 🙏 Acknowledgments
 
-- Special thanks to the [Better Player / Chewie / Video Player] project for providing excellent open source code foundation.
-- Thanks to all developers who have contributed code, feedback, and suggestions to the IAppPlayer project.
-- Thanks to the Flutter community and open source community for their support.
+- Special thanks to [Better Player / Chewie / Video Player] projects for providing excellent open source code foundation.
+- Thanks to all developers who have contributed code, reported issues, and provided suggestions for the IAppPlayer project.
 
 ## 📞 Contact
 
-- 🌍 **Official Website**: [TV Treasure App Store](https://www.itvapp.net)
+- 🌍 **Official Website**: [TV App Store](https://www.itvapp.net)
 - 🐛 **Issue Feedback**: [GitHub Issues](https://github.com/ITVAPP/IAppPlayer/issues)
-- 📧 **Email Contact**: service # itvapp.net (replace # with @)
+- 📧 **Email**: service # itvapp.net (replace # with @)
 
 ---
 
 <div align="center">
 
-**If this project helps you, please give it a ⭐ Star to support!**
+**If this project helps you, please give it a ⭐ Star!**
+
+**IAppPlayer - Making video playback simple yet powerful!**
 
 [⬆ Back to Top](#IAppPlayer)
 

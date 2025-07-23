@@ -18,10 +18,11 @@
   - [🎭 六、解码器类型](#-六解码器类型)
   - [⚙️ 七、播放器配置](#️-七播放器配置)
   - [🎚️ 八、控件配置](#️-八控件配置)
-  - [📝 九、字幕配置](#-九字幕配置)
-  - [💾 十、数据源配置](#-十数据源配置)
-  - [📑 十一、字幕源配置](#-十一字幕源配置)
-  - [⚠️ 十二、平台限制与注意事项](#️-十二平台限制与注意事项)
+  - [🎵 九、音频播放器显示模式](#-九音频播放器显示模式)
+  - [📝 十、字幕配置](#-十字幕配置)
+  - [💾 十一、数据源配置](#-十一数据源配置)
+  - [📑 十二、字幕源配置](#-十二字幕源配置)
+  - [⚠️ 十三、平台限制与注意事项](#️-十三平台限制与注意事项)
 
 ---
 
@@ -43,9 +44,7 @@
 | `rtsps://` | 直播流 | Secure RTSP |
 
 **注意**：
-- 检测结果会被缓存以提高性能（LRU缓存，最大1000条）
-- 缓存使用LRU（最近最少使用）策略，当缓存满时会自动删除最旧的条目
-- 扩展名检测使用 `lastIndexOf('.')` 优化性能
+- 检测结果会被缓存以提高性能
 - 可以通过 `clearAllCaches()` 清除缓存
 - 可以通过显式设置 `videoFormat` 和 `liveStream` 参数覆盖自动检测结果
 
@@ -67,7 +66,7 @@
 | `imageUrls` | `List<String>?` | `null` | 播放列表封面图片URL数组 |
 | `author` | `String?` | `null` | 通知栏作者信息（通常为应用名称） |
 | `notificationChannelName` | `String?` | `null` | Android通知渠道名称（通常为应用包名） |
-| `backgroundImage` | `String?` | `null` | 播放器背景图，支持网络图片（http://或https://开头）和本地资源图片。背景图使用BoxFit.cover缩放模式，错误时返回背景图Widget。本地图片使用gaplessPlayback和FilterQuality.medium优化显示 |
+| `backgroundImage` | `String?` | `null` | 播放器背景图，支持网络图片（http://或https://开头）和本地资源图片 |
 
 ### 📑 字幕参数
 
@@ -95,17 +94,17 @@
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `isTV` | `bool` | `false` | 是否为TV模式，TV模式会禁用通知和Logo下载，并且不会创建通知配置 |
+| `isTV` | `bool` | `false` | 是否为TV模式，TV模式会禁用通知和Logo下载 |
 | `headers` | `Map<String, String>?` | `null` | HTTP请求头，用于需要认证的视频资源 |
 | `preferredDecoderType` | `IAppPlayerDecoderType?` | `null` | 首选解码器类型（硬件/软件/自动） |
-| `liveStream` | `bool?` | `null` | 是否为直播流（null时根据[URL格式自动检测](#-url格式自动检测规则)） |
+| `liveStream` | `bool?` | `null` | 是否为直播流（null时根据URL格式自动检测） |
 | `audioOnly` | `bool?` | `null` | 是否纯音频模式（便捷参数，也可通过controlsConfiguration设置） |
 
 ### 🎥 视频配置参数
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `videoFormat` | `IAppPlayerVideoFormat?` | `null` | 视频格式（null时根据[URL格式自动检测](#-url格式自动检测规则)） |
+| `videoFormat` | `IAppPlayerVideoFormat?` | `null` | 视频格式（null时根据URL格式自动检测） |
 | `videoExtension` | `String?` | `null` | 视频扩展名 |
 | `dataSourceType` | `IAppPlayerDataSourceType?` | `null` | 数据源类型（network/file/memory） |
 | `resolutions` | `Map<String, String>?` | `null` | 分辨率映射表 |
@@ -120,7 +119,7 @@
 | `overlay` | `Widget?` | `null` | 视频上的覆盖组件 |
 | `aspectRatio` | `double?` | `null` | 视频宽高比 |
 | `fit` | `BoxFit?` | `null` | 视频缩放模式 |
-| `rotation` | `double?` | `null` | 视频旋转角度（必须是90的倍数且不超过360度，否则使用默认值0） |
+| `rotation` | `double?` | `null` | 视频旋转角度（必须是90的倍数且不超过360度） |
 | `showPlaceholderUntilPlay` | `bool?` | `null` | 是否在播放前显示占位符 |
 | `placeholderOnTop` | `bool?` | `null` | 占位符是否置于顶层 |
 
@@ -157,7 +156,7 @@
 | `deviceOrientationsOnFullScreen` | `List<DeviceOrientation>?` | `null` | 全屏时设备方向 |
 | `deviceOrientationsAfterFullScreen` | `List<DeviceOrientation>?` | `null` | 退出全屏后设备方向 |
 | `systemOverlaysAfterFullScreen` | `List<SystemUiOverlay>?` | `null` | 退出全屏后的系统UI |
-| `autoDetectFullscreenDeviceOrientation` | `bool?` | `null` | 自动检测全屏设备方向（根据视频宽高比自动选择横屏或竖屏） |
+| `autoDetectFullscreenDeviceOrientation` | `bool?` | `null` | 自动检测全屏设备方向 |
 | `autoDetectFullscreenAspectRatio` | `bool?` | `null` | 自动检测全屏宽高比 |
 
 ### 🎵 流媒体参数
@@ -181,18 +180,6 @@
 | `useRootNavigator` | `bool?` | `null` | 是否使用根导航器 |
 | `playerVisibilityChangedBehavior` | `Function(double)?` | `null` | 播放器可见性变化回调 |
 
-### 📌 播放列表默认值说明
-
-当使用播放列表模式时，如果未提供某些参数，系统会使用以下默认值：
-
-| 场景 | 默认值 | 说明 |
-|:---:|:---:|:---|
-| 未提供标题 | `视频 1`、`视频 2`... | 自动生成递增的默认标题 |
-| 未提供字幕名称 | `字幕` | 默认字幕名称 |
-| 通知活动名称 | `MainActivity` | Android默认活动名称 |
-
-**注意**：播放列表使用 `List.generate` 批量创建数据源，确保高效处理大量视频。
-
 ### 💡 通知参数使用示例
 
 ```dart
@@ -205,6 +192,16 @@ IAppPlayerConfig.createPlayer(
   notificationChannelName: 'com.example.app', // Android通知渠道
 );
 ```
+
+### 📌 播放列表默认值说明
+
+当使用播放列表模式时，如果未提供某些参数，系统会使用以下默认值：
+
+| 场景 | 默认值 | 说明 |
+|:---:|:---:|:---|
+| 未提供标题 | `视频 1`、`视频 2`... | 自动生成递增的默认标题 |
+| 未提供字幕名称 | `字幕` | 默认字幕名称 |
+| 通知活动名称 | `MainActivity` | Android默认活动名称 |
 
 ---
 
@@ -302,13 +299,6 @@ eventListener: (IAppPlayerEvent event) {
     case IAppPlayerEventType.exception:
       final error = event.parameters?['exception'] as String?;
       print('播放错误: $error');
-      // 可以在这里实现重试逻辑
-      break;
-    case IAppPlayerEventType.bufferingStart:
-      print('开始缓冲，可以显示加载动画');
-      break;
-    case IAppPlayerEventType.bufferingEnd:
-      print('缓冲结束，隐藏加载动画');
       break;
     case IAppPlayerEventType.changedPlaylistShuffle:
       final shuffleMode = event.parameters?['shuffleMode'] as bool?;
@@ -351,7 +341,7 @@ eventListener: (IAppPlayerEvent event) {
 | 方法 | 说明 |
 |:---:|:---|
 | `setupSubtitleSource(IAppPlayerSubtitlesSource)` | 切换字幕源 |
-| `setTrack(IAppPlayerAsmsTrack)` | 设置视频轨道（HLS多码率）。当轨道的高度、宽度、比特率都为0时，会显示为"自动" |
+| `setTrack(IAppPlayerAsmsTrack)` | 设置视频轨道（HLS多码率） |
 | `setAudioTrack(IAppPlayerAsmsAudioTrack)` | 设置音频轨道 |
 
 #### 高级功能
@@ -396,7 +386,7 @@ eventListener: (IAppPlayerEvent event) {
 | `setupDataSource(int index)` | 播放指定索引的视频 | `playlistController.setupDataSource(2)` |
 | `toggleShuffleMode()` | 切换随机播放模式 | `playlistController.toggleShuffleMode()` |
 | `setupDataSourceList(List<IAppPlayerDataSource>)` | 设置新的播放列表 | - |
-| `dispose()` | 释放资源（会强制释放内部播放器控制器） | `playlistController.dispose()` |
+| `dispose()` | 释放资源 | `playlistController.dispose()` |
 
 ### 📈 播放列表属性获取
 
@@ -418,7 +408,7 @@ eventListener: (IAppPlayerEvent event) {
 | 方法 | 说明 | 使用场景 |
 |:---:|:---|:---|
 | `playSource()` | 简化的播放源切换方法 | 动态切换视频源 |
-| `clearAllCaches()` | 清理URL格式检测的LRU缓存（最大1000条）<br>使用LRU策略管理，缓存满时自动删除最旧条目 | 长时间运行后释放内存或强制重新检测URL格式 |
+| `clearAllCaches()` | 清理URL格式检测缓存 | 释放内存或强制重新检测URL格式 |
 | `createDataSource()` | 创建数据源 | 构建复杂数据源 |
 | `createPlayerConfig()` | 创建播放器配置 | 自定义播放器配置 |
 | `createPlaylistConfig()` | 创建播放列表配置 | 自定义播放列表配置 |
@@ -431,9 +421,9 @@ static Future<void> playSource({
   required IAppPlayerController controller,
   required dynamic source,  // 实际必须是 String 类型
   bool? liveStream,
-  String? title,              // 视频标题
-  String? imageUrl,           // 视频封面
-  String? author,             // 通知作者
+  String? title,
+  String? imageUrl,
+  String? author,
   String? notificationChannelName,
   bool preloadOnly = false,
   bool isTV = false,
@@ -459,34 +449,7 @@ static Future<void> playSource({
 }) async
 ```
 
-| 参数 | 类型 | 说明 |
-|:---:|:---:|:---|
-| `controller` | `IAppPlayerController` | 播放器控制器 |
-| `source` | `dynamic` (实际必须是String) | 视频源 URL，虽然参数类型是dynamic，但必须传入String类型，否则会抛出ArgumentError |
-| `liveStream` | `bool?` | 是否为直播流 |
-| `title` | `String?` | 视频标题 |
-| `imageUrl` | `String?` | 视频封面URL |
-| `author` | `String?` | 作者信息 |
-| `notificationChannelName` | `String?` | 通知渠道名 |
-| `preloadOnly` | `bool` | 仅预加载不播放（预加载模式只创建简化的数据源） |
-| `isTV` | `bool` | 是否TV模式 |
-| `audioOnly` | `bool?` | 是否纯音频模式（会更新控制器配置） |
-| `subtitles/subtitleUrl/subtitleContent` | - | 字幕参数 |
-| `headers` | `Map<String, String>?` | HTTP请求头 |
-| `dataSourceType` | `IAppPlayerDataSourceType?` | 数据源类型 |
-| `showNotification` | `bool?` | 是否显示通知 |
-| `preferredDecoderType` | `IAppPlayerDecoderType?` | 解码器类型 |
-| `videoFormat` | `IAppPlayerVideoFormat?` | 视频格式 |
-| `videoExtension` | `String?` | 视频扩展名 |
-| `bufferingConfiguration` | `IAppPlayerBufferingConfiguration?` | 缓冲配置 |
-| `cacheConfiguration` | `IAppPlayerCacheConfiguration?` | 缓存配置 |
-| `drmConfiguration` | `IAppPlayerDrmConfiguration?` | DRM配置 |
-| `resolutions` | `Map<String, String>?` | 分辨率映射 |
-| `useAsmsTracks` | `bool?` | 使用HLS轨道 |
-| `useAsmsAudioTracks` | `bool?` | 使用音频轨道 |
-| `useAsmsSubtitles` | `bool?` | 使用内嵌字幕 |
-| `overriddenDuration` | `Duration?` | 覆盖时长 |
-| `notificationConfiguration` | `IAppPlayerNotificationConfiguration?` | 通知配置 |
+**注意**：`source` 参数虽然类型是 `dynamic`，但必须传入 `String` 类型，否则会抛出 `ArgumentError`。
 
 #### 使用示例
 
@@ -502,15 +465,17 @@ await IAppPlayerConfig.playSource(
 );
 ```
 
-### 🎯 createDataSource 方法参数
+### 🎯 createDataSource 方法
+
+创建数据源对象，用于构建复杂的视频配置。
 
 ```dart
 static IAppPlayerDataSource createDataSource({
   required String url,
   bool? liveStream,
   Map<String, String>? headers,
-  String? title,              // 视频标题
-  String? imageUrl,           // 视频封面
+  String? title,
+  String? imageUrl,
   String? author,
   String? notificationChannelName,
   bool isTV = false,
@@ -534,7 +499,9 @@ static IAppPlayerDataSource createDataSource({
 })
 ```
 
-### 🎮 createPlayerConfig 方法参数
+### 🎮 createPlayerConfig 方法
+
+创建播放器配置对象。
 
 ```dart
 static IAppPlayerConfiguration createPlayerConfig({
@@ -579,20 +546,26 @@ static IAppPlayerConfiguration createPlayerConfig({
 })
 ```
 
-**注意**：`createPlayerConfig` 会根据 `audioOnly` 参数动态构建控件配置，如果提供了 `audioOnly` 参数，会自动创建或更新 `controlsConfiguration`。
+### 📋 createPlaylistConfig 方法
 
-### 📋 createPlaylistConfig 方法参数
+创建播放列表配置对象。
 
 ```dart
 static IAppPlayerPlaylistConfiguration createPlaylistConfig({
   bool shuffleMode = false,
   bool loopVideos = true,
-  Duration nextVideoDelay = defaultNextVideoDelay,
+  Duration nextVideoDelay = const Duration(seconds: 1),  // 默认1秒切换延迟
   int initialStartIndex = 0,
 })
 ```
 
-### 🎵 createPlaylistPlayer 方法参数
+**注意**：
+- `IAppPlayerPlaylistConfiguration` 类本身的默认切换延迟是3秒，但 `createPlaylistConfig` 方法使用1秒作为默认值
+- 播放列表在视频结束后会显示倒计时界面，用户可以跳过等待时间直接播放下一个视频
+
+### 🎵 createPlaylistPlayer 方法
+
+创建带有自定义数据源的播放列表播放器。
 
 ```dart
 static PlayerResult createPlaylistPlayer({
@@ -600,46 +573,11 @@ static PlayerResult createPlaylistPlayer({
   required List<IAppPlayerDataSource> dataSources,
   bool shuffleMode = false,
   bool loopVideos = true,
-  Duration nextVideoDelay = defaultNextVideoDelay,
+  Duration nextVideoDelay = const Duration(seconds: 1),
   int initialStartIndex = 0,
   IAppPlayerConfiguration? playerConfiguration,
 })
 ```
-
-### 🔧 常量定义
-
-| 常量 | 值 | 说明 |
-|:---:|:---:|:---|
-| `defaultNextVideoDelay` | `Duration(seconds: 1)` | IAppPlayerConfig中的默认播放列表切换延迟时间 |
-
-### 📌 内部常量说明
-
-播放器内部使用的默认常量值：
-
-| 常量 | 值 | 说明 |
-|:---:|:---:|:---|
-| 预缓存大小 | 10MB (10 * 1024 * 1024 字节) | 默认预缓存大小 |
-| 最大缓存 | 300MB (300 * 1024 * 1024 字节) | 默认最大缓存大小 |
-| 单文件最大缓存 | 50MB (50 * 1024 * 1024 字节) | 单个文件最大缓存大小 |
-| 直播最小缓冲 | 15秒 | 直播流最小缓冲时间 |
-| 直播最大缓冲 | 15秒 | 直播流最大缓冲时间 |
-| 点播最小缓冲 | 20秒 | 点播流最小缓冲时间 |
-| 点播最大缓冲 | 30秒 | 点播流最大缓冲时间 |
-| 播放缓冲 | 3秒 | 开始播放所需缓冲时间 |
-| 重新缓冲后播放 | 5秒 | 重新缓冲后播放所需时间 |
-| URL缓存容量 | 1000条 | URL格式检测缓存最大条目数（LRU策略） |
-| 默认视频标题前缀 | `视频 ` | 播放列表默认标题前缀 |
-| 默认字幕名称 | `字幕` | 默认字幕名称 |
-| 默认活动名称 | `MainActivity` | Android默认活动名称 |
-| 默认图片缩放模式 | BoxFit.cover | 背景图片默认缩放模式 |
-| 默认图片质量 | FilterQuality.medium | 本地图片默认渲染质量 |
-| 默认旋转角度 | 0 | 视频默认旋转角度 |
-| 缓冲防抖时间 | 500毫秒 | 缓冲状态变化的默认防抖时间 |
-| 播放列表切换延迟（IAppPlayerPlaylistConfiguration） | 3秒 | 使用IAppPlayerPlaylistConfiguration时的默认切换延迟 |
-| 音频控件隐藏时间 | 不隐藏 | 音频控件始终保持可见 |
-| 进度事件节流 | 500毫秒 | Progress事件最小触发间隔 |
-| 音频扩展布局阈值 | 200px | 高度超过此值时显示扩展布局 |
-| 字幕段检查间隔 | 1秒 | ASMS字幕段位置检查的最小间隔 |
 
 ---
 
@@ -670,17 +608,15 @@ preferredDecoderType: IAppPlayerDecoderType.auto,
 
 ## ⚙️ 七、播放器配置
 
-**注意**：以下默认值基于 `IAppPlayerConfiguration` 类的定义。使用 `createPlayerConfig()` 方法创建配置时，部分参数会根据 `liveStream` 等参数动态设置。
-
 ### 🎮 播放行为参数
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `autoPlay` | `bool` | `false` | 是否自动播放。**注意**：播放列表模式下切换视频时会忽略此设置，始终自动播放 |
+| `autoPlay` | `bool` | `false` | 是否自动播放。**注意**：播放列表模式下切换视频时会忽略此设置 |
 | `startAt` | `Duration?` | `null` | 视频起始播放位置 |
-| `looping` | `bool` | `false` | 是否单个视频循环播放。**注意**：<br>1. 这是基础默认值，使用 `createPlayerConfig()` 时会根据 `liveStream` 参数动态设置（非直播流默认true，直播流默认false）<br>2. 播放列表模式下此参数会被强制设置为false |
+| `looping` | `bool` | `false` | 是否单个视频循环播放。**注意**：<br>1. 使用 `createPlayerConfig()` 时会根据 `liveStream` 参数动态设置（非直播流默认true，直播流默认false）<br>2. 播放列表模式下此参数会被强制设置为false |
 | `handleLifecycle` | `bool` | `true` | 是否自动处理应用生命周期（后台暂停等） |
-| `autoDispose` | `bool` | `true` | 是否自动释放资源 |
+| `autoDispose` | `bool` | `true` | 是否自动释放资源。设为`false`时需手动调用`dispose()`，适用于复杂UI避免过早释放 |
 | `showControlsOnInitialize` | `bool` | `true` | 初始化时是否显示控件 |
 
 ### 🎨 显示参数
@@ -719,11 +655,11 @@ preferredDecoderType: IAppPlayerDecoderType.auto,
 | `fullScreenByDefault` | `bool` | `false` | 是否默认全屏播放 |
 | `allowedScreenSleep` | `bool` | `true` | 全屏时是否允许屏幕休眠 |
 | `fullScreenAspectRatio` | `double?` | `null` | 全屏时的宽高比 |
-| `autoDetectFullscreenDeviceOrientation` | `bool` | `false` | 是否自动检测全屏方向（根据视频宽高比自动选择横屏或竖屏） |
+| `autoDetectFullscreenDeviceOrientation` | `bool` | `false` | 是否自动检测全屏方向 |
 | `autoDetectFullscreenAspectRatio` | `bool` | `false` | 是否自动检测全屏宽高比 |
 | `deviceOrientationsOnFullScreen` | `List<DeviceOrientation>` | `[landscapeLeft, landscapeRight]` | 全屏时允许的设备方向 |
 | `deviceOrientationsAfterFullScreen` | `List<DeviceOrientation>` | `[landscapeLeft, landscapeRight, portraitUp]` | 退出全屏后的设备方向 |
-| `systemOverlaysAfterFullScreen` | `List<SystemUiOverlay>` | `SystemUiOverlay.values` | 退出全屏后的系统UI（显示所有系统UI） |
+| `systemOverlaysAfterFullScreen` | `List<SystemUiOverlay>` | `SystemUiOverlay.values` | 退出全屏后的系统UI |
 | `fullscreenOrientationLocker` | `Function?` | `null` | 自定义全屏方向锁定逻辑 |
 
 ### 🎯 其他参数
@@ -731,17 +667,30 @@ preferredDecoderType: IAppPlayerDecoderType.auto,
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
 | `overlay` | `Widget?` | `null` | 视频上的覆盖组件 |
-| `errorBuilder` | `Function?` | `null` | 错误时的自定义组件构建器（使用backgroundImage时会默认返回背景图Widget） |
+| `errorBuilder` | `Function?` | `null` | 错误时的自定义组件构建器 |
 | `eventListener` | `Function?` | `null` | 事件监听器 |
 | `routePageBuilder` | `Function?` | `null` | 自定义全屏页面路由构建器 |
 | `translations` | `List<IAppPlayerTranslations>?` | `null` | 多语言翻译配置 |
-| `playerVisibilityChangedBehavior` | `Function?` | `null` | 播放器可见性变化回调 |
+| `playerVisibilityChangedBehavior` | `Function?` | `null` | 播放器可见性变化回调（接收0.0-1.0的可见度值） |
 | `subtitlesConfiguration` | `IAppPlayerSubtitlesConfiguration` | - | 字幕配置 |
 | `controlsConfiguration` | `IAppPlayerControlsConfiguration` | - | 控件配置 |
-继续 API_REFERENCE_CN.md 的剩余部分：
-
-```markdown
 | `useRootNavigator` | `bool` | `false` | 是否使用根导航器 |
+
+### 📊 可见性回调说明
+
+`playerVisibilityChangedBehavior` 基于 VisibilityDetector 工作，用于处理播放器在列表中的自动播放/暂停：
+
+```dart
+// 示例：当播放器可见度低于50%时暂停，超过80%时播放
+playerVisibilityChangedBehavior: (visibilityFraction) {
+  // visibilityFraction: 0.0 = 完全不可见, 1.0 = 完全可见
+  if (visibilityFraction < 0.5 && controller.isPlaying()) {
+    controller.pause();
+  } else if (visibilityFraction > 0.8 && !controller.isPlaying()) {
+    controller.play();
+  }
+}
+```
 
 ### 🌐 多语言配置
 
@@ -917,7 +866,7 @@ translations: [
 class IAppPlayerOverflowMenuItem {
   final String title;           // 菜单项标题
   final IconData icon;         // 菜单项图标
-  final Function() onClicked;  // 点击回调（注意：属性名是onClicked不是onTap）
+  final Function() onClicked;  // 点击回调
   final bool Function()? isEnabled;  // 可选：控制是否启用
   
   IAppPlayerOverflowMenuItem(
@@ -953,13 +902,13 @@ overflowMenuCustomItems: [
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `controlsHideTime` | `Duration` | `Duration(milliseconds: 1000)` | 控件自动隐藏时间（注意：音频控件不会自动隐藏） |
+| `controlsHideTime` | `Duration` | `Duration(milliseconds: 1000)` | 控件自动隐藏时间。**注意**：音频控件不会自动隐藏 |
 | `controlBarHeight` | `double` | `30.0` | 控制栏高度 |
 | `forwardSkipTimeInMilliseconds` | `int` | `10000` | 快进时间（毫秒） |
 | `backwardSkipTimeInMilliseconds` | `int` | `10000` | 快退时间（毫秒） |
 | `loadingWidget` | `Widget?` | `null` | 自定义加载组件 |
-| `audioOnly` | `bool` | `false` | 纯音频模式（隐藏视频显示音频控件）。音频控件在高度超过200px时会显示扩展布局（包含封面和标题） |
-| `handleAllGestures` | `bool` | `true` | 播放器不拦截手势，让事件能传递到外部 |
+| `audioOnly` | `bool` | `false` | 纯音频模式（隐藏视频显示音频控件） |
+| `handleAllGestures` | `bool` | `true` | 播放器不拦截手势 |
 | `customControlsBuilder` | `Function?` | `null` | 自定义控件构建器 |
 | `playerTheme` | `IAppPlayerTheme?` | `null` | 播放器主题 |
 
@@ -973,29 +922,92 @@ overflowMenuCustomItems: [
 | `audio` | 音频风格 | 为音频设计的控件 |
 | `custom` | 自定义控件 | 使用 customControlsBuilder 构建 |
 
-### 🎵 音频模式配置
+---
 
-纯音频模式配置说明：
+## 🎵 九、音频播放器显示模式
+
+音频控件根据播放器的尺寸自动切换显示模式，提供最佳的用户体验。
+
+### 📐 显示模式判断规则
+
+| 模式 | 判断条件 | 说明 |
+|:---:|:---|:---|
+| **正方形模式** | `aspectRatio = 1.0`（允许1%误差） | 封面铺满 + 居中播放按钮 |
+| **紧凑模式** | `aspectRatio = 2.0`（允许1%误差）或 高度 ≤ 200px | 横向布局，左侧封面 + 右侧控制区 |
+| **扩展模式** | 其他所有情况 | 唱片动画 + 完整控制栏 |
+
+### 🎨 各模式特点
+
+#### 📦 正方形模式
+- 封面图片铺满整个区域
+- 封面放大10%以避免黑边
+- 半透明黑色遮罩层
+- 居中的圆形播放/暂停按钮
+- 适合：单曲展示、专辑封面展示
+
+#### 🎯 紧凑模式
+- 左侧正方形封面（高度适应）
+- 封面放大10%以避免黑边
+- 右侧渐变过渡到控制区域
+- 顶部：剩余时间、模式切换、全屏按钮
+- 中部：歌曲信息（歌手名、歌曲名）
+- 底部：进度条和播放控制按钮
+- 适合：播放列表、嵌入式播放器
+
+#### 🎭 扩展模式
+- 随机渐变背景 + 玻璃效果
+- 旋转的黑胶唱片动画
+- 唱片中心显示封面图
+- 唱片纹理和中心标签设计
+- 完整的控制栏和进度条
+- 适合：全屏播放、音乐欣赏
+
+### 💡 使用建议
 
 ```dart
-// 音频模式会显示一个音频可视化界面而不是视频
-controlsConfiguration: IAppPlayerControlsConfiguration(
-  audioOnly: true,  // 启用纯音频模式
-  // 音频模式下建议配置
-  enableFullscreen: false,  // 音频模式通常不需要全屏
-  showControls: true,
-  enableProgressBar: true,
-  enablePlayPause: true,
-  enableSkips: true,
-  enablePlaybackSpeed: true,
-  // 可以自定义音频封面
-  placeholder: Image.asset('assets/audio_cover.png'),
-),
+// 正方形模式示例（1:1比例）
+IAppPlayerConfig.createPlayer(
+  url: 'music.mp3',
+  audioOnly: true,
+  aspectRatio: 1.0,  // 触发正方形模式
+);
+
+// 紧凑模式示例（2:1比例）
+IAppPlayerConfig.createPlayer(
+  url: 'music.mp3',
+  audioOnly: true,
+  aspectRatio: 2.0,  // 触发紧凑模式
+);
+
+// 扩展模式示例（其他比例）
+IAppPlayerConfig.createPlayer(
+  url: 'music.mp3',
+  audioOnly: true,
+  aspectRatio: 16/9,  // 触发扩展模式
+);
+```
+
+### 🎵 歌词显示支持
+
+所有模式都支持LRC歌词显示：
+- 正方形模式：歌词在内部处理，不显示在UI上
+- 紧凑模式：歌词在内部处理，不显示在UI上
+- 扩展模式：歌词显示在进度条上方
+
+通过 `controller.renderedSubtitle` 可以获取当前显示的歌词内容：
+
+```dart
+// 获取当前歌词
+final subtitle = controller.renderedSubtitle;
+if (subtitle != null && subtitle.texts != null) {
+  final currentLyric = subtitle.texts!.join(' ');
+  print('当前歌词: $currentLyric');
+}
 ```
 
 ---
 
-## 📝 九、字幕配置
+## 📝 十、字幕配置
 
 ### 🎨 字体配置
 
@@ -1045,14 +1057,14 @@ controlsConfiguration: IAppPlayerControlsConfiguration(
 
 ---
 
-## 💾 十、数据源配置
+## 💾 十一、数据源配置
 
 ### 🎯 基础参数
 
 | 参数 | 类型 | 说明 |
 |:---:|:---:|:---|
 | `type` | `IAppPlayerDataSourceType` | 数据源类型（network/file/memory） |
-| `url` | `String` | 视频URL或文件路径（需要trim处理，不能为空） |
+| `url` | `String` | 视频URL或文件路径 |
 | `bytes` | `List<int>?` | 内存数据源的字节数组 |
 
 #### 数据源类型说明
@@ -1061,7 +1073,7 @@ controlsConfiguration: IAppPlayerControlsConfiguration(
 |:---:|:---|:---|
 | `network` | 网络视频 | 在线视频播放 |
 | `file` | 本地文件 | 已下载的视频 |
-| `memory` | 内存数据 | 加密视频或动态生成。**注意**：内存数据源会创建临时文件，在dispose或切换数据源时自动清理 |
+| `memory` | 内存数据 | 加密视频或动态生成 |
 
 ### 📺 视频格式
 
@@ -1092,15 +1104,15 @@ controlsConfiguration: IAppPlayerControlsConfiguration(
 
 | 参数 | 类型 | 说明 |
 |:---:|:---:|:---|
-| `subtitles` | `List<IAppPlayerSubtitlesSource>?` | 字幕源列表（通过专门的创建方法构建） |
+| `subtitles` | `List<IAppPlayerSubtitlesSource>?` | 字幕源列表 |
 | `useAsmsSubtitles` | `bool` | 是否使用HLS/DASH内嵌字幕 |
 
 ### 🎵 音视频轨道（ASMS）
 
 | 参数 | 类型 | 说明 |
 |:---:|:---:|:---|
-| `useAsmsTracks` | `bool` | 是否使用HLS轨道（默认根据liveStream自动设置） |
-| `useAsmsAudioTracks` | `bool` | 是否使用HLS/DASH音轨（默认根据liveStream自动设置） |
+| `useAsmsTracks` | `bool` | 是否使用HLS轨道 |
+| `useAsmsAudioTracks` | `bool` | 是否使用HLS/DASH音轨 |
 | `asmsTrackNames` | `List<String>?` | 自定义轨道名称 |
 
 #### ASMS（自适应流媒体源）说明
@@ -1122,6 +1134,8 @@ ASMS 指的是 Adaptive Streaming Media Sources，包括：
 | `frameRate` | `int?` | 帧率 |
 | `codecs` | `String?` | 编码格式 |
 | `mimeType` | `String?` | MIME类型 |
+
+**注意**：当轨道的高度、宽度、比特率都为0时，会显示为"自动"。
 
 #### IAppPlayerAsmsAudioTrack 属性
 
@@ -1175,10 +1189,10 @@ resolutions: {
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
-| `useCache` | `bool` | 根据流类型 | 是否启用缓存。默认值根据 `liveStream` 自动设置：<br>• 非直播流：`true`<br>• 直播流：`false` |
-| `preCacheSize` | `int` | 见[内部常量](#-内部常量说明) | 预缓存大小（默认10MB） |
-| `maxCacheSize` | `int` | 见[内部常量](#-内部常量说明) | 最大缓存大小（默认300MB） |
-| `maxCacheFileSize` | `int` | 见[内部常量](#-内部常量说明) | 单个文件最大缓存大小（默认50MB） |
+| `useCache` | `bool` | 根据流类型 | 是否启用缓存。默认值：<br>• 非直播流：`true`<br>• 直播流：`false` |
+| `preCacheSize` | `int` | 10MB | 预缓存大小（10 * 1024 * 1024 字节） |
+| `maxCacheSize` | `int` | 300MB | 最大缓存大小（300 * 1024 * 1024 字节） |
+| `maxCacheFileSize` | `int` | 50MB | 单个文件最大缓存大小（50 * 1024 * 1024 字节） |
 | `key` | `String?` | `null` | 缓存键，用于区分不同视频 |
 
 #### 缓存 Key 命名规范
@@ -1189,8 +1203,6 @@ resolutions: {
 cacheConfiguration: IAppPlayerCacheConfiguration(
   useCache: true,
   key: 'myapp_video_${videoId}_v1',
-  // 或使用 URL 的 MD5
-  // key: md5.convert(utf8.encode(videoUrl)).toString(),
 ),
 
 // 实际示例
@@ -1200,6 +1212,16 @@ cacheConfiguration: IAppPlayerCacheConfiguration(
 // 用户视频：myapp_user_${userId}_${videoId}_v1
 ```
 
+#### 缓存功能平台支持
+
+| 功能 | Android HLS | Android 非HLS | iOS HLS | iOS 非HLS |
+|:---:|:---:|:---:|:---:|:---:|
+| 普通缓存 | ✓ | ✓ | ✓ | ✓ |
+| 预缓存 | ✓ | ✓ | ✗ | ✓ |
+| 停止缓存 | ✓ | ✓ | ✗ | ✓ |
+
+**注意**：iOS平台对HLS流的缓存支持有限。
+
 ### 🔔 通知配置
 
 | 参数 | 类型 | 默认值 | 说明 |
@@ -1208,16 +1230,14 @@ cacheConfiguration: IAppPlayerCacheConfiguration(
 
 #### IAppPlayerNotificationConfiguration 结构
 
-通知配置对象，用于控制播放器通知栏的显示。参数说明请参考 [基础参数](#-基础参数) 部分。
+通知配置对象，用于控制播放器通知栏的显示。
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
 | `showNotification` | `bool` | `false` | 是否显示通知（非TV模式默认true） |
 | `activityName` | `String?` | `"MainActivity"` | Android Activity名称 |
 
-**注意**：
-- `title`、`author`、`imageUrl`、`notificationChannelName` 参数与 createPlayer 的基础参数相同
-- TV模式下不会创建通知配置，即使设置了相关参数
+**注意**：TV模式下不会创建通知配置，即使设置了相关参数。
 
 ### 🔐 DRM配置
 
@@ -1268,27 +1288,36 @@ drmConfiguration: IAppPlayerDrmConfiguration(
   },
 ),
 
-// ClearKey DRM (Android) - 注意clearKey是String类型的JSON
+// ClearKey DRM (Android)
 drmConfiguration: IAppPlayerDrmConfiguration(
   drmType: IAppPlayerDrmType.clearkey,
   clearKey: '{"keys":[{"kty":"oct","k":"GawgguFyGrWKav7AX4VKUg","kid":"nrQFDeRLSAKTLifXUIPiZg"}]}',
 ),
 ```
 
+#### ClearKey生成步骤（仅Android）
+
+1. 创建`drm_file.xml`配置文件
+2. 使用MP4Box生成加密文件：
+   ```bash
+   MP4Box -crypt drm_file.xml input.mp4 -out encrypted_tmp.mp4
+   MP4Box -frag 240000 encrypted_tmp.mp4 -out encrypted.mp4
+   ```
+
 ### ⏸️ 缓冲配置
 
 | 参数 | 类型 | 说明 |
 |:---:|:---:|:---|
-| `bufferingConfiguration` | `IAppPlayerBufferingConfiguration` | 缓冲配置（如果未提供会根据liveStream自动创建） |
+| `bufferingConfiguration` | `IAppPlayerBufferingConfiguration` | 缓冲配置 |
 
 #### IAppPlayerBufferingConfiguration 参数
 
 | 参数 | 类型 | 默认值 | 说明 | 平台 |
 |:---:|:---:|:---:|:---|:---|
-| `minBufferMs` | `int?` | 见[内部常量](#-内部常量说明) | 最小缓冲时间（毫秒）<br>直播流：15秒<br>点播流：20秒 | Android |
-| `maxBufferMs` | `int?` | 见[内部常量](#-内部常量说明) | 最大缓冲时间（毫秒）<br>直播流：15秒<br>点播流：30秒 | Android |
-| `bufferForPlaybackMs` | `int?` | 见[内部常量](#-内部常量说明) | 播放所需缓冲时间（默认3秒） | Android |
-| `bufferForPlaybackAfterRebufferMs` | `int?` | 见[内部常量](#-内部常量说明) | 重新缓冲后播放所需时间（默认5秒） | Android |
+| `minBufferMs` | `int?` | 根据流类型 | 最小缓冲时间（毫秒） | Android |
+| `maxBufferMs` | `int?` | 根据流类型 | 最大缓冲时间（毫秒） | Android |
+| `bufferForPlaybackMs` | `int?` | - | 播放所需缓冲时间 | Android |
+| `bufferForPlaybackAfterRebufferMs` | `int?` | - | 重新缓冲后播放所需时间 | Android |
 
 **注意**：如果不提供缓冲配置，系统会根据是否是直播流自动创建合适的默认配置。
 
@@ -1297,16 +1326,16 @@ drmConfiguration: IAppPlayerDrmConfiguration(
 | 参数 | 类型 | 说明 |
 |:---:|:---:|:---|
 | `placeholder` | `Widget?` | 视频占位组件 |
-| `preferredDecoderType` | `IAppPlayerDecoderType?` | 首选解码器类型（默认hardwareFirst） |
+| `preferredDecoderType` | `IAppPlayerDecoderType?` | 首选解码器类型 |
 
 ---
 
-## 📑 十一、字幕源配置
+## 📑 十二、字幕源配置
 
 | 参数 | 类型 | 默认值 | 说明 |
 |:---:|:---:|:---:|:---|
 | `type` | `IAppPlayerSubtitlesSourceType` | - | 字幕源类型 |
-| `name` | `String` | `"Default subtitles"` | 字幕名称（用于多语言选择） |
+| `name` | `String` | `"Default subtitles"` | 字幕名称 |
 | `urls` | `List<String>?` | `null` | 字幕文件URL列表 |
 | `content` | `String?` | `null` | 字幕内容字符串 |
 | `selectedByDefault` | `bool?` | `null` | 是否默认选中 |
@@ -1367,7 +1396,6 @@ subtitles: [
         endTime: Duration(seconds: 20),
         realUrl: 'https://example.com/subtitle_seg2.vtt',
       ),
-      // 更多分段...
     ],
   ),
 ],
@@ -1375,7 +1403,7 @@ subtitles: [
 
 ---
 
-## ⚠️ 十二、平台限制与注意事项
+## ⚠️ 十三、平台限制与注意事项
 
 ### 📱 iOS 平台
 
@@ -1399,7 +1427,6 @@ subtitles: [
 #### 视频格式
 - 原生支持HLS（.m3u8）
 - 其他格式通过FFmpeg支持
-- 30 FPS限制已在最新版本修复
 
 ### 🤖 Android 平台
 
@@ -1435,33 +1462,6 @@ cacheConfiguration: IAppPlayerCacheConfiguration(
 - 大型播放列表建议分页加载
 - 内存数据源会创建临时文件，在dispose或切换数据源时自动清理
 
-#### 内存使用优化指标
-
-```dart
-// 推荐的内存使用限制
-// 单个视频实例：
-// - 480p: 30-50MB
-// - 720p: 50-80MB  
-// - 1080p: 80-120MB
-// - 4K: 150-200MB
-
-// 设备类型建议：
-// 移动设备：
-//   - 最多同时播放: 1-2个视频
-//   - 缓存大小: 50-200MB
-//   - 预加载: 最多1个视频
-
-// 平板设备：
-//   - 最多同时播放: 2-3个视频
-//   - 缓存大小: 100-500MB
-//   - 预加载: 最多2个视频
-
-// TV设备：
-//   - 最多同时播放: 1个视频
-//   - 缓存大小: 200MB-1GB
-//   - 预加载: 2-3个视频
-```
-
 #### 网络视频
 - HTTPS优于HTTP
 - 某些CDN可能需要特定请求头
@@ -1474,7 +1474,7 @@ cacheConfiguration: IAppPlayerCacheConfiguration(
 
 #### URL验证
 - 播放列表中的URL不能为空
-- 空URL会抛出 `ArgumentError` 异常，错误信息会包含具体的索引位置
+- 空URL会抛出 `ArgumentError` 异常
 - 建议在添加URL前进行验证
 
 #### 缓冲防抖机制
@@ -1482,11 +1482,10 @@ cacheConfiguration: IAppPlayerCacheConfiguration(
 - 可以通过 `setBufferingDebounceTime()` 方法调整防抖时间
 - 防抖机制可以避免频繁的缓冲状态切换，提升用户体验
 
-#### ASMS字幕段智能加载
+#### HLS分段字幕智能加载
 - HLS/DASH分段字幕采用按需加载策略
-- 根据当前播放位置预加载未来5个分段时间的字幕
+- 根据当前播放位置预加载未来5个分段的字幕
 - 避免一次性加载所有字幕段，节省内存和带宽
-- 字幕段位置检查有1秒的最小间隔限制，避免频繁检查
 
 #### 播放列表资源管理
 - `IAppPlayerPlaylistController` 的 `dispose` 方法会强制释放内部播放器控制器
