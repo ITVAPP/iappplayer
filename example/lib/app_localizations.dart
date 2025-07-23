@@ -199,19 +199,19 @@ class AppLocalizations {
   String get decoderSelection {
     switch (locale.languageCode) {
       case 'zh':
-        return locale.countryCode == 'TW' ? '解碼器選擇' : '解码器选择';
+        return locale.countryCode == 'TW' ? '解碼器和畫中畫' : '解码器和画中画';
       case 'ja':
-        return 'デコーダー選択';
+        return 'デコーダーとピクチャー・イン・ピクチャー';
       case 'fr':
-        return 'Sélection du Décodeur';
+        return 'Décodeur et Picture-in-Picture';
       case 'es':
-        return 'Selección de Decodificador';
+        return 'Decodificador y Picture-in-Picture';
       case 'pt':
-        return 'Seleção de Decodificador';
+        return 'Decodificador e Picture-in-Picture';
       case 'ru':
-        return 'Выбор декодера';
+        return 'Декодер и картинка в картинке';
       default:
-        return 'Decoder Selection';
+        return 'Decoder & Picture-in-Picture';
     }
   }
   
@@ -250,25 +250,6 @@ class AppLocalizations {
         return 'Программный';
       default:
         return 'Software';
-    }
-  }
-  
-  String get autoSelect {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '自動選擇' : '自动选择';
-      case 'ja':
-        return '自動';
-      case 'fr':
-        return 'Auto';
-      case 'es':
-        return 'Auto';
-      case 'pt':
-        return 'Auto';
-      case 'ru':
-        return 'Авто';
-      default:
-        return 'Auto';
     }
   }
   
