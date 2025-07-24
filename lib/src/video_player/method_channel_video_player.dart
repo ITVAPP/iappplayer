@@ -432,6 +432,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
           return VideoEvent(
             eventType: VideoEventType.pipStop,
             key: key,
+            pipExitReason: map['exitReason'] as String?,
           );
 
         default:
