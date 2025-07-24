@@ -96,8 +96,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     if (mounted) {
       setState(() {
         _controller = result.activeController;
-        // 关键修改：设置GlobalKey到控制器，确保画中画功能正常工作
-        _controller?.setIAppPlayerGlobalKey(_playerGlobalKey!);
       });
     }
   }
