@@ -285,52 +285,53 @@ class IAppPlayerController {
     return betterPLayerControllerProvider.controller;
   }
 
-  // 设置数据源并初始化
-  Future setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
-    // 清理旧的临时文件，避免文件累积
-    await _clearTempFiles();
-    
-    postEvent(IAppPlayerEvent(IAppPlayerEventType.setupDataSource,
-        parameters: <String, dynamic>{
-          _dataSourceParameter: iappPlayerDataSource,
-        }));
-    _postControllerEvent(IAppPlayerControllerEvent.setupDataSource);
-    _hasCurrentDataSourceStarted = false;
-    _hasCurrentDataSourceInitialized = false;
-    _iappPlayerDataSource = iappPlayerDataSource;
-    _iappPlayerSubtitlesSourceList.clear();
-    _clearBufferingState();
-    _cachedIsLiveStream = null;
-    _pendingSubtitleSegments = null;
-    _lastSubtitleCheckPosition = null;
+// 设置数据源并初始化
+Future setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
+  // 清理旧的临时文件，避免文件累积
+  await _clearTempFiles();
+  
+  postEvent(IAppPlayerEvent(IAppPlayerEventType.setupDataSource,
+      parameters: <String, dynamic>{
+        _dataSourceParameter: iappPlayerDataSource,
+      }));
+  _postControllerEvent(IAppPlayerControllerEvent.setupDataSource);
+  _hasCurrentDataSourceStarted = false;
+  _hasCurrentDataSourceInitialized = false;
+  _iappPlayerDataSource = iappPlayerDataSource;
+  _iappPlayerSubtitlesSourceList.clear();
+  _clearBufferingState();
+  _cachedIsLiveStream = null;
+  _pendingSubtitleSegments = null;
+  _lastSubtitleCheckPosition = null;
+  _isReturningFromPip = false;  // ✅ 重置标记
 
-    if (videoPlayerController == null) {
-      videoPlayerController = VideoPlayerController(
-          bufferingConfiguration:
-              iappPlayerDataSource.bufferingConfiguration);
-      videoPlayerController?.addListener(_onVideoPlayerChanged);
-    }
-
-    iappPlayerAsmsTracks.clear();
-
-    final List<IAppPlayerSubtitlesSource>? iappPlayerSubtitlesSourceList =
-        iappPlayerDataSource.subtitles;
-    if (iappPlayerSubtitlesSourceList != null) {
-      _iappPlayerSubtitlesSourceList
-          .addAll(iappPlayerDataSource.subtitles!);
-    }
-
-    if (_isDataSourceAsms(iappPlayerDataSource)) {
-      _setupAsmsDataSource(iappPlayerDataSource).then((dynamic value) {
-        _setupSubtitles();
-      });
-    } else {
-      _setupSubtitles();
-    }
-
-    await _setupDataSource(iappPlayerDataSource);
-    setTrack(IAppPlayerAsmsTrack.defaultTrack());
+  if (videoPlayerController == null) {
+    videoPlayerController = VideoPlayerController(
+        bufferingConfiguration:
+            iappPlayerDataSource.bufferingConfiguration);
+    videoPlayerController?.addListener(_onVideoPlayerChanged);
   }
+
+  iappPlayerAsmsTracks.clear();
+
+  final List<IAppPlayerSubtitlesSource>? iappPlayerSubtitlesSourceList =
+      iappPlayerDataSource.subtitles;
+  if (iappPlayerSubtitlesSourceList != null) {
+    _iappPlayerSubtitlesSourceList
+        .addAll(iappPlayerDataSource.subtitles!);
+  }
+
+  if (_isDataSourceAsms(iappPlayerDataSource)) {
+    _setupAsmsDataSource(iappPlayerDataSource).then((dynamic value) {
+      _setupSubtitles();
+    });
+  } else {
+    _setupSubtitles();
+  }
+
+  await _setupDataSource(iappPlayerDataSource);
+  setTrack(IAppPlayerAsmsTrack.defaultTrack());
+}
 
   // 清理临时文件
   Future<void> _clearTempFiles() async {
@@ -594,54 +595,6 @@ class IAppPlayerController {
       throw Exception('无法从asset加载文件: $assetPath, 错误: $e');
     }
   }
-
-// 设置数据源并初始化
-Future setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
-  // 清理旧的临时文件，避免文件累积
-  await _clearTempFiles();
-  
-  postEvent(IAppPlayerEvent(IAppPlayerEventType.setupDataSource,
-      parameters: <String, dynamic>{
-        _dataSourceParameter: iappPlayerDataSource,
-      }));
-  _postControllerEvent(IAppPlayerControllerEvent.setupDataSource);
-  _hasCurrentDataSourceStarted = false;
-  _hasCurrentDataSourceInitialized = false;
-  _iappPlayerDataSource = iappPlayerDataSource;
-  _iappPlayerSubtitlesSourceList.clear();
-  _clearBufferingState();
-  _cachedIsLiveStream = null;
-  _pendingSubtitleSegments = null;
-  _lastSubtitleCheckPosition = null;
-  _isReturningFromPip = false;
-
-  if (videoPlayerController == null) {
-    videoPlayerController = VideoPlayerController(
-        bufferingConfiguration:
-            iappPlayerDataSource.bufferingConfiguration);
-    videoPlayerController?.addListener(_onVideoPlayerChanged);
-  }
-
-  iappPlayerAsmsTracks.clear();
-
-  final List<IAppPlayerSubtitlesSource>? iappPlayerSubtitlesSourceList =
-      iappPlayerDataSource.subtitles;
-  if (iappPlayerSubtitlesSourceList != null) {
-    _iappPlayerSubtitlesSourceList
-        .addAll(iappPlayerDataSource.subtitles!);
-  }
-
-  if (_isDataSourceAsms(iappPlayerDataSource)) {
-    _setupAsmsDataSource(iappPlayerDataSource).then((dynamic value) {
-      _setupSubtitles();
-    });
-  } else {
-    _setupSubtitles();
-  }
-
-  await _setupDataSource(iappPlayerDataSource);
-  setTrack(IAppPlayerAsmsTrack.defaultTrack());
-}
 
   // 创建临时文件
   Future<File> _createFile(List<int> bytes,
