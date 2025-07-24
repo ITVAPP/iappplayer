@@ -965,17 +965,7 @@ class IAppPlayerController {
 
     // 根据事件类型管理画中画保护状态
     switch (iappPlayerEvent.iappPlayerEventType) {
-      case IAppPlayerEventType.pipStart:
-        if (iappPlayerEvent.parameters?['preparing'] == true) {
-          // 准备进入画中画，启用短期保护
-          _isReturningFromPip = true;
-          Future.delayed(Duration(milliseconds: 600), () {
-            if (!_disposed) {
-              _isReturningFromPip = false;
-            }
-          });
-        }
-        break;
+
       case IAppPlayerEventType.pipStop:
         // 退出画中画，启用保护
         _isReturningFromPip = true;
@@ -1013,7 +1003,6 @@ class IAppPlayerController {
     }
   }
 
-// 处理播放器状态变化
 // 处理播放器状态变化
 void _onVideoPlayerChanged() async {
   if (_disposed) {
@@ -1055,41 +1044,64 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.initialized));
   }
 
-  // 使用1.0版本的画中画处理逻辑
+  // 画中画状态处理
   if (currentValue.isPip) {
     _wasInPipMode = true;
   } else if (_wasInPipMode) {
-    // 退出画中画模式
+    // 画中画退出处理
+    _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     _wasInPipMode = false;
-    
-    // 暂停播放（用户关闭画中画时的预期行为）
-    if (isPlaying() == true) {
-      pause();
-    }
-    
-    // 恢复全屏状态
-    if (_wasInFullScreenBeforePiP) {
-      // 如果进入画中画前是全屏，保持全屏
-      if (!_isFullScreen) {
-        enterFullScreen();
-      }
-    } else {
-      // 如果进入画中画前不是全屏，确保退出全屏
-      if (_isFullScreen) {
-        exitFullScreen();
-      }
-    }
     
     // 恢复控件状态
     if (_wasControlsEnabledBeforePiP) {
       setControlsEnabled(true);
     }
     
-    // 刷新播放器
-    videoPlayerController?.refresh();
+    // 处理全屏状态
+    // 如果之前不是全屏，但当前状态显示为全屏，立即修正
+    if (!_wasInFullScreenBeforePiP && _isFullScreen) {
+      _isFullScreen = false;
+      // 不发送全屏事件，避免UI层的处理
+    }
     
-    // 发送画中画停止事件
-    _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+    // 如果之前是全屏，需要恢复全屏状态
+    if (_wasInFullScreenBeforePiP && !_isFullScreen) {
+      // 延迟恢复全屏，等待画中画完全退出
+      Future.delayed(Duration(milliseconds: 300), () {
+        if (!_disposed && _wasInFullScreenBeforePiP) {
+          _isFullScreen = true;
+          _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
+        }
+      });
+    }
+    
+    // 根据退出原因决定播放行为
+    if (_lastPipExitReason == 'return') {
+      // 点击返回按钮：保持或恢复播放状态
+      if (!currentValue.isPlaying && _wasPlayingBeforePause == true) {
+        // 如果之前在播放，恢复播放
+        play();
+      }
+      // 如果正在播放，保持播放状态
+    } else if (_lastPipExitReason == 'close') {
+      // 点击关闭按钮：暂停播放
+      pause();
+      // 发送画中画关闭事件，UI层可以根据需要处理
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipClosed));
+    } else {
+      // 其他情况（如系统关闭）：暂停播放
+      pause();
+    }
+    
+    // 重置退出原因
+    _lastPipExitReason = null;
+    
+    // 延迟刷新，避免立即触发状态更新
+    Future.delayed(Duration(milliseconds: 100), () {
+      if (!_disposed) {
+        videoPlayerController?.refresh();
+      }
+    });
   }
 
   // 处理字幕加载
