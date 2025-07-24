@@ -426,27 +426,21 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 // 构建PiP参数
                 val pipParamsBuilder = PictureInPictureParams.Builder()
             
-                // 获取视频视图的位置和大小
-                player.getPictureInPictureParams()?.let { rect ->
-                    pipParamsBuilder.setSourceRectHint(rect)
-                }
-            
-                // 设置宽高比（如果有视频格式信息）
-                player.exoPlayer?.videoFormat?.let { format ->
-                    val aspectRatio = if (format.height > 0) {
-                        android.util.Rational(format.width, format.height)
-                    } else {
-                        android.util.Rational(16, 9) // 默认16:9
-                    }
+                // 设置宽高比
+                player.getVideoAspectRatio()?.let { aspectRatio ->
                     pipParamsBuilder.setAspectRatio(aspectRatio)
                 }
             
-                // 进入PiP模式
-                activity.enterPictureInPictureMode(pipParamsBuilder.build())
+                try {
+                    // 进入PiP模式
+                    activity.enterPictureInPictureMode(pipParamsBuilder.build())
                     startPictureInPictureListenerTimer(player)
-                player.onPictureInPictureStatusChanged(true)
+                    player.onPictureInPictureStatusChanged(true)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
-            }
+        }
     }
 
     // 禁用画中画模式，清理媒体会话
