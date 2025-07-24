@@ -111,8 +111,7 @@ abstract class VideoPlayerPlatform {
   }
 
   // 启用画中画模式
-  Future<void> enablePictureInPicture(int? textureId, double? top, double? left,
-      double? width, double? height) {
+  Future<void> enablePictureInPicture(int? textureId) {
     throw UnimplementedError(
         'enablePictureInPicture() has not been implemented.');
   }
