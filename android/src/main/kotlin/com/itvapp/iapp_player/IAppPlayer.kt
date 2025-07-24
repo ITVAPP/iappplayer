@@ -1257,10 +1257,19 @@ internal class IAppPlayer(
         return null
     }
 
-    // 通知画中画状态变化
-    fun onPictureInPictureStatusChanged(inPip: Boolean) {
+    // 通知画中画状态变化，支持传递退出原因
+    fun onPictureInPictureStatusChanged(inPip: Boolean, exitReason: String? = null) {
         if (!isDisposed.get()) {
-            sendEvent(if (inPip) EVENT_PIP_START else EVENT_PIP_STOP)
+            if (inPip) {
+                sendEvent(EVENT_PIP_START)
+            } else {
+                sendEvent(EVENT_PIP_STOP) { event ->
+                event["key"] = key
+                exitReason?.let {
+                    event["exitReason"] = it
+                    }
+                }
+            }
         }
     }
 
