@@ -1448,26 +1448,39 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     _wasInFullScreenBeforePiP = _isFullScreen;
     _wasControlsEnabledBeforePiP = _controlsEnabled;
     
+    // 设置标志，防止在退出全屏时触发其他操作
+    _isReturningFromPip = true;
+    
     // 禁用控件
     setControlsEnabled(false);
     
     // 设置全局键
     _iappPlayerGlobalKey = iappPlayerGlobalKey;
     
-    // 关键修改：如果当前是全屏，先退出全屏再进入画中画
-    if (_isFullScreen) {
-      // 先退出全屏
-      exitFullScreen();
-      
-      // 等待全屏退出动画完成和视图层级稳定
-      await Future.delayed(Duration(milliseconds: 400));
-    }
-    
     if (Platform.isAndroid || Platform.isIOS) {
-      // 现在视图层级已经稳定，可以安全进入画中画
+      // 关键修改：确保正确的执行顺序
+      if (_isFullScreen) {
+        // 1. 先同步退出全屏
+        _isFullScreen = false;
+        _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
+        
+        // 2. 等待全屏页面完全关闭
+        await Future.delayed(Duration(milliseconds: 500));
+      }
+      
+      // 3. 现在可以安全进入画中画
       await videoPlayerController?.enablePictureInPicture();
       
+      // 4. 发送事件
       _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
+      
+      // 5. 短暂延迟后清除保护标志
+      Future.delayed(Duration(milliseconds: 800), () {
+        if (!_disposed) {
+          _isReturningFromPip = false;
+        }
+      });
+      
       return;
     } else {
       IAppPlayerUtils.log("当前平台不支持画中画");
