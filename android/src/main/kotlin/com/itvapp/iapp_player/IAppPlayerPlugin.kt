@@ -478,7 +478,7 @@ private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
                     // 如果Activity存在且没有finishing，说明是返回应用
                     if (currentActivity == null || currentActivity.isFinishing) {
                         // 用户关闭了画中画窗口，停止播放
-                        player.stop()
+                        player.pause()
                     }
                     // 如果是返回应用，不暂停，继续播放
                 }
