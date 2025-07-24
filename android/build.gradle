@@ -1,9 +1,7 @@
 group 'com.itvapp.iapp_player.iapp_player'
 version '1.6.8'
-
 buildscript {
     ext.media3Version = "1.6.1"
-    ext.jellyfinVersion = "1.6.1+2"
     ext.workVersion = "2.9.0"
     ext.kotlinVersion = "1.9.23"
     
@@ -17,7 +15,6 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
     }
 }
-
 rootProject.allprojects {
     repositories {
         google()
@@ -25,10 +22,8 @@ rootProject.allprojects {
         maven { url 'https://jitpack.io' }
     }
 }
-
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-
 android {
     namespace "com.itvapp.iapp_player"
     compileSdk 35
@@ -50,6 +45,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 35
         
+        // 包含主要的两个架构
         ndk {
             abiFilters 'arm64-v8a', 'armeabi-v7a'
         }
@@ -60,7 +56,6 @@ android {
         abortOnError false
         disable 'InvalidPackage', 'GradleDependency'
     }
-    
     buildTypes {
         release {
             minifyEnabled true
@@ -71,49 +66,39 @@ android {
     packagingOptions {
         pickFirst 'META-INF/**'
         pickFirst 'lib/*/libc++_shared.so'
-        // 处理 Media3 可能的冲突
-        pickFirst 'META-INF/DEPENDENCIES'
-        pickFirst 'META-INF/LICENSE'
-        pickFirst 'META-INF/LICENSE.txt'
-        pickFirst 'META-INF/NOTICE'
-        pickFirst 'META-INF/NOTICE.txt'
     }
 }
-
 dependencies {
-    // 确保版本一致性
-    implementation platform("androidx.media3:media3-bom:$media3Version")
-    
     // Media3 核心播放器和流媒体支持
-    implementation "androidx.media3:media3-exoplayer"
-    implementation "androidx.media3:media3-exoplayer-hls"
-    implementation "androidx.media3:media3-exoplayer-dash"
-    implementation "androidx.media3:media3-exoplayer-smoothstreaming"
-    implementation "androidx.media3:media3-exoplayer-rtsp"
+    implementation "androidx.media3:media3-exoplayer:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-hls:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-dash:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-smoothstreaming:$media3Version"
+    implementation "androidx.media3:media3-exoplayer-rtsp:$media3Version"
     
     // UI 组件
-    implementation "androidx.media3:media3-ui"
+    implementation "androidx.media3:media3-ui:$media3Version"
     
     // 会话和通知
-    implementation "androidx.media3:media3-session"
+    implementation "androidx.media3:media3-session:$media3Version"
     
     // 核心组件和数据源
-    implementation "androidx.media3:media3-common"
-    implementation "androidx.media3:media3-datasource"
-    implementation "androidx.media3:media3-datasource-rtmp"
-    implementation "androidx.media3:media3-datasource-cronet"
-    implementation "androidx.media3:media3-extractor"
+    implementation "androidx.media3:media3-common:$media3Version"
+    implementation "androidx.media3:media3-datasource:$media3Version"
+    implementation "androidx.media3:media3-datasource-rtmp:$media3Version"
+    implementation "androidx.media3:media3-datasource-cronet:$media3Version"
+    implementation "androidx.media3:media3-extractor:$media3Version"
     
     // 基础解码器
-    implementation "androidx.media3:media3-decoder"
+    implementation "androidx.media3:media3-decoder:$media3Version"
     
-    // 🔧 FFmpeg 解码器版本
-    implementation "org.jellyfin.media3:media3-ffmpeg-decoder:$jellyfinVersion"
+    // 解码器扩展
+    implementation "org.jellyfin.media3:media3-ffmpeg-decoder:${media3Version}+1"
     
     // 额外的 Media3 组件
-    implementation "androidx.media3:media3-container"
-    implementation "androidx.media3:media3-effect"
-    implementation "androidx.media3:media3-database"
+    implementation "androidx.media3:media3-container:$media3Version"
+    implementation "androidx.media3:media3-effect:$media3Version"
+    implementation "androidx.media3:media3-database:$media3Version"
     
     // WorkManager
     implementation "androidx.work:work-runtime-ktx:$workVersion"
