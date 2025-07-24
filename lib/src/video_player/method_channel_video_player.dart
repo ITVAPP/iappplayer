@@ -238,16 +238,11 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
 
   // 启用画中画模式
   @override
-  Future<void> enablePictureInPicture(int? textureId, double? top, double? left,
-      double? width, double? height) async {
+  Future<void> enablePictureInPicture(int? textureId) async {
     return _channel.invokeMethod<void>(
       'enablePictureInPicture',
       <String, dynamic>{
         'textureId': textureId,
-        'top': top,
-        'left': left,
-        'width': width,
-        'height': height,
       },
     );
   }
