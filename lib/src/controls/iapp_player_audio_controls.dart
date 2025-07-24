@@ -13,18 +13,18 @@ import 'package:iapp_player/src/core/iapp_player_utils.dart';
 import 'package:iapp_player/src/video_player/video_player.dart';
 import 'package:iapp_player/src/subtitles/iapp_player_subtitles_drawer.dart';
 
-// 播放器显示模式
+// 定义播放器显示模式
 enum PlayerDisplayMode {
-  expanded,   // 扩展模式：高度 ≥ 200px 且非正方形
-  square,     // 封面模式：宽高比接近 1:1
-  compact,    // 紧凑模式：高度 < 200px 且非正方形
+  expanded,   // 显示扩展模式：高度 ≥ 200px 且非正方形
+  square,     // 显示封面模式：宽高比接近 1:1
+  compact,    // 显示紧凑模式：高度 < 200px 且非正方形
 }
 
-// 音频播放控件
+// 构建音频播放控件
 class IAppPlayerAudioControls extends StatefulWidget {
-  // 控件可见性变化回调
+  // 通知控件可见性变化
   final Function(bool visbility) onControlsVisibilityChanged;
-  // 控件配置
+  // 配置控件参数
   final IAppPlayerControlsConfiguration controlsConfiguration;
 
   const IAppPlayerAudioControls({
@@ -39,192 +39,228 @@ class IAppPlayerAudioControls extends StatefulWidget {
 
 class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAudioControls> 
     with TickerProviderStateMixin {
-  // 基础间距单位
+  // 定义基础间距单位
   static const double kSpacingUnit = 8.0;
-  // 半间距 - 修改：从 4.0 改为 2.0，减小播放按钮与进度条的距离
+  // 定义半间距单位
   static const double kSpacingHalf = 2.0;
-  // 双倍间距
+  // 定义双倍间距单位
   static const double kSpacingDouble = 16.0;
 
-  // 进度条高度
+  // 定义进度条高度
   static const double kProgressBarHeight = 12.0;
-  // 音频控件条高度
+  // 定义音频控件条高度
   static const double kAudioControlBarHeight = 36.0;
-  // 基础图标尺寸
+  // 定义基础图标尺寸
   static const double kIconSizeBase = 24.0;
-  // 播放/暂停图标尺寸
+  // 定义播放/暂停图标尺寸
   static const double kPlayPauseIconSize = 32.0;
-  // 基础文本尺寸
+  // 定义基础文本尺寸
   static const double kTextSizeBase = 13.0;
-  // 错误图标尺寸
+  // 定义错误图标尺寸
   static const double kErrorIconSize = 42.0;
 
-  // 图标阴影模糊半径
+  // 定义图标阴影模糊半径
   static const double kIconShadowBlurRadius = 3.0;
-  // 文本阴影模糊半径
+  // 定义文本阴影模糊半径
   static const double kTextShadowBlurRadius = 2.0;
-  // 阴影垂直偏移
+  // 定义阴影垂直偏移
   static const double kShadowOffsetY = 1.0;
-  // 阴影水平偏移
+  // 定义阴影水平偏移
   static const double kShadowOffsetX = 0.0;
 
-  // 模态框圆角
+  // 定义模态框圆角
   static const double kModalBorderRadius = 22.0;
-  // 模态框头部高度
+  // 定义模态框头部高度
   static const double kModalHeaderHeight = 48.0;
-  // 播放列表项高度
+  // 定义播放列表项高度
   static const double kModalItemHeight = 30.0;
-  // 模态框标题字体大小
+  // 定义模态框标题字体大小
   static const double kModalTitleFontSize = 18.0;
-  // 播放列表项字体大小
+  // 定义播放列表项字体大小
   static const double kModalItemFontSize = 16.0;
-  // 播放指示器图标尺寸
+  // 定义播放指示器图标尺寸
   static const double kPlayIndicatorIconSize = 20.0;
-  // 模态框背景透明度
+  // 定义模态框背景透明度
   static const double kModalBackgroundOpacity = 0.95;
-  // 播放列表项悬停透明度
+  // 定义播放列表项悬停透明度
   static const double kModalItemHoverOpacity = 0.08;
 
-  // 播放列表美化相关常量
-  static const Color kPlaylistPrimaryColor = Color(0xFFFF0000); // 红色主题色
-  static const Color kPlaylistBackgroundColor = Color(0xFF1A1A1A); // 深色背景
-  static const Color kPlaylistSurfaceColor = Color(0xFF2A2A2A); // 表面颜色
-  static const double kPlaylistItemRadius = 12.0; // 列表项圆角
-  // 修改：减小列表项上下间距
-  static const double kPlaylistItemVerticalMargin = 1.0; // 原来是 2.0
+  // 定义播放列表主题色
+  static const Color kPlaylistPrimaryColor = Color(0xFFFF0000);
+  // 定义播放列表背景色
+  static const Color kPlaylistBackgroundColor = Color(0xFF1A1A1A);
+  // 定义播放列表表面颜色
+  static const Color kPlaylistSurfaceColor = Color(0xFF2A2A2A);
+  // 定义播放列表项圆角
+  static const double kPlaylistItemRadius = 12.0;
+  // 定义播放列表项垂直间距
+  static const double kPlaylistItemVerticalMargin = 1.0;
 
-
-  // 禁用按钮透明度
+  // 定义禁用按钮透明度
   static const double kDisabledButtonOpacity = 0.3;
-  // 静音音量
+  // 定义静音音量
   static const double kMutedVolume = 0.0;
-  // 播放列表最大高度比例
+  // 定义播放列表最大高度比例
   static const double kPlaylistMaxHeightRatio = 0.6;
 
-  // 时间文本尺寸减量
+  // 定义时间文本尺寸减量
   static const double kTimeTextSizeDecrease = 1.0;
-  // 时间与进度条水平间距
+  // 定义时间与进度条水平间距
   static const double kTimeProgressSpacing = 8.0;
 
-  // 扩展模式高度阈值
+  // 定义扩展模式高度阈值
   static const double kExpandedModeThreshold = 200.0;
-  // 封面尺寸
+  // 定义封面尺寸
   static const double kCoverSize = 100.0;
-  // 标题字体大小
+  // 定义标题字体大小
   static const double kTitleFontSize = 16.0;
-  // 封面圆角
+  // 定义封面圆角
   static const double kCoverBorderRadius = 12.0;
-  // 紧凑模式相关常量
+  // 定义紧凑模式最小高度
   static const double kCompactModeMinHeight = 120.0;
+  // 定义紧凑模式最大高度
   static const double kCompactModeMaxHeight = 180.0;
 
-  // 唱片相关常量 - 修改以减少纹理，增大封面
-  static const double kDiscGrooveWidth = 1.0; // 线条宽度
-  static const double kDiscGrooveSpacing = 11.0; // 修改：增加间距
-  static const double kDiscCenterRatio = 0.25; // 中心标签比例
-  static const double kDiscInnerCircleRatio = 0.75; // 修改：增大内圈封面比例
+  // 定义唱片线条宽度
+  static const double kDiscGrooveWidth = 1.0;
+  // 定义唱片线条间距
+  static const double kDiscGrooveSpacing = 11.0;
+  // 定义唱片中心标签比例
+  static const double kDiscCenterRatio = 0.25;
+  // 定义唱片内圈封面比例
+  static const double kDiscInnerCircleRatio = 0.75;
 
-  // 扩展模式唱片尺寸
-  static const double kExpandedDiscSize = 150.0; // 修改：调整为 150.0（原280.0）
+  // 定义扩展模式唱片尺寸
+  static const double kExpandedDiscSize = 150.0;
 
-  // 动画相关常量
-  static const Duration kRotationDuration = Duration(seconds: 5); // 旋转周期
-  static const double kFullRotation = 2 * math.pi; // 完整旋转角度
+  // 定义唱片旋转动画周期
+  static const Duration kRotationDuration = Duration(seconds: 5);
+  // 定义完整旋转角度
+  static const double kFullRotation = 2 * math.pi;
 
-  // 紧凑模式新样式常量
-  static const Color kCompactBackgroundColor = Colors.black; // 背景色
-  static const double kGradientWidth = 60.0; // 渐变宽度
-  static const double kCompactSongInfoSpacing = 4.0; // 歌曲信息间距
-  static const double kCompactSectionSpacing = 12.0; // 各区域间距
-  static const double kCompactProgressHeight = 6.0; // 进度条高度（增加高度）
-  static const double kCompactTopBarHeight = 22.0; // 顶部栏高度
-  static const double kCompactPlayButtonSize = 28.0; // 播放按钮尺寸
-  static const double kCompactControlButtonSize = 28.0; // 控制按钮尺寸
-  static const double kCompactSmallIconSize = 20.0; // 小图标尺寸
-  static const double kCompactPlayPauseIconSize = 22.0; // 紧凑模式播放按钮图标大小
+  // 定义紧凑模式背景色
+  static const Color kCompactBackgroundColor = Colors.black;
+  // 定义紧凑模式渐变宽度
+  static const double kGradientWidth = 60.0;
+  // 定义紧凑模式歌曲信息间距
+  static const double kCompactSongInfoSpacing = 4.0;
+  // 定义紧凑模式区域间距
+  static const double kCompactSectionSpacing = 12.0;
+  // 定义紧凑模式进度条高度
+  static const double kCompactProgressHeight = 6.0;
+  // 定义紧凑模式顶部栏高度
+  static const double kCompactTopBarHeight = 22.0;
+  // 定义紧凑模式播放按钮尺寸
+  static const double kCompactPlayButtonSize = 28.0;
+  // 定义紧凑模式控制按钮尺寸
+  static const double kCompactControlButtonSize = 28.0;
+  // 定义紧凑模式小图标尺寸
+  static const double kCompactSmallIconSize = 20.0;
+  // 定义紧凑模式播放/暂停图标尺寸
+  static const double kCompactPlayPauseIconSize = 22.0;
 
-  // 封面模式相关常量
-  static const double kSquareModePlayButtonSize = 38.0; // 封面模式播放按钮尺寸
-  static const double kSquareModeIconSize = 32.0; // 封面模式图标大小
-  // 透明度使黑色更明显
-  static const double kSquareModeButtonOpacity = 0.5; // 封面模式按钮透明度
+  // 定义封面模式播放按钮尺寸
+  static const double kSquareModePlayButtonSize = 38.0;
+  // 定义封面模式图标尺寸
+  static const double kSquareModeIconSize = 32.0;
+  // 定义封面模式按钮透明度
+  static const double kSquareModeButtonOpacity = 0.5;
 
-  // 双击检测超时时间（与视频控件保持一致）
+  // 定义双击检测超时时间
   static const Duration kDoubleTapTimeout = Duration(milliseconds: 300);
-  // 全屏切换防抖时间
+  // 定义全屏切换防抖时间
   static const Duration kFullscreenDebounceTimeout = Duration(milliseconds: 500);
 
-  // 图片缓存尺寸限制
+  // 定义图片缓存最大宽度
   static const int kImageCacheMaxWidth = 512;
+  // 定义图片缓存最大高度
   static const int kImageCacheMaxHeight = 512;
 
-  // 常量样式定义
+  // 定义文本阴影效果
   static const List<Shadow> _textShadows = [
     Shadow(blurRadius: kTextShadowBlurRadius, color: Colors.black54, offset: Offset(kShadowOffsetX, kShadowOffsetY)),
   ];
 
+  // 定义进度条阴影效果
   static const List<BoxShadow> _progressBarShadows = [
     BoxShadow(blurRadius: kIconShadowBlurRadius, color: Colors.black45, offset: Offset(kShadowOffsetX, kShadowOffsetY)),
   ];
 
+  // 定义图标阴影效果
   static const List<Shadow> _iconShadows = [
     Shadow(blurRadius: kIconShadowBlurRadius, color: Colors.black45, offset: Offset(kShadowOffsetX, kShadowOffsetY)),
   ];
 
-  // 常量EdgeInsets
+  // 定义控件内边距
   static const EdgeInsets _controlsPadding = EdgeInsets.symmetric(horizontal: kSpacingDouble);
+  // 定义进度条内边距
   static const EdgeInsets _progressPadding = EdgeInsets.only(
     left: kSpacingDouble,
     right: kSpacingDouble,
     top: kSpacingUnit,
   );
+  // 定义直播模式进度条内边距
   static const EdgeInsets _progressPaddingLive = EdgeInsets.only(
     left: kSpacingDouble,
     right: kSpacingDouble,
     top: 0.0,
   );
+  // 定义图标按钮内边距
   static const EdgeInsets _iconButtonPadding = EdgeInsets.all(kSpacingHalf);
+  // 定义标题内边距
   static const EdgeInsets _titlePadding = EdgeInsets.symmetric(horizontal: kSpacingUnit);
+  // 定义模态框头部内边距
   static const EdgeInsets _modalHeaderPadding = EdgeInsets.only(left: kSpacingDouble, right: kSpacingUnit);
+  // 定义模态框列表内边距
   static const EdgeInsets _modalListPadding = EdgeInsets.symmetric(vertical: kSpacingUnit);
-  // 修改：使用新的垂直间距常量
+  // 定义模态框列表项外边距
   static const EdgeInsets _modalItemMargin = EdgeInsets.symmetric(horizontal: kSpacingUnit, vertical: kPlaylistItemVerticalMargin);
 
-  // 常量BorderRadius
+  // 定义模态框顶部圆角
   static const BorderRadius _modalTopBorderRadius = BorderRadius.only(
     topLeft: Radius.circular(kModalBorderRadius),
     topRight: Radius.circular(kModalBorderRadius),
   );
+  // 定义封面圆角
   static const BorderRadius _coverBorderRadius = BorderRadius.all(Radius.circular(kCoverBorderRadius));
+  // 定义列表项圆角
   static const BorderRadius _itemBorderRadius = BorderRadius.all(Radius.circular(8));
 
-  // 常量SizedBox
+  // 定义双倍间距占位
   static const SizedBox _spacingDoubleBox = SizedBox(height: kSpacingDouble);
+  // 定义双倍宽度间距占位
   static const SizedBox _spacingDoubleWidthBox = SizedBox(width: kSpacingDouble);
+  // 定义时间与进度条间距占位
   static const SizedBox _timeSpacingBox = SizedBox(width: kTimeProgressSpacing);
 
-  // 【性能优化】静态Widget缓存
+  // 缓存音乐图标
   static final Widget _musicNoteIcon = Icon(
     Icons.music_note,
     size: 60,
     color: Colors.grey[600],
   );
+  // 缓存音乐图标背景
   static final Widget _musicNoteBackground = Container(
     color: Colors.grey[900],
     child: _musicNoteIcon,
   );
 
-  // 【性能优化】扩展静态Widget缓存
+  // 缓存黑色背景
   static const Widget _blackBackground = ColoredBox(color: Colors.black);
+  // 缓存透明遮罩
   static final Widget _transparentOverlay = Container(
     color: Colors.black.withOpacity(0.4),
   );
+  // 缓存紧凑模式区域间距占位
   static const Widget _compactSectionSpacer = SizedBox(height: kCompactSectionSpacing);
+  // 缓存紧凑模式歌曲信息间距占位
   static const Widget _compactSongInfoSpacer = SizedBox(height: kCompactSongInfoSpacing);
+  // 缓存单位间距占位
   static const Widget _spacingUnitBox = SizedBox(width: kSpacingUnit);
+  // 缓存双倍间距占位
   static const Widget _spacingDoubleBox2 = SizedBox(width: kSpacingDouble);
   
-  // 【性能优化】缓存常用装饰
+  // 缓存唱片阴影装饰
   static final BoxDecoration _discShadowDecoration = BoxDecoration(
     shape: BoxShape.circle,
     boxShadow: [
@@ -236,66 +272,77 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     ],
   );
   
+  // 缓存透明圆形装饰
   static const BoxDecoration _transparentCircleDecoration = BoxDecoration(
     shape: BoxShape.circle,
     color: Colors.transparent,
   );
   
+  // 缓存白色圆形装饰
   static const BoxDecoration _whiteCircleDecoration = BoxDecoration(
     color: Colors.white,
     shape: BoxShape.circle,
   );
   
+  // 缓存中心孔装饰
   static final BoxDecoration _centerHoleDecoration = BoxDecoration(
     color: Colors.grey[800],
     shape: BoxShape.circle,
   );
 
-  // 最新播放值
+  // 存储最新播放值
   VideoPlayerValue? _latestValue;
-  // 最新音量，用于静音恢复
+  // 存储最新音量
   double? _latestVolume;
-  // 视频播放控制器
+  // 存储视频播放控制器
   VideoPlayerController? _controller;
-  // 播放器控制器
+  // 存储播放器控制器
   IAppPlayerController? _iappPlayerController;
 
-  // 唱片旋转动画控制器（扩展模式需要）
+  // 控制唱片旋转动画
   AnimationController? _rotationController;
-  // 【性能优化】使用RotationTransition替代Transform.rotate
+  // 驱动旋转动画
   Animation<double>? _rotationAnimation;
 
-  // 随机渐变色生成器（扩展模式需要）
+  // 生成随机渐变色
   final _random = math.Random();
+  // 存储渐变色列表
   List<Color>? _gradientColors;
 
-  // 当前显示模式
+  // 存储当前显示模式
   PlayerDisplayMode _currentDisplayMode = PlayerDisplayMode.compact;
-  // 动画是否已初始化
+  // 标记动画初始化状态
   bool _animationsInitialized = false;
 
-  // 【性能优化】缓存上次更新的位置（秒级）
+  // 缓存上次更新位置（秒级）
   int? _lastUpdatedPositionInSeconds;
-  // 【性能优化】缓存的显示模式和约束
+  // 缓存布局约束
   BoxConstraints? _cachedConstraints;
+  // 缓存显示模式
   PlayerDisplayMode? _cachedDisplayMode;
 
-  // 手势相关变量（仅扩展模式handleAllGestures需要）
+  // 存储上次点击时间
   DateTime? _lastTapTime;
+  // 控制双击定时器
   Timer? _doubleTapTimer;
 
-  // 全屏切换防抖相关
+  // 控制全屏切换防抖
   Timer? _fullscreenDebounceTimer;
+  // 标记全屏切换状态
   bool _isFullscreenTransitioning = false;
 
-  // 【性能优化】缓存播放列表状态
+  // 缓存播放列表索引
   int? _cachedPlaylistIndex;
+  // 缓存随机播放模式
   bool? _cachedShuffleMode;
 
-  // 【性能优化】新增状态缓存，避免重复setState
+  // 缓存播放状态
   bool? _cachedIsPlaying;
+  // 缓存错误状态
   bool? _cachedHasError;
+  // 缓存音量值
   double? _cachedVolume;
+  // 缓存时长
   Duration? _cachedDuration;
 
   // 获取控件配置
@@ -310,22 +357,22 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   @override
   IAppPlayerControlsConfiguration get iappPlayerControlsConfiguration => _controlsConfiguration;
 
-  // 响应式尺寸缓存
+  // 缓存响应式缩放因子
   double? _cachedScaleFactor;
-  // 屏幕尺寸缓存
+  // 缓存屏幕尺寸
   Size? _cachedScreenSize;
-  // 响应式图标尺寸
+  // 存储响应式图标尺寸
   late double _responsiveIconSize;
-  // 响应式播放/暂停图标尺寸
+  // 存储响应式播放/暂停图标尺寸
   late double _responsivePlayPauseIconSize;
-  // 响应式文本尺寸
+  // 存储响应式文本尺寸
   late double _responsiveTextSize;
-  // 响应式错误图标尺寸
+  // 存储响应式错误图标尺寸
   late double _responsiveErrorIconSize;
-  // 响应式标题字体尺寸
+  // 存储响应式标题字体尺寸
   late double _responsiveTitleFontSize;
 
-  // 【性能优化】改进的响应式尺寸计算 - 移除冗余检查
+  // 计算响应式尺寸
   double _getResponsiveSize(double baseSize) {
     return baseSize * (_cachedScaleFactor ?? 1.0);
   }
@@ -334,7 +381,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   void _precalculateResponsiveSizes(BuildContext context) {
     final currentScreenSize = MediaQuery.of(context).size;
     
-    // 只在屏幕尺寸变化时重新计算
+    // 检查屏幕尺寸变化
     if (_cachedScreenSize != currentScreenSize) {
       _cachedScreenSize = currentScreenSize;
       final screenWidth = currentScreenSize.width;
@@ -345,7 +392,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       _cachedScaleFactor = scaleFactor.clamp(0.8, 1.5);
     }
     
-    // 使用缓存的scaleFactor计算尺寸
+    // 计算响应式尺寸
     _responsiveIconSize = _getResponsiveSize(kIconSizeBase);
     _responsivePlayPauseIconSize = _getResponsiveSize(kPlayPauseIconSize);
     _responsiveTextSize = _getResponsiveSize(kTextSizeBase);
@@ -356,15 +403,15 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   @override
   void initState() {
     super.initState();
-    // 不在这里初始化动画，等待布局确定后再初始化
+    // 延迟动画初始化至布局确定
   }
 
-  // 生成随机渐变色（扩展模式需要）
+  // 生成随机渐变色
   void _generateRandomGradient() {
-    if (_gradientColors != null) return; // 避免重复生成
+    if (_gradientColors != null) return;
     
     final hue1 = _random.nextDouble() * 360;
-    final hue2 = (hue1 + 30 + _random.nextDouble() * 60) % 360; // 相近色相
+    final hue2 = (hue1 + 30 + _random.nextDouble() * 60) % 360;
     
     _gradientColors = [
       HSVColor.fromAHSV(1.0, hue1, 0.6, 0.3).toColor(),
@@ -372,46 +419,44 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     ];
   }
 
-  // 初始化动画（仅扩展模式需要）
+  // 初始化旋转动画
   void _initializeAnimations() {
-    if (_animationsInitialized) return; // 避免重复初始化
+    if (_animationsInitialized) return;
     
     _animationsInitialized = true;
     
-    // 唱片旋转动画
+    // 设置旋转动画控制器
     _rotationController = AnimationController(
       duration: kRotationDuration,
       vsync: this,
     );
-    // 【性能优化】使用0到1的值，配合RotationTransition使用
+    // 设置旋转动画驱动
     _rotationAnimation = _rotationController!.drive(
       Tween<double>(begin: 0.0, end: 1.0),
     );
   }
 
-  // 【性能优化】计算当前显示模式 - 添加缓存机制
+  // 计算当前显示模式
   PlayerDisplayMode _calculateDisplayMode(BoxConstraints constraints) {
-    // 如果约束没有变化，直接返回缓存的结果
     if (_cachedConstraints == constraints && _cachedDisplayMode != null) {
       return _cachedDisplayMode!;
     }
     
     _cachedConstraints = constraints;
     
-    // 计算宽高比
     final double aspectRatio = constraints.maxWidth / constraints.maxHeight;
     
-    // 封面模式：aspectRatio = 1.0（精确值，允许1%误差）
+    // 判断封面模式
     if ((aspectRatio - 1.0).abs() < 0.01) {
       _cachedDisplayMode = PlayerDisplayMode.square;
     }
-    // 紧凑模式：aspectRatio = 2.0（精确值，允许1%误差）或高度 <= 200px
+    // 判断紧凑模式
     else if ((aspectRatio - 2.0).abs() < 0.01 || 
         (constraints.maxHeight != double.infinity && 
          constraints.maxHeight <= kExpandedModeThreshold)) {
       _cachedDisplayMode = PlayerDisplayMode.compact;
     }
-    // 扩展模式：其他所有情况
+    // 默认扩展模式
     else {
       _cachedDisplayMode = PlayerDisplayMode.expanded;
     }
@@ -424,20 +469,20 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     return buildLTRDirectionality(
       LayoutBuilder(
         builder: (context, constraints) {
-          // 计算当前显示模式
+          // 计算显示模式
           final displayMode = _calculateDisplayMode(constraints);
           
-          // 如果显示模式发生变化
+          // 处理显示模式变化
           if (_currentDisplayMode != displayMode) {
             _currentDisplayMode = displayMode;
             
-            // 只在扩展模式下初始化动画
+            // 初始化扩展模式动画
             if (_currentDisplayMode == PlayerDisplayMode.expanded && !_animationsInitialized) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   _initializeAnimations();
                   _generateRandomGradient();
-                  // 如果正在播放，开始动画
+                  // 开始播放动画
                   if (_controller?.value.isPlaying ?? false) {
                     _startAnimations();
                   }
@@ -446,6 +491,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             }
           }
           
+          // 构建主控件
           return _buildMainWidget(constraints);
         },
       ),
@@ -454,11 +500,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   @override
   void dispose() {
+    // 清理资源
     _dispose();
     _rotationController?.dispose();
-    _doubleTapTimer?.cancel(); // 清理手势相关定时器
-    _fullscreenDebounceTimer?.cancel(); // 清理全屏防抖定时器
-    // 修改：重置动画初始化标志，确保组件重新创建时状态正确
+    _doubleTapTimer?.cancel();
+    _fullscreenDebounceTimer?.cancel();
     _animationsInitialized = false;
     super.dispose();
   }
@@ -482,8 +528,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       _initialize();
     }
 
-    // 修改：优化响应式尺寸计算时机
-    // 只在必要时重新计算尺寸（屏幕尺寸变化或首次初始化）
+    // 计算响应式尺寸
     _precalculateResponsiveSizes(context);
 
     super.didChangeDependencies();
@@ -498,7 +543,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       );
     }
     
-    // 根据显示模式选择不同的布局
+    // 根据显示模式选择布局
     switch (_currentDisplayMode) {
       case PlayerDisplayMode.expanded:
         return _buildExpandedMode();
@@ -509,49 +554,45 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     }
   }
 
-  // ============== 扩展模式 ==============
-  // 扩展模式：显示唱片动画 + 完整控制栏
+  // 构建扩展模式布局
   Widget _buildExpandedMode() {
     Widget content = Container(
       color: Colors.transparent,
       child: Stack(
         children: [
-          // 渐变背景
+          // 添加渐变背景
           if (_gradientColors != null)
             Positioned.fill(
               child: _buildGradientBackground(),
             ),
-          // 主内容
+          // 添加主内容
           _buildExpandedLayout(),
         ],
       ),
     );
 
-    // 仅在扩展模式下处理 handleAllGestures
+    // 处理手势事件
     final gestureDetector = IAppPlayerMultipleGestureDetector.of(context);
     
     if (!_controlsConfiguration.handleAllGestures) {
-      // 使用 Listener 手动管理单击/双击逻辑
+      // 使用Listener处理单击/双击
       return Listener(
         behavior: HitTestBehavior.translucent,
         onPointerUp: (_) {
           final now = DateTime.now();
           if (_lastTapTime != null && now.difference(_lastTapTime!) < kDoubleTapTimeout) {
-            // 处理双击事件
             _doubleTapTimer?.cancel();
             _lastTapTime = null;
-            // 双击切换全屏
             gestureDetector?.onDoubleTap?.call();
+            // 切换全屏
             if (_controlsConfiguration.enableFullscreen) {
               _toggleFullscreen();
             }
           } else {
-            // 处理单击或超时
             _lastTapTime = now;
             _doubleTapTimer?.cancel();
             _doubleTapTimer = Timer(kDoubleTapTimeout, () {
               _lastTapTime = null;
-              // 单击回调（音频控件保持始终可见，不需要切换可见性）
               gestureDetector?.onTap?.call();
             });
           }
@@ -559,14 +600,14 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         child: content,
       );
     } else {
-      // 使用 GestureDetector 处理所有手势
+      // 使用GestureDetector处理所有手势
       return GestureDetector(
         onTap: () {
           gestureDetector?.onTap?.call();
         },
         onDoubleTap: () {
           gestureDetector?.onDoubleTap?.call();
-          // 双击切换全屏
+          // 切换全屏
           if (_controlsConfiguration.enableFullscreen) {
             _toggleFullscreen();
           }
@@ -595,7 +636,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建扩展布局
+  // 构建扩展模式主布局
   Widget _buildExpandedLayout() {
     return Stack(
       children: [
@@ -613,13 +654,14 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             ),
           ],
         ),
+        // 添加标题区域
         Positioned(
           top: kSpacingDouble,
           left: 0,
           right: 0,
           child: _buildTitleSection(),
         ),
-        // 字幕显示在距离进度条的 kSpacingHalf 上面
+        // 添加字幕显示
         if (_controlsConfiguration.enableSubtitles)
           Positioned(
             bottom: kAudioControlBarHeight + kProgressBarHeight + kSpacingHalf,
@@ -635,7 +677,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 【性能优化】构建唱片区域 - 使用RotationTransition替代Transform.rotate
+  // 构建唱片区域
   Widget _buildDiscSection() {
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
     final imageUrl = _getImageUrl();
@@ -643,23 +685,22 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final singer = _getCurrentSinger();
     
     return Center(
-      child: RepaintBoundary(  // 【性能优化】隔离动画区域，防止影响其他部分
+      child: RepaintBoundary(
         child: Container(
           width: kExpandedDiscSize,
           height: kExpandedDiscSize,
           decoration: _discShadowDecoration,
           child: ClipOval(
-            // 【性能优化】使用RotationTransition替代AnimatedBuilder + Transform.rotate
             child: RotationTransition(
               turns: _rotationAnimation ?? const AlwaysStoppedAnimation(0.0),
               child: Stack(
                 children: [
-                  // 唱片纹理
+                  // 绘制唱片纹理
                   const CustomPaint(
                     size: Size(kExpandedDiscSize, kExpandedDiscSize),
                     painter: _DiscPainter(isCompact: false),
                   ),
-                  // 中心封面
+                  // 添加中心封面
                   Center(
                     child: Container(
                       width: kExpandedDiscSize * kDiscInnerCircleRatio,
@@ -670,7 +711,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                       ),
                     ),
                   ),
-                  // 中心白色标签
+                  // 添加中心白色标签
                   Center(
                     child: Container(
                       width: kExpandedDiscSize * kDiscCenterRatio,
@@ -703,7 +744,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                       ),
                     ),
                   ),
-                  // 中心孔
+                  // 添加中心孔
                   Center(
                     child: Container(
                       width: 10,
@@ -720,34 +761,32 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // ============== 封面模式 ==============
-  // 封面模式：封面铺满 + 居中播放按钮 - 修改：使用 _buildCoverImage 方法
+  // 构建封面模式布局
   Widget _buildSquareMode() {
     final imageUrl = _getImageUrl();
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
     
-    // 简化设计：直接使用Stack填充
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 黑色背景（作为图片加载失败的后备）
+        // 添加黑色背景
         _blackBackground,
-        // 封面图片 - 修改：移除Transform.scale，直接使用BoxFit.cover
+        // 添加封面图片
         _buildCoverImage(
           placeholder, 
           imageUrl, 
           fit: BoxFit.cover,
         ),
-        // 半透明遮罩
+        // 添加透明遮罩
         _transparentOverlay,
-        // 居中的播放/暂停按钮
+        // 添加居中播放按钮
         Center(
           child: _buildSquareModePlayButton(),
         ),
-        // 字幕处理（不显示在UI上，但需要继续运行以供其他地方调用）
+        // 处理字幕逻辑
         if (_controlsConfiguration.enableSubtitles)
           Offstage(
-            offstage: true, // 隐藏UI，但组件继续运行
+            offstage: true,
             child: IAppPlayerSubtitlesDrawer(
               iappPlayerController: _iappPlayerController!,
               iappPlayerSubtitlesConfiguration: _iappPlayerController!.iappPlayerConfiguration.subtitlesConfiguration,
@@ -758,7 +797,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建封面模式的播放按钮
+  // 构建封面模式播放按钮
   Widget _buildSquareModePlayButton() {
     final bool isFinished = isVideoFinished(_latestValue);
     final bool isPlaying = _controller?.value.isPlaying ?? false;
@@ -780,9 +819,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         height: kSquareModePlayButtonSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          // 修改：改为白色半透明背景
           color: Colors.white.withOpacity(kSquareModeButtonOpacity),
-          // 强化阴影效果，增加层次感
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.6),
@@ -794,25 +831,22 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         ),
         child: Icon(
           iconData,
-          color: Colors.black, // 修改：白色背景使用黑色图标
-          size: kSquareModeIconSize, // 修改：使用常量控制图标大小
+          color: Colors.black,
+          size: kSquareModeIconSize,
         ),
       ),
     );
   }
 
-  // ============== 紧凑模式 ==============
-  // 紧凑模式：横向布局
+  // 构建紧凑模式布局
   Widget _buildCompactMode(BoxConstraints constraints) {
     final bool isPlaylist = _iappPlayerController!.isPlaylistMode;
     final imageUrl = _getImageUrl();
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
     
-    // 修改：使用实际高度计算
     final double playerHeight = constraints.maxHeight.isFinite 
       ? math.min(constraints.maxHeight, kCompactModeMaxHeight)
       : kCompactModeMinHeight;
-    // 修改：左侧封面为正方形
     final double coverSize = playerHeight;
     
     return Container(
@@ -831,9 +865,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         children: [
           Row(
             children: [
-              // 左侧封面区域 - 正方形
+              // 添加左侧封面
               _buildCompactCoverSection(placeholder, imageUrl, coverSize, showGradient: true),
-              // 右侧控制区域
+              // 添加右侧控制区域
               Expanded(
                 child: Container(
                   color: kCompactBackgroundColor,
@@ -846,10 +880,10 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ),
             ],
           ),
-          // 字幕处理（不显示在UI上，但需要继续运行以供其他地方调用）
+          // 处理字幕逻辑
           if (_controlsConfiguration.enableSubtitles)
             Offstage(
-              offstage: true, // 隐藏UI，但组件继续运行
+              offstage: true,
               child: IAppPlayerSubtitlesDrawer(
                 iappPlayerController: _iappPlayerController!,
                 iappPlayerSubtitlesConfiguration: _iappPlayerController!.iappPlayerConfiguration.subtitlesConfiguration,
@@ -861,7 +895,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建紧凑模式左侧封面区域 - 修改：移除Transform.scale和ClipRect
+  // 构建紧凑模式封面区域
   Widget _buildCompactCoverSection(Widget? placeholder, String? imageUrl, double size, {bool showGradient = false}) {
     return SizedBox(
       width: size,
@@ -869,13 +903,13 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 修改：直接使用图片，移除ClipRect和Transform
+          // 添加封面图片
           _buildCoverImage(
             placeholder, 
             imageUrl, 
             fit: BoxFit.cover,
           ),
-          // 右侧渐变遮罩（仅在需要时显示）
+          // 添加渐变遮罩
           if (showGradient)
             Positioned(
               right: 0,
@@ -902,26 +936,24 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建紧凑模式右侧控制区域
+  // 构建紧凑模式控制区域
   Widget _buildCompactControlsArea(bool isPlaylist) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // 顶部栏（居右）
+        // 添加顶部栏
         _buildCompactTopBar(isPlaylist),
-        // 歌曲信息（水平居中）
+        // 添加歌曲信息
         Expanded(
           child: Center(
             child: _buildCompactSongInfoArea(),
           ),
         ),
-        // 底部控制区
+        // 添加底部控制区
         Column(
           children: [
-            // 进度条和时间
             _buildCompactProgressSection(),
             _compactSectionSpacer,
-            // 播放控制按钮（水平居中）
             Center(
               child: _buildCompactPlaybackControls(isPlaylist),
             ),
@@ -943,7 +975,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 左侧显示剩余时间
+          // 显示剩余时间
           if (_controlsConfiguration.enableProgressText && !isLive)
             Text(
               '-${IAppPlayerUtils.formatDuration(remaining)}',
@@ -953,10 +985,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ),
             ),
           const Spacer(),
-          // 右侧按钮组
+          // 添加右侧按钮组
           Row(
             children: [
-              // 播放列表模式按钮
               if (isPlaylist) ...[
                 _buildCompactIconButton(
                   icon: _iappPlayerController!.playlistShuffleMode 
@@ -977,7 +1008,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                 if (_controlsConfiguration.enableFullscreen)
                   _spacingUnitBox,
               ],
-              // 全屏按钮
+              // 添加全屏按钮
               if (_controlsConfiguration.enableFullscreen)
                 _buildCompactIconButton(
                   icon: _iappPlayerController!.isFullScreen
@@ -1031,7 +1062,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建紧凑模式的进度条区域
+  // 构建紧凑模式进度条区域
   Widget _buildCompactProgressSection() {
     return Row(
       children: [
@@ -1097,7 +1128,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建紧凑模式的图标按钮
+  // 构建紧凑模式图标按钮
   Widget _buildCompactIconButton({
     required IconData icon,
     required VoidCallback? onTap,
@@ -1118,7 +1149,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建紧凑模式的播放/暂停按钮
+  // 构建紧凑模式播放/暂停按钮
   Widget _buildCompactPlayPauseButton() {
     final bool isFinished = isVideoFinished(_latestValue);
     final bool isPlaying = _controller?.value.isPlaying ?? false;
@@ -1151,32 +1182,30 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // ============== 通用方法 ==============
-  // 获取图片URL
+  // 获取封面图片URL
   String? _getImageUrl() {
     final placeholder = _iappPlayerController?.iappPlayerDataSource?.placeholder;
-    if (placeholder != null) return null; // placeholder是Widget，不是URL
+    if (placeholder != null) return null;
     
     return _iappPlayerController?.iappPlayerDataSource?.notificationConfiguration?.imageUrl;
   }
 
-  // 【性能优化】构建封面图片 - 添加内存缓存限制
+  // 构建封面图片
   Widget _buildCoverImage(Widget? placeholder, String? imageUrl, {
     BoxFit? fit,
   }) {
     final effectiveFit = fit ?? BoxFit.cover;
     
-    // 【性能优化】根据显示模式动态设置缓存大小
+    // 设置缓存尺寸
     int cacheWidth = kImageCacheMaxWidth;
     int cacheHeight = kImageCacheMaxHeight;
     
     switch (_currentDisplayMode) {
       case PlayerDisplayMode.compact:
-        cacheWidth = 180;  // 紧凑模式最大高度
+        cacheWidth = 180;
         cacheHeight = 180;
         break;
       case PlayerDisplayMode.square:
-        // 封面模式保持默认512
         break;
       case PlayerDisplayMode.expanded:
         cacheWidth = (kExpandedDiscSize * kDiscInnerCircleRatio).toInt();
@@ -1194,7 +1223,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           imageUrl,
           fit: effectiveFit,
           alignment: Alignment.center,
-          // 【性能优化】根据显示模式动态调整缓存尺寸
           cacheWidth: cacheWidth,
           cacheHeight: cacheHeight,
           errorBuilder: (context, error, stackTrace) => _musicNoteBackground,
@@ -1204,7 +1232,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           imageUrl,
           fit: effectiveFit,
           alignment: Alignment.center,
-          // 【性能优化】根据显示模式动态调整缓存尺寸
           cacheWidth: cacheWidth,
           cacheHeight: cacheHeight,
           errorBuilder: (context, error, stackTrace) => _musicNoteBackground,
@@ -1316,6 +1343,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       padding: isLive ? _progressPaddingLive : _progressPadding,
       child: Row(
         children: [
+          // 显示当前时间
           if (_controlsConfiguration.enableProgressText && !isLive) ...[
             Text(
               IAppPlayerUtils.formatDuration(_latestValue?.position ?? Duration.zero),
@@ -1327,6 +1355,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             ),
             _timeSpacingBox,
           ],
+          // 添加进度条
           if (_controlsConfiguration.enableProgressBar)
             Expanded(
               child: Container(
@@ -1337,6 +1366,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             )
           else if (_controlsConfiguration.enableProgressText && !isLive)
             const Expanded(child: SizedBox()),
+          // 显示总时长
           if (_controlsConfiguration.enableProgressText && !isLive) ...[
             _timeSpacingBox,
             Text(
@@ -1364,7 +1394,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       padding: _controlsPadding,
       child: Stack(
         children: [
-          // 左侧按钮
+          // 添加左侧按钮
           Positioned(
             left: 0,
             top: 0,
@@ -1376,7 +1406,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ],
             ),
           ),
-          // 中间播放控制按钮（始终居中）
+          // 添加中间播放控制
           Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1393,7 +1423,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ],
             ),
           ),
-          // 右侧按钮
+          // 添加右侧按钮
           Positioned(
             right: 0,
             top: 0,
@@ -1421,9 +1451,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 切换全屏（带防抖）
+  // 切换全屏模式
   void _toggleFullscreen() {
-    // 防抖：如果正在切换中，忽略新的请求
     if (_isFullscreenTransitioning) return;
     
     _isFullscreenTransitioning = true;
@@ -1614,7 +1643,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建播放列表菜单内容 - 美化版本
+  // 构建播放列表菜单内容
   Widget _buildPlaylistMenuContent() {
     final playlistController = _iappPlayerController!.playlistController;
     final translations = _iappPlayerController!.translations;
@@ -1644,7 +1673,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 美化的标题栏
+          // 添加标题栏
           Container(
             height: kModalHeaderHeight,
             padding: _modalHeaderPadding,
@@ -1659,7 +1688,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             ),
             child: Row(
               children: [
-                // 修改：去掉图标背景容器
                 const Icon(
                   Icons.queue_music_rounded,
                   color: kPlaylistPrimaryColor,
@@ -1687,7 +1715,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ],
             ),
           ),
-          // 美化的列表内容
+          // 添加列表内容
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
@@ -1716,7 +1744,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     );
   }
 
-  // 构建播放列表项 - 美化版本
+  // 构建播放列表项
   Widget _buildPlaylistItem({
     required String title,
     String? author,
@@ -1744,7 +1772,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         ),
         child: Row(
           children: [
-            // 播放指示器
+            // 添加播放指示器
             Container(
               width: 40,
               alignment: Alignment.center,
@@ -1771,7 +1799,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                   ),
             ),
             const SizedBox(width: 8),
-            // 歌曲信息
+            // 添加歌曲信息
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1805,7 +1833,6 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ),
             ),
             const SizedBox(width: 12),
-            // 修改：移除正在播放动画
           ],
         ),
       ),
@@ -1832,9 +1859,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     }
   }
 
-  // 播放/暂停切换
+  // 切换播放/暂停状态
   void _onPlayPause() {
-    // 修改：加强空值安全检查
     if (_controller == null || !(_controller!.value.initialized)) {
       return;
     }
@@ -1854,54 +1880,52 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     }
   }
 
-  // 开始动画（仅扩展模式需要）
+  // 开始旋转动画
   void _startAnimations() {
     if (_currentDisplayMode == PlayerDisplayMode.expanded && _animationsInitialized) {
       _rotationController?.repeat();
     }
   }
 
-  // 停止动画
+  // 停止旋转动画
   void _stopAnimations() {
     _rotationController?.stop();
   }
 
-  // 初始化控制器
+  // 初始化播放控制器
   Future<void> _initialize() async {
     _controller!.addListener(_updateState);
     _updateState();
     
-    // 根据初始播放状态设置动画
+    // 设置初始播放动画
     if (_controller!.value.isPlaying) {
       _startAnimations();
     }
   }
 
-  // 【性能优化核心】更新播放状态
+  // 更新播放状态
   void _updateState() {
     if (!mounted) return;
     
     final newValue = _controller!.value;
     
-    // 【性能优化】将position比较精度从毫秒改为秒级
     final currentPositionInSeconds = newValue.position.inSeconds;
     final bool positionChanged = _lastUpdatedPositionInSeconds != currentPositionInSeconds;
     
-    // 【性能优化】只检查真正需要UI更新的状态变化
     bool shouldUpdate = false;
     
-    // 位置变化（秒级）
+    // 检查位置变化
     if (positionChanged) {
       _lastUpdatedPositionInSeconds = currentPositionInSeconds;
       shouldUpdate = true;
     }
     
-    // 播放状态变化
+    // 检查播放状态变化
     if (_cachedIsPlaying != newValue.isPlaying) {
       _cachedIsPlaying = newValue.isPlaying;
       shouldUpdate = true;
       
-      // 根据播放状态控制动画
+      // 控制动画状态
       if (newValue.isPlaying && !(_rotationController?.isAnimating ?? false)) {
         _startAnimations();
       } else if (!newValue.isPlaying && (_rotationController?.isAnimating ?? false)) {
@@ -1909,25 +1933,25 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       }
     }
     
-    // 错误状态变化
+    // 检查错误状态变化
     if (_cachedHasError != newValue.hasError) {
       _cachedHasError = newValue.hasError;
       shouldUpdate = true;
     }
     
-    // 音量变化（仅当差异大于1%时）
+    // 检查音量变化
     if (_cachedVolume == null || (_cachedVolume! - newValue.volume).abs() > 0.01) {
       _cachedVolume = newValue.volume;
       shouldUpdate = true;
     }
     
-    // 时长变化
+    // 检查时长变化
     if (_cachedDuration != newValue.duration) {
       _cachedDuration = newValue.duration;
       shouldUpdate = true;
     }
     
-    // 播放列表状态检测
+    // 检查播放列表状态
     if (_iappPlayerController?.isPlaylistMode == true) {
       final currentIndex = _iappPlayerController!.playlistController?.currentDataSourceIndex;
       final currentShuffleMode = _iappPlayerController!.playlistShuffleMode;
@@ -1939,7 +1963,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       }
     }
     
-    // 【性能优化】只在必要时调用setState
+    // 更新UI状态
     if (shouldUpdate) {
       setState(() {
         _latestValue = newValue;
@@ -1966,11 +1990,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   @override
   void cancelAndRestartTimer() {
-    // 音频控件保持始终可见
+    // 保持控件始终可见
   }
 }
 
-// 唱片纹理绘制器（扩展模式需要）
+// 绘制唱片纹理
 class _DiscPainter extends CustomPainter {
   final bool isCompact;
   
@@ -1981,20 +2005,19 @@ class _DiscPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     
-    // 黑色背景
+    // 绘制黑色背景
     final backgroundPaint = Paint()
       ..color = Colors.black
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, backgroundPaint);
     
-    // 绘制纹理圆环
+    // 设置纹理画笔
     final groovePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isCompact ? _IAppPlayerAudioControlsState.kDiscGrooveWidth : 1.0; // 修改：扩展模式线条更细
+      ..strokeWidth = isCompact ? _IAppPlayerAudioControlsState.kDiscGrooveWidth : 1.0;
     
-    // 根据模式选择不同的线条样式
+    // 绘制紧凑模式纹理
     if (isCompact) {
-      // 紧凑模式：白色线条，减少数量
       groovePaint.color = Colors.white.withOpacity(0.15);
       for (double r = _IAppPlayerAudioControlsState.kDiscGrooveSpacing * 2; 
            r < radius; 
@@ -2002,17 +2025,11 @@ class _DiscPainter extends CustomPainter {
         canvas.drawCircle(center, r, groovePaint);
       }
     } else {
-      // 修改：扩展模式精确绘制4条纹理线
+      // 绘制扩展模式纹理
       groovePaint.color = Colors.white.withOpacity(0.3);
-      
-      // 计算封面边缘位置
       final coverRadius = radius * _IAppPlayerAudioControlsState.kDiscInnerCircleRatio;
-      // 可用空间
       final availableSpace = radius - coverRadius;
-      // 将可用空间分为5份（4条线 + 5个间隔）
       final spacing = availableSpace / 5;
-      
-      // 从封面边缘开始，绘制4条纹理线
       for (int i = 1; i <= 4; i++) {
         final r = coverRadius + spacing * i;
         canvas.drawCircle(center, r, groovePaint);
