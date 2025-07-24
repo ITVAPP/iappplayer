@@ -436,30 +436,45 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         player.disposeMediaSession()
     }
 
-    private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val activity = activityWeakRef?.get()
-            if (activity == null) return
+private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val activity = activityWeakRef?.get()
+        if (activity == null) return
 
-            // 先停止现有的Handler，避免重复创建
-            stopPipHandler()
-            pipHandler = Handler(Looper.getMainLooper())
-            pipRunnable = object : Runnable {
-                override fun run() {
-                    val currentActivity = activityWeakRef?.get()
-                    if (currentActivity != null && currentActivity.isInPictureInPictureMode) {
-                        pipHandler?.postDelayed(this, 500)
-                    } else {
-                        // 退出画中画
-                        player.onPictureInPictureStatusChanged(false)
+        // 先停止现有的Handler，避免重复创建
+        stopPipHandler()
+        pipHandler = Handler(Looper.getMainLooper())
+        pipRunnable = object : Runnable {
+            override fun run() {
+                val currentActivity = activityWeakRef?.get()
+                if (currentActivity != null && currentActivity.isInPictureInPictureMode) {
+                    pipHandler?.postDelayed(this, 500)
+                } else {
+                    // 退出画中画，延迟300ms判断Activity状态
+                    pipHandler?.postDelayed({
+                        val activityRef = activityWeakRef?.get()
+                        val isActivityVisible = activityRef != null && 
+                            !activityRef.isFinishing && 
+                            !activityRef.isDestroyed &&
+                            activityRef.hasWindowFocus()  // 关键：检查窗口是否有焦点
+                        
+                        // 发送带有退出原因的事件
+                        if (isActivityVisible) {
+                            // Activity可见且有焦点，说明是返回按钮
+                            player.onPictureInPictureStatusChanged(false, "return")
+                        } else {
+                            // Activity不可见或无焦点，说明是关闭按钮
+                            player.onPictureInPictureStatusChanged(false, "close")
+                        }
                         player.disposeMediaSession()
                         stopPipHandler()
-                    }
+                    }, 300)  // 延迟300ms让Activity状态稳定
                 }
             }
-            pipHandler?.post(pipRunnable!!)
-            }
+        }
+        pipHandler?.post(pipRunnable!!)
     }
+}
 
     private fun dispose(player: IAppPlayer, textureId: Long) {
         player.dispose()
