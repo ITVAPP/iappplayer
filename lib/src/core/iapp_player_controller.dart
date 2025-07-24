@@ -170,6 +170,28 @@ class IAppPlayerController {
   
   // 画中画退出原因
   String? _lastPipExitReason;
+  
+  // 画中画退出时间戳
+  DateTime? _pipExitTime;
+  
+  // 画中画返回保护期（毫秒）
+  static const int _pipReturnWindowMs = 1000;
+  
+  // 计算是否在画中画返回期间
+  bool get isReturningFromPip {
+    if (_pipExitTime == null) return false;
+    
+    final now = DateTime.now();
+    final elapsed = now.difference(_pipExitTime!).inMilliseconds;
+    
+    // 如果超过保护期，清理时间戳
+    if (elapsed > _pipReturnWindowMs) {
+      _pipExitTime = null;
+      return false;
+    }
+    
+    return true;
+  }
 
   // 全局键
   GlobalKey? _iappPlayerGlobalKey;
@@ -774,6 +796,13 @@ class IAppPlayerController {
       IAppPlayerUtils.log("画中画模式下不允许进入全屏");
       return;
     }
+    
+    // 如果刚从画中画返回，暂时阻止全屏
+    if (isReturningFromPip) {
+      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
+      return;
+    }
+    
     _isFullScreen = true;
     _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
   }
@@ -1010,6 +1039,9 @@ void _onVideoPlayerChanged() async {
     // 画中画退出处理
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     _wasInPipMode = false;
+    
+    // 记录退出时间戳
+    _pipExitTime = DateTime.now();
     
     // 恢复控件状态
     if (_wasControlsEnabledBeforePiP) {
