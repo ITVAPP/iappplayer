@@ -167,10 +167,16 @@ class IAppPlayerController {
 
   // 画中画前控件状态
   bool _wasControlsEnabledBeforePiP = false;
-
+  
   // 画中画退出原因
   String? _lastPipExitReason;
   
+  // 画中画状态标志
+  bool _isReturningFromPip = false;
+
+  // 公开画中画返回状态，供IAppPlayer使用
+  bool get isReturningFromPip => _isReturningFromPip;
+
   // 全局键
   GlobalKey? _iappPlayerGlobalKey;
 
@@ -941,6 +947,18 @@ class IAppPlayerController {
   void _postEvent(IAppPlayerEvent iappPlayerEvent) {
     if (_disposed) {
       return;
+    }
+    
+    // 根据事件类型管理画中画保护状态
+    if (iappPlayerEvent.iappPlayerEventType == 
+        IAppPlayerEventType.pipStop) {
+        // 退出画中画，启用保护
+        _isReturningFromPip = true;
+        Future.delayed(Duration(milliseconds: 2000), () {
+          if (!_disposed) {
+            _isReturningFromPip = false;
+          }
+        });
     }
 
     if (iappPlayerEvent.iappPlayerEventType == 
