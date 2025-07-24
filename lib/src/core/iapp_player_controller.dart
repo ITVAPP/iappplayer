@@ -1049,9 +1049,9 @@ void _onVideoPlayerChanged() async {
     }
     
     // 恢复控件状态
-    // if (_wasControlsEnabledBeforePiP) {
-    //   setControlsEnabled(true);
-    // }
+    if (_wasControlsEnabledBeforePiP) {
+       setControlsEnabled(true);
+    }
     
     // 刷新播放器
     videoPlayerController?.refresh();
@@ -1425,7 +1425,7 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     _isPipTransitioning = true;
     
     // 禁用控件
-    // setControlsEnabled(false);
+    setControlsEnabled(false);
     
     // 设置全局键
     _iappPlayerGlobalKey = iappPlayerGlobalKey;
