@@ -246,12 +246,6 @@ class IAppPlayerController {
 
   // 直播流检测缓存
   bool? _cachedIsLiveStream;
-  
-  // 画中画状态标志
-  bool _isReturningFromPip = false;
-
-  // 公开画中画返回状态，供IAppPlayer使用
-  bool get isReturningFromPip => _isReturningFromPip;
 
   // 字幕段缓存
   List<IAppPlayerAsmsSubtitleSegment>? _pendingSubtitleSegments;
@@ -285,53 +279,52 @@ class IAppPlayerController {
     return betterPLayerControllerProvider.controller;
   }
 
-// 设置数据源并初始化
-Future setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
-  // 清理旧的临时文件，避免文件累积
-  await _clearTempFiles();
-  
-  postEvent(IAppPlayerEvent(IAppPlayerEventType.setupDataSource,
-      parameters: <String, dynamic>{
-        _dataSourceParameter: iappPlayerDataSource,
-      }));
-  _postControllerEvent(IAppPlayerControllerEvent.setupDataSource);
-  _hasCurrentDataSourceStarted = false;
-  _hasCurrentDataSourceInitialized = false;
-  _iappPlayerDataSource = iappPlayerDataSource;
-  _iappPlayerSubtitlesSourceList.clear();
-  _clearBufferingState();
-  _cachedIsLiveStream = null;
-  _pendingSubtitleSegments = null;
-  _lastSubtitleCheckPosition = null;
-  _isReturningFromPip = false;
+  // 设置数据源并初始化
+  Future setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
+    // 清理旧的临时文件，避免文件累积
+    await _clearTempFiles();
+    
+    postEvent(IAppPlayerEvent(IAppPlayerEventType.setupDataSource,
+        parameters: <String, dynamic>{
+          _dataSourceParameter: iappPlayerDataSource,
+        }));
+    _postControllerEvent(IAppPlayerControllerEvent.setupDataSource);
+    _hasCurrentDataSourceStarted = false;
+    _hasCurrentDataSourceInitialized = false;
+    _iappPlayerDataSource = iappPlayerDataSource;
+    _iappPlayerSubtitlesSourceList.clear();
+    _clearBufferingState();
+    _cachedIsLiveStream = null;
+    _pendingSubtitleSegments = null;
+    _lastSubtitleCheckPosition = null;
 
-  if (videoPlayerController == null) {
-    videoPlayerController = VideoPlayerController(
-        bufferingConfiguration:
-            iappPlayerDataSource.bufferingConfiguration);
-    videoPlayerController?.addListener(_onVideoPlayerChanged);
-  }
+    if (videoPlayerController == null) {
+      videoPlayerController = VideoPlayerController(
+          bufferingConfiguration:
+              iappPlayerDataSource.bufferingConfiguration);
+      videoPlayerController?.addListener(_onVideoPlayerChanged);
+    }
 
-  iappPlayerAsmsTracks.clear();
+    iappPlayerAsmsTracks.clear();
 
-  final List<IAppPlayerSubtitlesSource>? iappPlayerSubtitlesSourceList =
-      iappPlayerDataSource.subtitles;
-  if (iappPlayerSubtitlesSourceList != null) {
-    _iappPlayerSubtitlesSourceList
-        .addAll(iappPlayerDataSource.subtitles!);
-  }
+    final List<IAppPlayerSubtitlesSource>? iappPlayerSubtitlesSourceList =
+        iappPlayerDataSource.subtitles;
+    if (iappPlayerSubtitlesSourceList != null) {
+      _iappPlayerSubtitlesSourceList
+          .addAll(iappPlayerDataSource.subtitles!);
+    }
 
-  if (_isDataSourceAsms(iappPlayerDataSource)) {
-    _setupAsmsDataSource(iappPlayerDataSource).then((dynamic value) {
+    if (_isDataSourceAsms(iappPlayerDataSource)) {
+      _setupAsmsDataSource(iappPlayerDataSource).then((dynamic value) {
+        _setupSubtitles();
+      });
+    } else {
       _setupSubtitles();
-    });
-  } else {
-    _setupSubtitles();
-  }
+    }
 
-  await _setupDataSource(iappPlayerDataSource);
-  setTrack(IAppPlayerAsmsTrack.defaultTrack());
-}
+    await _setupDataSource(iappPlayerDataSource);
+    setTrack(IAppPlayerAsmsTrack.defaultTrack());
+  }
 
   // 清理临时文件
   Future<void> _clearTempFiles() async {
@@ -596,16 +589,6 @@ Future setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
     }
   }
 
-  // 创建临时文件
-  Future<File> _createFile(List<int> bytes,
-      {String? extension = "temp"}) async {
-    final String dir = (await getTemporaryDirectory()).path;
-    final File temp = File(
-        '$dir/iapp_player_${DateTime.now().millisecondsSinceEpoch}.$extension');
-    await temp.writeAsBytes(bytes);
-    return temp;
-  }
-
   // 设置数据源
   Future _setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
     switch (iappPlayerDataSource.type) {
@@ -720,75 +703,80 @@ Future setupDataSource(IAppPlayerDataSource iappPlayerDataSource) async {
     }
     await _initializeVideo();
   }
-  
-// 初始化视频
-Future _initializeVideo() async {
-  // 播放列表模式下始终禁用循环
-  if (isPlaylistMode) {
-    setLooping(false);
-  } else {
-    setLooping(iappPlayerConfiguration.looping);
+
+  // 创建临时文件
+  Future<File> _createFile(List<int> bytes,
+      {String? extension = "temp"}) async {
+    final String dir = (await getTemporaryDirectory()).path;
+    final File temp = File(
+        '$dir/iapp_player_${DateTime.now().millisecondsSinceEpoch}.$extension');
+    await temp.writeAsBytes(bytes);
+    return temp;
   }
-  _videoEventStreamSubscription?.cancel();
-  _videoEventStreamSubscription = null;
 
-  _videoEventStreamSubscription = videoPlayerController
-      ?.videoEventStreamController.stream
-      .listen(_handleVideoEvent);
-
-  final fullScreenByDefault = iappPlayerConfiguration.fullScreenByDefault;
-  // 播放列表模式下，切换视频总是自动播放
-  final shouldAutoPlay = iappPlayerConfiguration.autoPlay || (iappPlayerPlaylistConfiguration != null);
-  
-  if (shouldAutoPlay) {
-    if (fullScreenByDefault && !isFullScreen && !_isReturningFromPip) { 
-      enterFullScreen();
+  // 初始化视频
+  Future _initializeVideo() async {
+    // 播放列表模式下始终禁用循环
+    if (isPlaylistMode) {
+      setLooping(false);
+    } else {
+      setLooping(iappPlayerConfiguration.looping);
     }
-    if (_isAutomaticPlayPauseHandled()) {
-      if (_appLifecycleState == AppLifecycleState.resumed &&
-          _isPlayerVisible) {
-        await play();
+    _videoEventStreamSubscription?.cancel();
+    _videoEventStreamSubscription = null;
+
+    _videoEventStreamSubscription = videoPlayerController
+        ?.videoEventStreamController.stream
+        .listen(_handleVideoEvent);
+
+    final fullScreenByDefault = iappPlayerConfiguration.fullScreenByDefault;
+    // 播放列表模式下，切换视频总是自动播放
+    final shouldAutoPlay = iappPlayerConfiguration.autoPlay || (iappPlayerPlaylistConfiguration != null);
+    
+    if (shouldAutoPlay) {
+      if (fullScreenByDefault && !isFullScreen) {
+        enterFullScreen();
+      }
+      if (_isAutomaticPlayPauseHandled()) {
+        if (_appLifecycleState == AppLifecycleState.resumed &&
+            _isPlayerVisible) {
+          await play();
+        } else {
+          _wasPlayingBeforePause = true;
+        }
       } else {
-        _wasPlayingBeforePause = true;
+        await play();
       }
     } else {
-      await play();
+      if (fullScreenByDefault) {
+        enterFullScreen();
+      }
     }
-  } else {
-    if (fullScreenByDefault && !_isReturningFromPip) {
+
+    final startAt = iappPlayerConfiguration.startAt;
+    if (startAt != null) {
+      seekTo(startAt);
+    }
+  }
+
+  // 处理全屏状态变化
+  Future<void> _onFullScreenStateChanged() async {
+    if (videoPlayerController?.value.isPlaying == true && !_isFullScreen) {
       enterFullScreen();
+      videoPlayerController?.removeListener(_onFullScreenStateChanged);
     }
   }
 
-  final startAt = iappPlayerConfiguration.startAt;
-  if (startAt != null) {
-    seekTo(startAt);
+  // 进入全屏模式
+  void enterFullScreen() {
+    // 如果正在画中画模式，不允许进入全屏
+    if (videoPlayerController?.value.isPip == true) {
+      IAppPlayerUtils.log("画中画模式下不允许进入全屏");
+      return;
+    }
+    _isFullScreen = true;
+    _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
   }
-}
-
-// 处理全屏状态变化
-Future<void> _onFullScreenStateChanged() async {
-  // 画中画返回时不自动全屏
-  if (_isReturningFromPip) {
-    return;
-  }
-  
-  if (videoPlayerController?.value.isPlaying == true && !_isFullScreen) {
-    enterFullScreen();
-    videoPlayerController?.removeListener(_onFullScreenStateChanged);
-  }
-}
-
-// 进入全屏模式
-void enterFullScreen() {
-  // 如果正在从画中画返回，不允许进入全屏
-  if (_isReturningFromPip) {
-    return;
-  }
-  
-  _isFullScreen = true;
-  _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
-}
 
   // 退出全屏模式
   void exitFullScreen() {
@@ -796,19 +784,15 @@ void enterFullScreen() {
     _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
   }
 
-// 切换全屏模式
-void toggleFullScreen() {
-  // 增加防护
-  if (_isReturningFromPip) {
-    return;
+  // 切换全屏模式
+  void toggleFullScreen() {
+    _isFullScreen = !_isFullScreen;
+    if (_isFullScreen) {
+      _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
+    } else {
+      _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
+    }
   }
-  _isFullScreen = !_isFullScreen;
-  if (_isFullScreen) {
-    _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
-  } else {
-    _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
-  }
-}
 
   // 播放视频
   Future<void> play() async {
@@ -1027,28 +1011,17 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     _wasInPipMode = false;
     
-    // 立即设置返回标记，防止任何自动全屏行为
-    // 这必须在所有其他操作之前设置
-    _isReturningFromPip = true;
-
-    // 先处理全屏状态，再做其他操作
-    if (!_wasInFullScreenBeforePiP && _isFullScreen) {
-      // 修正错误的全屏状态
-      _isFullScreen = false;
-    }
-    
     // 恢复控件状态
     if (_wasControlsEnabledBeforePiP) {
       setControlsEnabled(true);
     }
     
-    // 如果之前是全屏，需要恢复全屏状态
+    // 处理全屏状态
     if (_wasInFullScreenBeforePiP && !_isFullScreen) {
-      // 延迟恢复全屏，等待画中画完全退出
-      Future.delayed(Duration(milliseconds: 500), () {
-        if (!_disposed && _wasInFullScreenBeforePiP && _isReturningFromPip) {
-          _isFullScreen = true;
-          _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
+      // 之前是全屏，延迟恢复全屏
+      Future.delayed(Duration(milliseconds: 300), () {
+        if (!_disposed && _wasInFullScreenBeforePiP) {
+          enterFullScreen();
         }
       });
     }
@@ -1057,34 +1030,24 @@ void _onVideoPlayerChanged() async {
     if (_lastPipExitReason == 'return') {
       // 点击返回按钮：保持或恢复播放状态
       if (!currentValue.isPlaying && _wasPlayingBeforePause == true) {
-        // 如果之前在播放，恢复播放
         play();
       }
-      // 如果正在播放，保持播放状态
     } else if (_lastPipExitReason == 'close') {
       // 点击关闭按钮：暂停播放
       pause();
-      // 发送画中画关闭事件，UI层可以根据需要处理
       _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipClosed));
     } else {
-      // 其他情况（如系统关闭）：暂停播放
+      // 其他情况：暂停播放
       pause();
     }
     
     // 重置退出原因
     _lastPipExitReason = null;
     
-    // 延迟刷新，避免立即触发状态更新
+    // 延迟刷新
     Future.delayed(Duration(milliseconds: 100), () {
       if (!_disposed) {
         videoPlayerController?.refresh();
-      }
-    });
-    
-    // 延长防护时间，确保所有可能的全屏触发都被阻止
-    Future.delayed(Duration(milliseconds: 3000), () {
-      if (!_disposed) {
-        _isReturningFromPip = false;
       }
     });
   }
@@ -1424,11 +1387,8 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 如果当前是全屏，需要先退出全屏
     if (_isFullScreen) {
-      // 直接修改状态，避免触发其他逻辑
-      _isFullScreen = false;
-      
-      // 发送退出全屏事件让UI更新
-      _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
+      // 退出全屏
+      exitFullScreen();
       
       // 等待全屏退出完成
       await Future.delayed(Duration(milliseconds: 500));
