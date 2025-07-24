@@ -977,7 +977,6 @@ class IAppPlayerController {
         }
         break;
       case IAppPlayerEventType.pipStop:
-      case IAppPlayerEventType.pipClosed:
         // 退出画中画，启用保护
         _isReturningFromPip = true;
         Future.delayed(Duration(milliseconds: 2000), () {
@@ -1558,7 +1557,6 @@ void _handleVideoEvent(VideoEvent event) async {
     case VideoEventType.bufferingEnd:
       _handleBufferingEnd();
       break;
-    case VideoEventType.pipClosed:
     case VideoEventType.pipStop:
       // 新增：保存退出原因
       _lastPipExitReason = event.pipExitReason;
