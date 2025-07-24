@@ -61,7 +61,6 @@ import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo
 import androidx.media3.exoplayer.DefaultRenderersFactory
-import android.view.TextureView
 import org.chromium.net.CronetEngine
 import java.io.File
 import java.lang.Exception
@@ -128,64 +127,7 @@ internal class IAppPlayer(
     // 使用弱引用避免内存泄漏
     private var activityWeakRef: WeakReference<Context>? = null
     
-    // 添加成员变量来保存TextureView的引用
-    private var textureView: TextureView? = null
-    private val pipRect = android.graphics.Rect()
-    
-    // 添加设置TextureView的方法
-    private fun setupTextureView() {
-        // 这里需要获取实际的TextureView
-        // 根据Flutter插件的实现，可能需要通过反射或其他方式获取
-        try {
-            val field = textureEntry.javaClass.getDeclaredField("textureView")
-            field.isAccessible = true
-            textureView = field.get(textureEntry) as? TextureView
-        } catch (e: Exception) {
-        }
-    }
-
-    // 获取视频视图位置的方法
-    fun getVideoViewRect(): android.graphics.Rect? {
-        // 方案1：如果有TextureView引用
-        textureView?.let { view: TextureView ->
-            if (view.isAttachedToWindow) {
-                val location = IntArray(2)
-                view.getLocationOnScreen(location)
-                return android.graphics.Rect(
-                    location[0],
-                    location[1],
-                    location[0] + view.width,
-                    location[1] + view.height
-                )
-            }
-        }
-    
-        // 方案2：使用Surface尺寸和播放器视频格式
-        exoPlayer?.videoFormat?.let { format ->
-            // 获取视频的实际尺寸
-            var videoWidth = format.width
-            var videoHeight = format.height
-        
-            // 处理旋转
-            if (format.rotationDegrees == 90 || format.rotationDegrees == 270) {
-                val temp = videoWidth
-                videoWidth = videoHeight
-                videoHeight = temp
-            }
-        
-            // 返回默认位置（居中显示）
-            return android.graphics.Rect(0, 0, videoWidth, videoHeight)
-        }
-    
-        return null
-    }
-
-    // 添加供插件调用的方法
-    fun enablePictureInPictureMode(): Boolean {
-        return getVideoViewRect() != null
-    }
-
-    // 添加公开的getter方法来获取视频格式信息
+    // 获取视频宽高比 - 保留此方法，因为它被 IAppPlayerPlugin 使用
     fun getVideoAspectRatio(): android.util.Rational? {
         val player = exoPlayer ?: return android.util.Rational(16, 9)
         val format = player.videoFormat ?: return android.util.Rational(16, 9)
@@ -206,12 +148,6 @@ internal class IAppPlayer(
         }
         // 默认16:9
         return android.util.Rational(16, 9)
-    }
-
-    // 获取PiP参数
-    fun getPictureInPictureParams(): android.graphics.Rect? {
-        // 由于获取TextureView位置较复杂，返回null让系统使用默认行为
-        return null
     }
 
     // 初始化播放器，配置加载控制与事件通道
