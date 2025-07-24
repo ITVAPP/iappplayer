@@ -167,15 +167,6 @@ class IAppPlayerController {
 
   // 画中画前控件状态
   bool _wasControlsEnabledBeforePiP = false;
-  
-  // 画中画退出原因
-  String? _lastPipExitReason;
-  
-  // 画中画状态标志
-  bool _isReturningFromPip = false;
-
-  // 公开画中画返回状态，供IAppPlayer使用
-  bool get isReturningFromPip => _isReturningFromPip;
 
   // 全局键
   GlobalKey? _iappPlayerGlobalKey;
@@ -775,18 +766,6 @@ class IAppPlayerController {
 
   // 进入全屏模式
   void enterFullScreen() {
-    // 如果正在画中画模式，不允许进入全屏
-    if (videoPlayerController?.value.isPip == true) {
-      IAppPlayerUtils.log("画中画模式下不允许进入全屏");
-      return;
-    }
-    
-    // 如果刚从画中画返回，阻止全屏
-    if (isReturningFromPip) {
-      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
-      return;
-    }
-    
     _isFullScreen = true;
     _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
   }
@@ -799,18 +778,6 @@ class IAppPlayerController {
 
   // 切换全屏模式
   void toggleFullScreen() {
-    // 如果正在画中画模式，不允许进入全屏
-    if (videoPlayerController?.value.isPip == true) {
-      IAppPlayerUtils.log("画中画模式下不允许进入全屏");
-      return;
-    }
-    
-    // 如果刚从画中画返回，阻止全屏
-    if (isReturningFromPip) {
-      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
-      return;
-    }
-    
     _isFullScreen = !_isFullScreen;
     if (_isFullScreen) {
       _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
@@ -963,32 +930,6 @@ class IAppPlayerController {
       return;
     }
 
-    // 根据事件类型管理画中画保护状态
-    switch (iappPlayerEvent.iappPlayerEventType) {
-      case IAppPlayerEventType.pipStart:
-        if (iappPlayerEvent.parameters?['preparing'] == true) {
-          // 准备进入画中画，启用短期保护
-          _isReturningFromPip = true;
-          Future.delayed(Duration(milliseconds: 600), () {
-            if (!_disposed) {
-              _isReturningFromPip = false;
-            }
-          });
-        }
-        break;
-      case IAppPlayerEventType.pipStop:
-        // 退出画中画，启用保护
-        _isReturningFromPip = true;
-        Future.delayed(Duration(milliseconds: 2000), () {
-          if (!_disposed) {
-            _isReturningFromPip = false;
-          }
-        });
-        break;
-      default:
-        break;
-    }
-
     if (iappPlayerEvent.iappPlayerEventType == 
         IAppPlayerEventType.changedPlaylistShuffle) {
       _playlistShuffleMode = iappPlayerEvent.parameters?['shuffleMode'] ?? false;
@@ -1013,136 +954,103 @@ class IAppPlayerController {
     }
   }
 
-// 处理播放器状态变化
-void _onVideoPlayerChanged() async {
-  if (_disposed) {
-    return;
-  }
-
-  final currentValue = videoPlayerController?.value;
-  if (currentValue == null) {
-    return;
-  }
-
-  if (_lastVideoPlayerValue != null) {
-    // 检查关键值是否有变化
-    final hasPositionChanged = currentValue.position != _lastVideoPlayerValue!.position;
-    final hasPlayingChanged = currentValue.isPlaying != _lastVideoPlayerValue!.isPlaying;
-    final hasBufferingChanged = currentValue.isBuffering != _lastVideoPlayerValue!.isBuffering;
-    final hasErrorChanged = currentValue.hasError != _lastVideoPlayerValue!.hasError;
-    
-    // 如果没有任何变化，直接返回
-    if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged) {
+  // 处理播放器状态变化
+  void _onVideoPlayerChanged() async {
+    if (_disposed) {
       return;
     }
-  }
 
-  if (currentValue.hasError && _videoPlayerValueOnError == null) {
-    _videoPlayerValueOnError = currentValue;
-    _postEvent(
-      IAppPlayerEvent(
-        IAppPlayerEventType.exception,
-        parameters: <String, dynamic>{
-          "exception": currentValue.errorDescription
-        },
-      ),
-    );
-  }
-
-  if (currentValue.initialized && !_hasCurrentDataSourceInitialized) {
-    _hasCurrentDataSourceInitialized = true;
-    _postEvent(IAppPlayerEvent(IAppPlayerEventType.initialized));
-  }
-
-  // 画中画状态处理
-  if (currentValue.isPip) {
-    _wasInPipMode = true;
-  } else if (_wasInPipMode) {
-    // 画中画退出处理
-    _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
-    _wasInPipMode = false;
-    
-    // 恢复控件状态
-    if (_wasControlsEnabledBeforePiP) {
-      setControlsEnabled(true);
+    final currentValue = videoPlayerController?.value;
+    if (currentValue == null) {
+      return;
     }
-    
-    // 处理全屏状态
-    // 如果之前不是全屏，但当前状态显示为全屏，立即修正
-    if (!_wasInFullScreenBeforePiP && _isFullScreen) {
-      _isFullScreen = false;
-      // 不发送全屏事件，避免UI层的处理
+
+    if (_lastVideoPlayerValue != null) {
+      // 检查关键值是否有变化
+      final hasPositionChanged = currentValue.position != _lastVideoPlayerValue!.position;
+      final hasPlayingChanged = currentValue.isPlaying != _lastVideoPlayerValue!.isPlaying;
+      final hasBufferingChanged = currentValue.isBuffering != _lastVideoPlayerValue!.isBuffering;
+      final hasErrorChanged = currentValue.hasError != _lastVideoPlayerValue!.hasError;
+      
+      // 如果没有任何变化，直接返回
+      if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged) {
+        return;
+      }
     }
-    
-    // 如果之前是全屏，需要恢复全屏状态
-    if (_wasInFullScreenBeforePiP && !_isFullScreen) {
-      // 延迟恢复全屏，等待画中画完全退出
-      Future.delayed(Duration(milliseconds: 300), () {
-        if (!_disposed && _wasInFullScreenBeforePiP) {
-          _isFullScreen = true;
-          _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
+
+    if (currentValue.hasError && _videoPlayerValueOnError == null) {
+      _videoPlayerValueOnError = currentValue;
+      _postEvent(
+        IAppPlayerEvent(
+          IAppPlayerEventType.exception,
+          parameters: <String, dynamic>{
+            "exception": currentValue.errorDescription
+          },
+        ),
+      );
+    }
+
+    if (currentValue.initialized && !_hasCurrentDataSourceInitialized) {
+      _hasCurrentDataSourceInitialized = true;
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.initialized));
+    }
+
+    if (currentValue.isPip) {
+      _wasInPipMode = true;
+    } else if (_wasInPipMode) {
+      // 退出画中画模式
+      _wasInPipMode = false;
+      
+      // 暂停播放（用户关闭画中画时的预期行为）
+      if (isPlaying() == true) {
+        pause();
+      }
+      
+      // 恢复全屏状态
+      if (_wasInFullScreenBeforePiP) {
+        // 如果进入画中画前是全屏，保持全屏
+        if (!_isFullScreen) {
+          enterFullScreen();
         }
-      });
-    }
-    
-    // 根据退出原因决定播放行为
-    if (_lastPipExitReason == 'return') {
-      // 点击返回按钮：保持或恢复播放状态
-      if (!currentValue.isPlaying && _wasPlayingBeforePause == true) {
-        // 如果之前在播放，恢复播放
-        play();
+      } else {
+        // 如果进入画中画前不是全屏，确保退出全屏
+        if (_isFullScreen) {
+          exitFullScreen();
+        }
       }
-      // 如果正在播放，保持播放状态
-    } else if (_lastPipExitReason == 'close') {
-      // 点击关闭按钮：暂停播放
-      pause();
-      // 发送画中画关闭事件，UI层可以根据需要处理
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipClosed));
-    } else {
-      // 其他情况（如系统关闭）：暂停播放
-      pause();
-    }
-    
-    // 重置退出原因
-    _lastPipExitReason = null;
-    
-    // 延迟刷新，避免立即触发状态更新
-    Future.delayed(Duration(milliseconds: 100), () {
-      if (!_disposed) {
-        videoPlayerController?.refresh();
+      
+      // 恢复控件状态
+      if (_wasControlsEnabledBeforePiP) {
+        setControlsEnabled(true);
       }
-    });
-  }
+      
+      // 刷新播放器
+      videoPlayerController?.refresh();
+      
+      // 发送画中画停止事件
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+    }
 
-  // 处理字幕加载
-  if (_iappPlayerSubtitlesSource?.asmsIsSegmented == true) {
-    _loadAsmsSubtitlesSegments(currentValue.position);
-  }
+    if (_iappPlayerSubtitlesSource?.asmsIsSegmented == true) {
+      _loadAsmsSubtitlesSegments(currentValue.position);
+    }
 
-  // 处理进度更新
-  final int now = DateTime.now().millisecondsSinceEpoch;
-  if (now - _lastPositionSelection > 500) {
-    _lastPositionSelection = now;
-    _postEvent(
-      IAppPlayerEvent(
-        IAppPlayerEventType.progress,
-        parameters: <String, dynamic>{
-          _progressParameter: currentValue.position,
-          _durationParameter: currentValue.duration
-        },
-      ),
-    );
-  }
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastPositionSelection > 500) {
+      _lastPositionSelection = now;
+      _postEvent(
+        IAppPlayerEvent(
+          IAppPlayerEventType.progress,
+          parameters: <String, dynamic>{
+            _progressParameter: currentValue.position,
+            _durationParameter: currentValue.duration
+          },
+        ),
+      );
+    }
 
-  _lastVideoPlayerValue = currentValue;
-}
-
-// 检查并退出画中画模式
-Future<void> checkAndExitPictureInPicture() async {
-  if (videoPlayerController?.value.isPip == true) {
-    await disablePictureInPicture();
+    _lastVideoPlayerValue = currentValue;
   }
-}
 
   // 添加事件监听器
   void addEventsListener(Function(IAppPlayerEvent) eventListener) {
@@ -1434,63 +1342,60 @@ Future<void> checkAndExitPictureInPicture() async {
     return _overriddenFit ?? iappPlayerConfiguration.fit;
   }
 
-// 启用画中画
-Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
-  if (videoPlayerController == null) {
-    throw StateError("数据源未初始化");
-  }
-
-  final bool isPipSupported =
-      (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
-
-  if (isPipSupported) {
-    // 保存当前的全屏状态
-    _wasInFullScreenBeforePiP = _isFullScreen;
-    
-    // 如果当前是全屏，需要先退出全屏
-    if (_isFullScreen) {
-      // 发送准备进入画中画的事件，启用保护
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart, 
-          parameters: {'preparing': true}));
-      
-      // 退出全屏
-      exitFullScreen();
-      
-      // 等待全屏退出完成
-      await Future.delayed(Duration(milliseconds: 500));
+  // 启用画中画
+  Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
+    if (videoPlayerController == null) {
+      throw StateError("数据源未初始化");
     }
-    
-    _wasControlsEnabledBeforePiP = _controlsEnabled;
-    setControlsEnabled(false);
-    
-    // 获取视频区域的实际位置和尺寸
-    final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
-        .findRenderObject() as RenderBox?;
-    if (renderBox == null) {
-      IAppPlayerUtils.log(
-          "无法显示画中画，RenderBox 为空，请提供有效的全局键");
-      return;
-    }
-    
-    final Offset position = renderBox.localToGlobal(Offset.zero);
-    
-    if (Platform.isAndroid || Platform.isIOS) {
-      await videoPlayerController?.enablePictureInPicture(
-        left: position.dx,
-        top: position.dy,
-        width: renderBox.size.width,
-        height: renderBox.size.height,
-      );
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
-      return;
+
+    final bool isPipSupported =
+        (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
+
+    if (isPipSupported) {
+      _wasInFullScreenBeforePiP = _isFullScreen;
+      _wasControlsEnabledBeforePiP = _controlsEnabled;
+      setControlsEnabled(false);
+      
+      // 获取视频区域的实际位置和尺寸
+      final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
+          .findRenderObject() as RenderBox?;
+      if (renderBox == null) {
+        IAppPlayerUtils.log(
+            "无法显示画中画，RenderBox 为空，请提供有效的全局键");
+        return;
+      }
+      
+      final Offset position = renderBox.localToGlobal(Offset.zero);
+      
+      if (Platform.isAndroid) {
+        // 使用实际的位置和尺寸
+        await videoPlayerController?.enablePictureInPicture(
+          left: position.dx,
+          top: position.dy,
+          width: renderBox.size.width,
+          height: renderBox.size.height,
+        );
+        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
+        return;
+      }
+      
+      if (Platform.isIOS) {
+        await videoPlayerController?.enablePictureInPicture(
+          left: position.dx,
+          top: position.dy,
+          width: renderBox.size.width,
+          height: renderBox.size.height,
+        );
+        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
+        return;
+      } else {
+        IAppPlayerUtils.log("当前平台不支持画中画");
+      }
     } else {
-      IAppPlayerUtils.log("当前平台不支持画中画");
+      IAppPlayerUtils.log(
+          "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
     }
-  } else {
-    IAppPlayerUtils.log(
-        "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
   }
-}
 
   // 禁用画中画
   Future<void>? disablePictureInPicture() {
@@ -1518,53 +1423,49 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
   }
 
   // 处理视频事件
-void _handleVideoEvent(VideoEvent event) async {
-  if (_disposed) {
-    return;
-  }
+  void _handleVideoEvent(VideoEvent event) async {
+    if (_disposed) {
+      return;
+    }
 
-  switch (event.eventType) {
-    case VideoEventType.play:
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.play));
-      break;
-    case VideoEventType.pause:
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pause));
-      break;
-    case VideoEventType.seek:
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.seekTo));
-      break;
-    case VideoEventType.completed:
-      final VideoPlayerValue? videoValue = videoPlayerController?.value;
-      _postEvent(
-        IAppPlayerEvent(
-          IAppPlayerEventType.finished,
-          parameters: <String, dynamic>{
-            _progressParameter: videoValue?.position,
-            _durationParameter: videoValue?.duration
-          },
-        ),
-      );
-      break;
-    case VideoEventType.bufferingStart:
-      _handleBufferingStart();
-      break;
-    case VideoEventType.bufferingUpdate:
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.bufferingUpdate,
-          parameters: <String, dynamic>{
-            _bufferedParameter: event.buffered,
-          }));
-      break;
-    case VideoEventType.bufferingEnd:
-      _handleBufferingEnd();
-      break;
-    case VideoEventType.pipStop:
-      // 新增：保存退出原因
-      _lastPipExitReason = event.pipExitReason;
-      break;
-    default:
-      break;
+    switch (event.eventType) {
+      case VideoEventType.play:
+        _postEvent(IAppPlayerEvent(IAppPlayerEventType.play));
+        break;
+      case VideoEventType.pause:
+        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pause));
+        break;
+      case VideoEventType.seek:
+        _postEvent(IAppPlayerEvent(IAppPlayerEventType.seekTo));
+        break;
+      case VideoEventType.completed:
+        final VideoPlayerValue? videoValue = videoPlayerController?.value;
+        _postEvent(
+          IAppPlayerEvent(
+            IAppPlayerEventType.finished,
+            parameters: <String, dynamic>{
+              _progressParameter: videoValue?.position,
+              _durationParameter: videoValue?.duration
+            },
+          ),
+        );
+        break;
+      case VideoEventType.bufferingStart:
+        _handleBufferingStart();
+        break;
+      case VideoEventType.bufferingUpdate:
+        _postEvent(IAppPlayerEvent(IAppPlayerEventType.bufferingUpdate,
+            parameters: <String, dynamic>{
+              _bufferedParameter: event.buffered,
+            }));
+        break;
+      case VideoEventType.bufferingEnd:
+        _handleBufferingEnd();
+        break;
+      default:
+        break;
+    }
   }
-}
 
   // 处理缓冲开始
   void _handleBufferingStart() {
