@@ -243,6 +243,9 @@ class IAppPlayerController {
 
   // 直播流检测缓存
   bool? _cachedIsLiveStream;
+  
+  // 画中画状态标志
+  bool _isReturningFromPip = false;
 
   // 字幕段缓存
   List<IAppPlayerAsmsSubtitleSegment>? _pendingSubtitleSegments;
@@ -966,13 +969,11 @@ void _onVideoPlayerChanged() async {
   }
 
   if (_lastVideoPlayerValue != null) {
-    // 检查关键值是否有变化
     final hasPositionChanged = currentValue.position != _lastVideoPlayerValue!.position;
     final hasPlayingChanged = currentValue.isPlaying != _lastVideoPlayerValue!.isPlaying;
     final hasBufferingChanged = currentValue.isBuffering != _lastVideoPlayerValue!.isBuffering;
     final hasErrorChanged = currentValue.hasError != _lastVideoPlayerValue!.hasError;
     
-    // 如果没有任何变化，直接返回
     if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged) {
       return;
     }
@@ -1001,14 +1002,26 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     _wasInPipMode = false;
     
-    // 退出画中画时直接暂停播放，不需要判断可见性
-    // 用户关闭画中画的意图很明确：停止播放
-    pause();
-    
-    // 恢复控件状态
-    if (_wasControlsEnabledBeforePiP) {
-      setControlsEnabled(true);
-    }
+    // 延迟一段时间后检查播放器是否可见
+    // 如果可见，说明是返回应用；如果不可见，说明是关闭画中画
+    Timer(Duration(milliseconds: 300), () {
+      if (!_disposed) {
+        if (_isPlayerVisible) {
+          // 返回应用场景 - 继续播放
+          if (_wasControlsEnabledBeforePiP) {
+            setControlsEnabled(true);
+          }
+        } else {
+          // 关闭画中画场景 - 暂停播放
+          pause();
+          
+          // 也要恢复控件，以便用户后续操作
+          if (_wasControlsEnabledBeforePiP) {
+            setControlsEnabled(true);
+          }
+        }
+      }
+    });
     
     videoPlayerController?.refresh();
   }
@@ -1032,6 +1045,21 @@ void _onVideoPlayerChanged() async {
   }
 
   _lastVideoPlayerValue = currentValue;
+}
+
+// 禁用画中画
+Future<void>? disablePictureInPicture() {
+  if (videoPlayerController == null) {
+    throw StateError("数据源未初始化");
+  }
+  return videoPlayerController!.disablePictureInPicture();
+}
+
+// 检查并退出画中画模式
+Future<void> checkAndExitPictureInPicture() async {
+  if (videoPlayerController?.value.isPip == true) {
+    await disablePictureInPicture();
+  }
 }
 
   // 添加事件监听器
@@ -1324,58 +1352,67 @@ void _onVideoPlayerChanged() async {
     return _overriddenFit ?? iappPlayerConfiguration.fit;
   }
 
-  // 启用画中画
-  Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
-    if (videoPlayerController == null) {
-      throw StateError("数据源未初始化");
-    }
-
-    final bool isPipSupported =
-        (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
-
-    if (isPipSupported) {
-      _wasInFullScreenBeforePiP = _isFullScreen;
-      _wasControlsEnabledBeforePiP = _controlsEnabled;
-      setControlsEnabled(false);
-      
-      // 获取视频区域的实际位置和尺寸
-      final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
-          .findRenderObject() as RenderBox?;
-      if (renderBox == null) {
-        IAppPlayerUtils.log(
-            "无法显示画中画，RenderBox 为空，请提供有效的全局键");
-        return;
-      }
-      
-      final Offset position = renderBox.localToGlobal(Offset.zero);
-      
-      if (Platform.isAndroid) {
-        // 统一Android和iOS的实现方式
-        await videoPlayerController?.enablePictureInPicture(
-          left: position.dx,
-          top: position.dy,
-          width: renderBox.size.width,
-          height: renderBox.size.height,
-        );
-        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
-        return;
-      }
-      
-      if (Platform.isIOS) {
-        return videoPlayerController?.enablePictureInPicture(
-          left: position.dx,
-          top: position.dy,
-          width: renderBox.size.width,
-          height: renderBox.size.height,
-        );
-      } else {
-        IAppPlayerUtils.log("当前平台不支持画中画");
-      }
-    } else {
-      IAppPlayerUtils.log(
-          "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
-    }
+// 启用画中画
+Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
+  if (videoPlayerController == null) {
+    throw StateError("数据源未初始化");
   }
+
+  final bool isPipSupported =
+      (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
+
+  if (isPipSupported) {
+    // 改进状态保存：在进入画中画前先退出全屏
+    if (_isFullScreen) {
+      _wasInFullScreenBeforePiP = true;
+      exitFullScreen();
+      // 等待全屏退出完成
+      await Future.delayed(Duration(milliseconds: 300));
+    } else {
+      _wasInFullScreenBeforePiP = false;
+    }
+    
+    _wasControlsEnabledBeforePiP = _controlsEnabled;
+    setControlsEnabled(false);
+    
+    // 获取视频区域的实际位置和尺寸
+    final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
+        .findRenderObject() as RenderBox?;
+    if (renderBox == null) {
+      IAppPlayerUtils.log(
+          "无法显示画中画，RenderBox 为空，请提供有效的全局键");
+      return;
+    }
+    
+    final Offset position = renderBox.localToGlobal(Offset.zero);
+    
+    if (Platform.isAndroid) {
+      // 统一Android和iOS的实现方式
+      await videoPlayerController?.enablePictureInPicture(
+        left: position.dx,
+        top: position.dy,
+        width: renderBox.size.width,
+        height: renderBox.size.height,
+      );
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
+      return;
+    }
+    
+    if (Platform.isIOS) {
+      return videoPlayerController?.enablePictureInPicture(
+        left: position.dx,
+        top: position.dy,
+        width: renderBox.size.width,
+        height: renderBox.size.height,
+      );
+    } else {
+      IAppPlayerUtils.log("当前平台不支持画中画");
+    }
+  } else {
+    IAppPlayerUtils.log(
+        "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
+  }
+}
 
   // 禁用画中画
   Future<void>? disablePictureInPicture() {
