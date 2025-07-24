@@ -214,6 +214,43 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     child: _musicNoteIcon,
   );
 
+  // 【性能优化】扩展静态Widget缓存
+  static const Widget _blackBackground = ColoredBox(color: Colors.black);
+  static final Widget _transparentOverlay = Container(
+    color: Colors.black.withOpacity(0.4),
+  );
+  static const Widget _compactSectionSpacer = SizedBox(height: kCompactSectionSpacing);
+  static const Widget _compactSongInfoSpacer = SizedBox(height: kCompactSongInfoSpacing);
+  static const Widget _spacingUnitBox = SizedBox(width: kSpacingUnit);
+  static const Widget _spacingDoubleBox2 = SizedBox(width: kSpacingDouble);
+  
+  // 【性能优化】缓存常用装饰
+  static final BoxDecoration _discShadowDecoration = BoxDecoration(
+    shape: BoxShape.circle,
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.5),
+        blurRadius: 20,
+        spreadRadius: 5,
+      ),
+    ],
+  );
+  
+  static const BoxDecoration _transparentCircleDecoration = BoxDecoration(
+    shape: BoxShape.circle,
+    color: Colors.transparent,
+  );
+  
+  static const BoxDecoration _whiteCircleDecoration = BoxDecoration(
+    color: Colors.white,
+    shape: BoxShape.circle,
+  );
+  
+  static final BoxDecoration _centerHoleDecoration = BoxDecoration(
+    color: Colors.grey[800],
+    shape: BoxShape.circle,
+  );
+
   // 最新播放值
   VideoPlayerValue? _latestValue;
   // 最新音量，用于静音恢复
@@ -255,6 +292,12 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   int? _cachedPlaylistIndex;
   bool? _cachedShuffleMode;
 
+  // 【性能优化】新增状态缓存，避免重复setState
+  bool? _cachedIsPlaying;
+  bool? _cachedHasError;
+  double? _cachedVolume;
+  Duration? _cachedDuration;
+
   // 获取控件配置
   IAppPlayerControlsConfiguration get _controlsConfiguration => widget.controlsConfiguration;
 
@@ -282,32 +325,32 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 响应式标题字体尺寸
   late double _responsiveTitleFontSize;
 
-  // 计算响应式尺寸
-  double _getResponsiveSize(BuildContext context, double baseSize) {
-    final currentScreenSize = MediaQuery.of(context).size;
-
-    if (_cachedScreenSize == currentScreenSize && _cachedScaleFactor != null) {
-      return baseSize * _cachedScaleFactor!;
-    }
-
-    _cachedScreenSize = currentScreenSize;
-    final screenWidth = currentScreenSize.width;
-    final screenHeight = currentScreenSize.height;
-    final screenSize = screenWidth < screenHeight ? screenWidth : screenHeight;
-
-    final scaleFactor = screenSize / 360.0;
-    _cachedScaleFactor = scaleFactor.clamp(0.8, 1.5);
-
-    return baseSize * _cachedScaleFactor!;
+  // 【性能优化】改进的响应式尺寸计算 - 移除冗余检查
+  double _getResponsiveSize(double baseSize) {
+    return baseSize * (_cachedScaleFactor ?? 1.0);
   }
 
   // 预计算响应式尺寸
   void _precalculateResponsiveSizes(BuildContext context) {
-    _responsiveIconSize = _getResponsiveSize(context, kIconSizeBase);
-    _responsivePlayPauseIconSize = _getResponsiveSize(context, kPlayPauseIconSize);
-    _responsiveTextSize = _getResponsiveSize(context, kTextSizeBase);
-    _responsiveErrorIconSize = _getResponsiveSize(context, kErrorIconSize);
-    _responsiveTitleFontSize = _getResponsiveSize(context, kTitleFontSize);
+    final currentScreenSize = MediaQuery.of(context).size;
+    
+    // 只在屏幕尺寸变化时重新计算
+    if (_cachedScreenSize != currentScreenSize) {
+      _cachedScreenSize = currentScreenSize;
+      final screenWidth = currentScreenSize.width;
+      final screenHeight = currentScreenSize.height;
+      final screenSize = screenWidth < screenHeight ? screenWidth : screenHeight;
+
+      final scaleFactor = screenSize / 360.0;
+      _cachedScaleFactor = scaleFactor.clamp(0.8, 1.5);
+    }
+    
+    // 使用缓存的scaleFactor计算尺寸
+    _responsiveIconSize = _getResponsiveSize(kIconSizeBase);
+    _responsivePlayPauseIconSize = _getResponsiveSize(kPlayPauseIconSize);
+    _responsiveTextSize = _getResponsiveSize(kTextSizeBase);
+    _responsiveErrorIconSize = _getResponsiveSize(kErrorIconSize);
+    _responsiveTitleFontSize = _getResponsiveSize(kTitleFontSize);
   }
 
   @override
@@ -441,10 +484,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
     // 修改：优化响应式尺寸计算时机
     // 只在必要时重新计算尺寸（屏幕尺寸变化或首次初始化）
-    final currentScreenSize = MediaQuery.of(context).size;
-    if (_cachedScreenSize == null || _cachedScreenSize != currentScreenSize) {
-      _precalculateResponsiveSizes(context);
-    }
+    _precalculateResponsiveSizes(context);
 
     super.didChangeDependencies();
   }
@@ -607,16 +647,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
         child: Container(
           width: kExpandedDiscSize,
           height: kExpandedDiscSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 20,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
+          decoration: _discShadowDecoration,
           child: ClipOval(
             // 【性能优化】使用RotationTransition替代AnimatedBuilder + Transform.rotate
             child: RotationTransition(
@@ -624,8 +655,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               child: Stack(
                 children: [
                   // 唱片纹理
-                  CustomPaint(
-                    size: const Size(kExpandedDiscSize, kExpandedDiscSize),
+                  const CustomPaint(
+                    size: Size(kExpandedDiscSize, kExpandedDiscSize),
                     painter: _DiscPainter(isCompact: false),
                   ),
                   // 中心封面
@@ -633,10 +664,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                     child: Container(
                       width: kExpandedDiscSize * kDiscInnerCircleRatio,
                       height: kExpandedDiscSize * kDiscInnerCircleRatio,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.transparent,
-                      ),
+                      decoration: _transparentCircleDecoration,
                       child: ClipOval(
                         child: _buildCoverImage(placeholder, imageUrl),
                       ),
@@ -647,10 +675,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                     child: Container(
                       width: kExpandedDiscSize * kDiscCenterRatio,
                       height: kExpandedDiscSize * kDiscCenterRatio,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: _whiteCircleDecoration,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -683,10 +708,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                     child: Container(
                       width: 10,
                       height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[800],
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: _centerHoleDecoration,
                     ),
                   ),
                 ],
@@ -709,7 +731,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       fit: StackFit.expand,
       children: [
         // 黑色背景（作为图片加载失败的后备）
-        Container(color: Colors.black),
+        _blackBackground,
         // 封面图片 - 修改：移除Transform.scale，直接使用BoxFit.cover
         _buildCoverImage(
           placeholder, 
@@ -717,9 +739,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           fit: BoxFit.cover,
         ),
         // 半透明遮罩
-        Container(
-          color: Colors.black.withOpacity(0.4),
-        ),
+        _transparentOverlay,
         // 居中的播放/暂停按钮
         Center(
           child: _buildSquareModePlayButton(),
@@ -900,7 +920,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           children: [
             // 进度条和时间
             _buildCompactProgressSection(),
-            SizedBox(height: kCompactSectionSpacing),
+            _compactSectionSpacer,
             // 播放控制按钮（水平居中）
             Center(
               child: _buildCompactPlaybackControls(isPlaylist),
@@ -948,14 +968,14 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                   },
                   size: kCompactSmallIconSize,
                 ),
-                SizedBox(width: kSpacingUnit),
+                _spacingUnitBox,
                 _buildCompactIconButton(
                   icon: Icons.queue_music,
                   onTap: _showPlaylistMenu,
                   size: kCompactSmallIconSize,
                 ),
                 if (_controlsConfiguration.enableFullscreen)
-                  SizedBox(width: kSpacingUnit),
+                  _spacingUnitBox,
               ],
               // 全屏按钮
               if (_controlsConfiguration.enableFullscreen)
@@ -994,7 +1014,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: kCompactSongInfoSpacing),
+          _compactSongInfoSpacer,
         ],
         Text(
           title,
@@ -1043,9 +1063,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             enabled: _iappPlayerController!.playlistController?.hasPrevious ?? false,
             size: kCompactControlButtonSize,
           ),
-          SizedBox(width: kSpacingDouble),
+          _spacingDoubleBox2,
           _buildCompactPlayPauseButton(),
-          SizedBox(width: kSpacingDouble),
+          _spacingDoubleBox2,
           _buildCompactIconButton(
             icon: Icons.skip_next,
             onTap: (_iappPlayerController!.playlistController?.hasNext ?? false) 
@@ -1061,11 +1081,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               onTap: skipBack,
               size: 24,
             ),
-            SizedBox(width: kSpacingDouble),
+            _spacingDoubleBox2,
           ],
           _buildCompactPlayPauseButton(),
           if (!isLive) ...[
-            SizedBox(width: kSpacingDouble),
+            _spacingDoubleBox2,
             _buildCompactIconButton(
               icon: Icons.forward_10,
               onTap: skipForward,
@@ -1146,6 +1166,24 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   }) {
     final effectiveFit = fit ?? BoxFit.cover;
     
+    // 【性能优化】根据显示模式动态设置缓存大小
+    int cacheWidth = kImageCacheMaxWidth;
+    int cacheHeight = kImageCacheMaxHeight;
+    
+    switch (_currentDisplayMode) {
+      case PlayerDisplayMode.compact:
+        cacheWidth = 180;  // 紧凑模式最大高度
+        cacheHeight = 180;
+        break;
+      case PlayerDisplayMode.square:
+        // 封面模式保持默认512
+        break;
+      case PlayerDisplayMode.expanded:
+        cacheWidth = (kExpandedDiscSize * kDiscInnerCircleRatio).toInt();
+        cacheHeight = (kExpandedDiscSize * kDiscInnerCircleRatio).toInt();
+        break;
+    }
+    
     Widget imageWidget;
     
     if (placeholder != null) {
@@ -1156,9 +1194,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           imageUrl,
           fit: effectiveFit,
           alignment: Alignment.center,
-          // 【性能优化】限制缓存图片尺寸，减少内存占用
-          cacheWidth: kImageCacheMaxWidth,
-          cacheHeight: kImageCacheMaxHeight,
+          // 【性能优化】根据显示模式动态调整缓存尺寸
+          cacheWidth: cacheWidth,
+          cacheHeight: cacheHeight,
           errorBuilder: (context, error, stackTrace) => _musicNoteBackground,
         );
       } else {
@@ -1166,9 +1204,9 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           imageUrl,
           fit: effectiveFit,
           alignment: Alignment.center,
-          // 【性能优化】限制缓存图片尺寸
-          cacheWidth: kImageCacheMaxWidth,
-          cacheHeight: kImageCacheMaxHeight,
+          // 【性能优化】根据显示模式动态调整缓存尺寸
+          cacheWidth: cacheWidth,
+          cacheHeight: cacheHeight,
           errorBuilder: (context, error, stackTrace) => _musicNoteBackground,
         );
       }
@@ -1622,7 +1660,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             child: Row(
               children: [
                 // 修改：去掉图标背景容器
-                Icon(
+                const Icon(
                   Icons.queue_music_rounded,
                   color: kPlaylistPrimaryColor,
                   size: 20,
@@ -1849,38 +1887,19 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     final currentPositionInSeconds = newValue.position.inSeconds;
     final bool positionChanged = _lastUpdatedPositionInSeconds != currentPositionInSeconds;
     
-    // 【性能优化】播放列表状态检测
-    bool playlistStateChanged = false;
-    if (_iappPlayerController?.isPlaylistMode == true) {
-      final currentIndex = _iappPlayerController!.playlistController?.currentDataSourceIndex;
-      final currentShuffleMode = _iappPlayerController!.playlistShuffleMode;
-      
-      playlistStateChanged = _cachedPlaylistIndex != currentIndex || 
-                            _cachedShuffleMode != currentShuffleMode;
-      
-      if (playlistStateChanged) {
-        _cachedPlaylistIndex = currentIndex;
-        _cachedShuffleMode = currentShuffleMode;
-      }
+    // 【性能优化】只检查真正需要UI更新的状态变化
+    bool shouldUpdate = false;
+    
+    // 位置变化（秒级）
+    if (positionChanged) {
+      _lastUpdatedPositionInSeconds = currentPositionInSeconds;
+      shouldUpdate = true;
     }
     
-    // 其他状态变化检查
-    final bool otherStateChanged = _latestValue == null || (
-        _latestValue!.isPlaying != newValue.isPlaying ||
-        _latestValue!.duration?.inMilliseconds != newValue.duration?.inMilliseconds ||
-        _latestValue!.hasError != newValue.hasError ||
-        (_latestValue!.volume - newValue.volume).abs() > 0.01 ||
-        playlistStateChanged
-    );
-    
-    // 只有在position变化到秒级或其他状态变化时才更新
-    if (positionChanged || otherStateChanged) {
-      setState(() {
-        _latestValue = newValue;
-        if (positionChanged) {
-          _lastUpdatedPositionInSeconds = currentPositionInSeconds;
-        }
-      });
+    // 播放状态变化
+    if (_cachedIsPlaying != newValue.isPlaying) {
+      _cachedIsPlaying = newValue.isPlaying;
+      shouldUpdate = true;
       
       // 根据播放状态控制动画
       if (newValue.isPlaying && !(_rotationController?.isAnimating ?? false)) {
@@ -1888,6 +1907,43 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       } else if (!newValue.isPlaying && (_rotationController?.isAnimating ?? false)) {
         _stopAnimations();
       }
+    }
+    
+    // 错误状态变化
+    if (_cachedHasError != newValue.hasError) {
+      _cachedHasError = newValue.hasError;
+      shouldUpdate = true;
+    }
+    
+    // 音量变化（仅当差异大于1%时）
+    if (_cachedVolume == null || (_cachedVolume! - newValue.volume).abs() > 0.01) {
+      _cachedVolume = newValue.volume;
+      shouldUpdate = true;
+    }
+    
+    // 时长变化
+    if (_cachedDuration != newValue.duration) {
+      _cachedDuration = newValue.duration;
+      shouldUpdate = true;
+    }
+    
+    // 播放列表状态检测
+    if (_iappPlayerController?.isPlaylistMode == true) {
+      final currentIndex = _iappPlayerController!.playlistController?.currentDataSourceIndex;
+      final currentShuffleMode = _iappPlayerController!.playlistShuffleMode;
+      
+      if (_cachedPlaylistIndex != currentIndex || _cachedShuffleMode != currentShuffleMode) {
+        _cachedPlaylistIndex = currentIndex;
+        _cachedShuffleMode = currentShuffleMode;
+        shouldUpdate = true;
+      }
+    }
+    
+    // 【性能优化】只在必要时调用setState
+    if (shouldUpdate) {
+      setState(() {
+        _latestValue = newValue;
+      });
     }
   }
 
@@ -1918,7 +1974,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 class _DiscPainter extends CustomPainter {
   final bool isCompact;
   
-  _DiscPainter({required this.isCompact});
+  const _DiscPainter({required this.isCompact});
   
   @override
   void paint(Canvas canvas, Size size) {
@@ -1934,7 +1990,7 @@ class _DiscPainter extends CustomPainter {
     // 绘制纹理圆环
     final groovePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isCompact ? _IAppPlayerAudioControlsState.kDiscGrooveWidth : 2.0; // 修改：扩展模式线条更细
+      ..strokeWidth = isCompact ? _IAppPlayerAudioControlsState.kDiscGrooveWidth : 1.0; // 修改：扩展模式线条更细
     
     // 根据模式选择不同的线条样式
     if (isCompact) {
