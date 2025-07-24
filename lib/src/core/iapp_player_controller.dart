@@ -1001,15 +1001,13 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     _wasInPipMode = false;
     
-    // 判断是关闭画中画还是返回应用
-    if (!_isPlayerVisible) {
-      // 画中画被关闭，播放器不可见，应该暂停播放
-      pause();
-    } else {
-      // 返回应用，保持当前状态
-      if (_wasControlsEnabledBeforePiP) {
-        setControlsEnabled(true);
-      }
+    // 退出画中画时直接暂停播放，不需要判断可见性
+    // 用户关闭画中画的意图很明确：停止播放
+    pause();
+    
+    // 恢复控件状态
+    if (_wasControlsEnabledBeforePiP) {
+      setControlsEnabled(true);
     }
     
     videoPlayerController?.refresh();
