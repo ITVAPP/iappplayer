@@ -172,10 +172,10 @@ class IAppPlayerController {
   String? _lastPipExitReason;
   
   // 画中画状态标志
-  bool _isReturningFromPip = false;
+  bool _isPipTransitioning = false;
 
   // 公开画中画返回状态，供IAppPlayer使用
-  bool get isReturningFromPip => _isReturningFromPip;
+  bool get isPipTransitioning => _isPipTransitioning;
 
   // 全局键
   GlobalKey? _iappPlayerGlobalKey;
@@ -776,7 +776,7 @@ class IAppPlayerController {
   // 进入全屏模式
   void enterFullScreen() {
     // 如果退出画中画模式，不允许进入全屏
-    if (isReturningFromPip) {
+    if (isPipTransitioning) {
       return;
     }
     _isFullScreen = true;
@@ -792,7 +792,7 @@ class IAppPlayerController {
   // 切换全屏模式
   void toggleFullScreen() {
     // 如果退出画中画模式，不允许进入全屏
-    if (isReturningFromPip) {
+    if (isPipTransitioning) {
       return;
     }
     _isFullScreen = !_isFullScreen;
@@ -951,10 +951,10 @@ class IAppPlayerController {
     if (iappPlayerEvent.iappPlayerEventType == 
         IAppPlayerEventType.pipStop) {
         // 退出画中画，启用保护
-        _isReturningFromPip = true;
+        _isPipTransitioning = true;
         Future.delayed(Duration(milliseconds: 2000), () {
           if (!_disposed) {
-            _isReturningFromPip = false;
+            _isPipTransitioning = false;
           }
         });
     }
@@ -1049,9 +1049,9 @@ void _onVideoPlayerChanged() async {
     }
     
     // 恢复控件状态
-    if (_wasControlsEnabledBeforePiP) {
-      setControlsEnabled(true);
-    }
+    // if (_wasControlsEnabledBeforePiP) {
+    //   setControlsEnabled(true);
+    // }
     
     // 刷新播放器
     videoPlayerController?.refresh();
@@ -1422,10 +1422,10 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     _wasControlsEnabledBeforePiP = _controlsEnabled;
     
     // 设置标志，防止在退出全屏时触发其他操作
-    _isReturningFromPip = true;
+    _isPipTransitioning = true;
     
     // 禁用控件
-    setControlsEnabled(false);
+    // setControlsEnabled(false);
     
     // 设置全局键
     _iappPlayerGlobalKey = iappPlayerGlobalKey;
@@ -1440,7 +1440,7 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       // 5. 短暂延迟后清除保护标志
       Future.delayed(Duration(milliseconds: 800), () {
         if (!_disposed) {
-          _isReturningFromPip = false;
+          _isPipTransitioning = false;
         }
       });
       
