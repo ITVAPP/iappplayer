@@ -455,38 +455,30 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         player.disposeMediaSession()
     }
 
-private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        val activity = activityWeakRef?.get()
-        if (activity == null) return
+    private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val activity = activityWeakRef?.get()
+            if (activity == null) return
     
-        // 先停止现有的Handler，避免重复创建
-        stopPipHandler()
-        pipHandler = Handler(Looper.getMainLooper())
-        pipRunnable = object : Runnable {
-            override fun run() {
-                val currentActivity = activityWeakRef?.get()
-                if (currentActivity != null && currentActivity.isInPictureInPictureMode) {
-                    pipHandler?.postDelayed(this, 500)
-                } else {
-                    // 退出画中画
-                    player.onPictureInPictureStatusChanged(false)
-                    player.disposeMediaSession()
-                    stopPipHandler()
-                
-                    // 如果Activity为null或者正在finishing，说明是关闭画中画
-                    // 如果Activity存在且没有finishing，说明是返回应用
-                    if (currentActivity == null || currentActivity.isFinishing) {
-                        // 用户关闭了画中画窗口，停止播放
-                        player.pause()
+            // 先停止现有的Handler，避免重复创建
+            stopPipHandler()
+            pipHandler = Handler(Looper.getMainLooper())
+            pipRunnable = object : Runnable {
+                override fun run() {
+                    val currentActivity = activityWeakRef?.get()
+                    if (currentActivity != null && currentActivity.isInPictureInPictureMode) {
+                        pipHandler?.postDelayed(this, 500)
+                    } else {
+                        // 退出画中画
+                        player.onPictureInPictureStatusChanged(false)
+                        player.disposeMediaSession()
+                        stopPipHandler()
                     }
-                    // 如果是返回应用，不暂停，继续播放
                 }
             }
+            pipHandler?.post(pipRunnable!!)
         }
-        pipHandler?.post(pipRunnable!!)
     }
-}
 
     private fun dispose(player: IAppPlayer, textureId: Long) {
         player.dispose()
