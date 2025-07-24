@@ -326,7 +326,7 @@ enum VideoFormat {
 }
 
 // 视频播放事件
-class VideoEvent {
+class VideoEvent {class VideoEvent {
   VideoEvent({
     required this.eventType,
     required this.key,
@@ -334,27 +334,17 @@ class VideoEvent {
     this.size,
     this.buffered,
     this.position,
+    this.pipExitReason, // 新增字段
   });
 
-  // 事件类型
   final VideoEventType eventType;
-
-  // 数据源标识
   final String? key;
-
-  // 视频时长
   final Duration? duration;
-
-  // 视频尺寸
   final Size? size;
-
-  // 缓冲范围
   final List<DurationRange>? buffered;
-
-  // 跳转位置
   final Duration? position;
+  final String? pipExitReason; // 新增：画中画退出原因
 
-  // 比较事件
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
@@ -364,16 +354,17 @@ class VideoEvent {
             eventType == other.eventType &&
             duration == other.duration &&
             size == other.size &&
-            listEquals(buffered, other.buffered);
+            listEquals(buffered, other.buffered) &&
+            pipExitReason == other.pipExitReason;
   }
 
-  // 计算哈希值
   @override
   int get hashCode =>
       eventType.hashCode ^
       duration.hashCode ^
       size.hashCode ^
-      buffered.hashCode;
+      buffered.hashCode ^
+      pipExitReason.hashCode;
 }
 
 // 视频事件类型
