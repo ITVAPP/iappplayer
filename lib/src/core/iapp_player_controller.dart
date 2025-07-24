@@ -167,6 +167,9 @@ class IAppPlayerController {
 
   // 画中画前控件状态
   bool _wasControlsEnabledBeforePiP = false;
+  
+  // 画中画退出原因
+  String? _lastPipExitReason;
 
   // 全局键
   GlobalKey? _iappPlayerGlobalKey;
@@ -969,11 +972,13 @@ void _onVideoPlayerChanged() async {
   }
 
   if (_lastVideoPlayerValue != null) {
+    // 检查关键值是否有变化
     final hasPositionChanged = currentValue.position != _lastVideoPlayerValue!.position;
     final hasPlayingChanged = currentValue.isPlaying != _lastVideoPlayerValue!.isPlaying;
     final hasBufferingChanged = currentValue.isBuffering != _lastVideoPlayerValue!.isBuffering;
     final hasErrorChanged = currentValue.hasError != _lastVideoPlayerValue!.hasError;
     
+    // 如果没有任何变化，直接返回
     if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged) {
       return;
     }
@@ -996,35 +1001,38 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.initialized));
   }
 
-  if (currentValue.isPip) {
-    _wasInPipMode = true;
-  } else if (_wasInPipMode) {
-    _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
-    _wasInPipMode = false;
-    
-    // 延迟一段时间后检查播放器是否可见
-    // 如果可见，说明是返回应用；如果不可见，说明是关闭画中画
-    Timer(Duration(milliseconds: 300), () {
-      if (!_disposed) {
-        if (_isPlayerVisible) {
-          // 返回应用场景 - 继续播放
-          if (_wasControlsEnabledBeforePiP) {
-            setControlsEnabled(true);
-          }
-        } else {
-          // 关闭画中画场景 - 暂停播放
-          pause();
-          
-          // 也要恢复控件，以便用户后续操作
-          if (_wasControlsEnabledBeforePiP) {
-            setControlsEnabled(true);
-          }
-        }
-      }
-    });
-    
-    videoPlayerController?.refresh();
+if (currentValue.isPip) {
+  _wasInPipMode = true;
+} else if (_wasInPipMode) {
+  _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+  _wasInPipMode = false;
+  
+  // 恢复控件状态
+  if (_wasControlsEnabledBeforePiP) {
+    setControlsEnabled(true);
   }
+  
+  // 退出全屏（确保返回app页面而不是全屏）
+  if (_isFullScreen) {
+    exitFullScreen();
+  }
+  
+  // 根据退出原因决定播放行为
+  if (_lastPipExitReason == 'return') {
+    // 点击返回按钮：继续播放
+    if (!currentValue.isPlaying) {
+      play();
+    }
+  } else {
+    // 点击关闭按钮或其他情况：暂停播放
+    pause();
+  }
+  
+  // 重置退出原因
+  _lastPipExitReason = null;
+  
+  videoPlayerController?.refresh();
+}
 
   if (_iappPlayerSubtitlesSource?.asmsIsSegmented == true) {
     _loadAsmsSubtitlesSegments(currentValue.position);
@@ -1432,49 +1440,53 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
   }
 
   // 处理视频事件
-  void _handleVideoEvent(VideoEvent event) async {
-    if (_disposed) {
-      return;
-    }
-
-    switch (event.eventType) {
-      case VideoEventType.play:
-        _postEvent(IAppPlayerEvent(IAppPlayerEventType.play));
-        break;
-      case VideoEventType.pause:
-        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pause));
-        break;
-      case VideoEventType.seek:
-        _postEvent(IAppPlayerEvent(IAppPlayerEventType.seekTo));
-        break;
-      case VideoEventType.completed:
-        final VideoPlayerValue? videoValue = videoPlayerController?.value;
-        _postEvent(
-          IAppPlayerEvent(
-            IAppPlayerEventType.finished,
-            parameters: <String, dynamic>{
-              _progressParameter: videoValue?.position,
-              _durationParameter: videoValue?.duration
-            },
-          ),
-        );
-        break;
-      case VideoEventType.bufferingStart:
-        _handleBufferingStart();
-        break;
-      case VideoEventType.bufferingUpdate:
-        _postEvent(IAppPlayerEvent(IAppPlayerEventType.bufferingUpdate,
-            parameters: <String, dynamic>{
-              _bufferedParameter: event.buffered,
-            }));
-        break;
-      case VideoEventType.bufferingEnd:
-        _handleBufferingEnd();
-        break;
-      default:
-        break;
-    }
+void _handleVideoEvent(VideoEvent event) async {
+  if (_disposed) {
+    return;
   }
+
+  switch (event.eventType) {
+    case VideoEventType.play:
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.play));
+      break;
+    case VideoEventType.pause:
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pause));
+      break;
+    case VideoEventType.seek:
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.seekTo));
+      break;
+    case VideoEventType.completed:
+      final VideoPlayerValue? videoValue = videoPlayerController?.value;
+      _postEvent(
+        IAppPlayerEvent(
+          IAppPlayerEventType.finished,
+          parameters: <String, dynamic>{
+            _progressParameter: videoValue?.position,
+            _durationParameter: videoValue?.duration
+          },
+        ),
+      );
+      break;
+    case VideoEventType.bufferingStart:
+      _handleBufferingStart();
+      break;
+    case VideoEventType.bufferingUpdate:
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.bufferingUpdate,
+          parameters: <String, dynamic>{
+            _bufferedParameter: event.buffered,
+          }));
+      break;
+    case VideoEventType.bufferingEnd:
+      _handleBufferingEnd();
+      break;
+    case VideoEventType.pipStop:
+      // 新增：保存退出原因
+      _lastPipExitReason = event.pipExitReason;
+      break;
+    default:
+      break;
+  }
+}
 
   // 处理缓冲开始
   void _handleBufferingStart() {
