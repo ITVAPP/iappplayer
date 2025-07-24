@@ -1445,45 +1445,47 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
 
   if (isPipSupported) {
     _wasInFullScreenBeforePiP = _isFullScreen;
-    
-    if (_isFullScreen) {
-      // 全屏处理逻辑保持不变
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart, 
-          parameters: {'preparing': true}));
-      exitFullScreen();
-      await Future.delayed(Duration(milliseconds: 500));
-    }
-    
     _wasControlsEnabledBeforePiP = _controlsEnabled;
     setControlsEnabled(false);
     
-    // 先获取RenderBox
+    // 获取视频区域的实际位置和尺寸
     final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
         .findRenderObject() as RenderBox?;
     if (renderBox == null) {
-      IAppPlayerUtils.log("无法显示画中画，RenderBox 为空，请提供有效的全局键");
+      IAppPlayerUtils.log(
+          "无法显示画中画，RenderBox 为空，请提供有效的全局键");
       return;
     }
     
     final Offset position = renderBox.localToGlobal(Offset.zero);
     
-    if (Platform.isAndroid || Platform.isIOS) {
-      // 先调用原生画中画
+    if (Platform.isAndroid) {
+      // 使用实际的位置和尺寸
       await videoPlayerController?.enablePictureInPicture(
         left: position.dx,
         top: position.dy,
         width: renderBox.size.width,
         height: renderBox.size.height,
       );
-      
-      // 成功后再发送事件
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
+      return;
+    }
+    
+    if (Platform.isIOS) {
+      await videoPlayerController?.enablePictureInPicture(
+        left: position.dx,
+        top: position.dy,
+        width: renderBox.size.width,
+        height: renderBox.size.height,
+      );
       _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
       return;
     } else {
       IAppPlayerUtils.log("当前平台不支持画中画");
     }
   } else {
-    IAppPlayerUtils.log("设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
+    IAppPlayerUtils.log(
+        "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
   }
 }
 
