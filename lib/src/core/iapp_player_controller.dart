@@ -965,6 +965,17 @@ class IAppPlayerController {
 
     // 根据事件类型管理画中画保护状态
     switch (iappPlayerEvent.iappPlayerEventType) {
+      case IAppPlayerEventType.pipStart:
+        if (iappPlayerEvent.parameters?['preparing'] == true) {
+          // 准备进入画中画，启用短期保护
+          _isReturningFromPip = true;
+          Future.delayed(Duration(milliseconds: 600), () {
+            if (!_disposed) {
+              _isReturningFromPip = false;
+            }
+          });
+        }
+        break;
       case IAppPlayerEventType.pipStop:
         // 退出画中画，启用保护
         _isReturningFromPip = true;
@@ -1433,39 +1444,35 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
 
   if (isPipSupported) {
-    // 保存当前的全屏状态
+    // 保存当前状态
     _wasInFullScreenBeforePiP = _isFullScreen;
+    _wasControlsEnabledBeforePiP = _controlsEnabled;
     
-    // 如果当前是全屏，需要先退出全屏
+    // 如果当前是全屏，发送准备事件
     if (_isFullScreen) {
-      // 退出全屏
-      exitFullScreen();
-      
-      // 等待全屏退出完成
-      await Future.delayed(Duration(milliseconds: 1000));
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart, 
+          parameters: {'preparing': true}));
     }
     
-    _wasControlsEnabledBeforePiP = _controlsEnabled;
+    // 禁用控件
     setControlsEnabled(false);
     
-    // 获取视频区域的实际位置和尺寸
-    final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
-        .findRenderObject() as RenderBox?;
-    if (renderBox == null) {
-      IAppPlayerUtils.log(
-          "无法显示画中画，RenderBox 为空，请提供有效的全局键");
-      return;
-    }
-    
-    final Offset position = renderBox.localToGlobal(Offset.zero);
+    // 设置全局键（供原生端使用）
+    _iappPlayerGlobalKey = iappPlayerGlobalKey;
     
     if (Platform.isAndroid || Platform.isIOS) {
-      await videoPlayerController?.enablePictureInPicture(
-        left: position.dx,
-        top: position.dy,
-        width: renderBox.size.width,
-        height: renderBox.size.height,
-      );
+      // 不再传递位置参数，让原生端自动识别
+      await videoPlayerController?.enablePictureInPicture();
+      
+      // 如果之前是全屏，现在退出
+      if (_isFullScreen) {
+        Future.delayed(Duration(milliseconds: 300), () {
+          if (!_disposed) {
+            exitFullScreen();
+          }
+        });
+      }
+      
       _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
       return;
     } else {
