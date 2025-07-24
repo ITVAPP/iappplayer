@@ -775,6 +775,18 @@ class IAppPlayerController {
 
   // 进入全屏模式
   void enterFullScreen() {
+    // 如果正在画中画模式，不允许进入全屏
+    if (videoPlayerController?.value.isPip == true) {
+      IAppPlayerUtils.log("画中画模式下不允许进入全屏");
+      return;
+    }
+    
+    // 如果刚从画中画返回，阻止全屏
+    if (isReturningFromPip) {
+      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
+      return;
+    }
+    
     _isFullScreen = true;
     _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
   }
@@ -787,6 +799,18 @@ class IAppPlayerController {
 
   // 切换全屏模式
   void toggleFullScreen() {
+    // 如果正在画中画模式，不允许进入全屏
+    if (videoPlayerController?.value.isPip == true) {
+      IAppPlayerUtils.log("画中画模式下不允许进入全屏");
+      return;
+    }
+    
+    // 如果刚从画中画返回，阻止全屏
+    if (isReturningFromPip) {
+      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
+      return;
+    }
+    
     _isFullScreen = !_isFullScreen;
     if (_isFullScreen) {
       _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
