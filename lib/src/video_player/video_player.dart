@@ -567,10 +567,11 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   }
 
   // 启用画中画模式
-  Future<void> enablePictureInPicture(
-      {double? top, double? left, double? width, double? height}) async {
-    await _videoPlayerPlatform.enablePictureInPicture(
-        textureId, top, left, width, height);
+  Future<void> enablePictureInPicture() async {
+    if (!value.initialized) {
+      throw Exception('视频未初始化');
+    }
+    await _videoPlayerPlatform.enablePictureInPicture(_textureId);
   }
 
   // 禁用画中画模式
