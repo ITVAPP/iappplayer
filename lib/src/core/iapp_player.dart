@@ -132,10 +132,6 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
 
   /// 处理控制器事件，更新UI或全屏状态
   void onControllerEvent(IAppPlayerControllerEvent event) {
-    // 如果正在从画中画返回，忽略事件
-    if (widget.controller.isReturningFromPip) {
-        return;
-    }
     switch (event) {
       case IAppPlayerControllerEvent.openFullscreen:
       case IAppPlayerControllerEvent.hideFullscreen:
@@ -167,11 +163,6 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   /// 处理全屏切换
   Future<void> onFullScreenChanged() async {
     final controller = widget.controller;
-  
-    // 如果正在进入画中画，不要处理全屏变化
-    if (controller.isReturningFromPip) {
-      return;
-    }
   
     if (controller.isFullScreen && !_isFullScreen) {
         _isFullScreen = true;
