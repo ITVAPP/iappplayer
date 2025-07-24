@@ -126,6 +126,68 @@ internal class IAppPlayer(
     
     // 使用弱引用避免内存泄漏
     private var activityWeakRef: WeakReference<Context>? = null
+    
+    // 添加成员变量来保存TextureView的引用
+    private var textureView: TextureView? = null
+    private val pipRect = android.graphics.Rect()
+    
+    // 添加设置TextureView的方法
+    private fun setupTextureView() {
+        // 这里需要获取实际的TextureView
+        // 根据Flutter插件的实现，可能需要通过反射或其他方式获取
+        try {
+            val field = textureEntry.javaClass.getDeclaredField("textureView")
+            field.isAccessible = true
+            textureView = field.get(textureEntry) as? TextureView
+        } catch (e: Exception) {
+        }
+    }
+
+    // 获取视频视图位置的方法
+    fun getVideoViewRect(): android.graphics.Rect? {
+        // 方案1：如果有TextureView引用
+        textureView?.let { view ->
+            if (view.isAttachedToWindow) {
+                val location = IntArray(2)
+                view.getLocationOnScreen(location)
+                return android.graphics.Rect(
+                    location[0],
+                    location[1],
+                    location[0] + view.width,
+                    location[1] + view.height
+                )
+            }
+        }
+    
+        // 方案2：使用Surface尺寸和播放器视频格式
+        exoPlayer?.videoFormat?.let { format ->
+            // 获取视频的实际尺寸
+            var videoWidth = format.width
+            var videoHeight = format.height
+        
+            // 处理旋转
+            if (format.rotationDegrees == 90 || format.rotationDegrees == 270) {
+                val temp = videoWidth
+                videoWidth = videoHeight
+                videoHeight = temp
+            }
+        
+            // 返回默认位置（居中显示）
+            return android.graphics.Rect(0, 0, videoWidth, videoHeight)
+        }
+    
+        return null
+    }
+
+    // 添加供插件调用的方法
+    fun enablePictureInPictureMode(): Boolean {
+        return getVideoViewRect() != null
+    }
+
+    // 获取PiP参数
+    fun getPictureInPictureParams(): android.graphics.Rect? {
+        return getVideoViewRect()
+    }
 
     // 初始化播放器，配置加载控制与事件通道
     init {
