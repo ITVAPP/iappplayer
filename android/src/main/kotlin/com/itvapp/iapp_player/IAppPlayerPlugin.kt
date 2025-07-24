@@ -72,6 +72,23 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     // 设置当前活动，绑定Activity
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activityWeakRef = WeakReference(binding.activity)
+    
+        // 检查并处理现有的画中画
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val activity = binding.activity
+            if (activity.isInPictureInPictureMode) {
+                // 如果应用重新打开时还在画中画模式，退出画中画
+                activity.runOnUiThread {
+                    // 延迟执行，确保Activity完全恢复
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        if (activity.isInPictureInPictureMode) {
+                            // 这会触发画中画监听器，自动处理状态变化
+                            activity.moveTaskToBack(false)
+                        }
+                    }, 300)
+                }
+            }
+        }
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
@@ -442,19 +459,28 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val activity = activityWeakRef?.get()
             if (activity == null) return
-            
+        
             // 先停止现有的Handler，避免重复创建
             stopPipHandler()
             pipHandler = Handler(Looper.getMainLooper())
             pipRunnable = object : Runnable {
                 override fun run() {
                     val currentActivity = activityWeakRef?.get()
-                    if (currentActivity != null && currentActivity.isInPictureInPictureMode) {
-                        pipHandler?.postDelayed(this, 500)
-                    } else {
+                        if (currentActivity != null && currentActivity.isInPictureInPictureMode) {
+                            pipHandler?.postDelayed(this, 500)
+                        } else {
+                        // 退出画中画
                         player.onPictureInPictureStatusChanged(false)
                         player.disposeMediaSession()
                         stopPipHandler()
+                    
+                        // 如果Activity为null或者正在finishing，说明是关闭画中画
+                        // 如果Activity存在且没有finishing，说明是返回应用
+                        if (currentActivity == null || currentActivity.isFinishing) {
+                            // 用户关闭了画中画窗口，暂停播放
+                            player.pause()
+                        }
+                        // 如果是返回应用，不暂停，继续播放
                     }
                 }
             }
