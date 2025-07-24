@@ -61,6 +61,7 @@ import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo
 import androidx.media3.exoplayer.DefaultRenderersFactory
+import android.widget.TextureView
 import org.chromium.net.CronetEngine
 import java.io.File
 import java.lang.Exception
@@ -184,9 +185,33 @@ internal class IAppPlayer(
         return getVideoViewRect() != null
     }
 
+    // 添加公开的getter方法来获取视频格式信息
+    fun getVideoAspectRatio(): android.util.Rational? {
+        val player = exoPlayer ?: return android.util.Rational(16, 9)
+        val format = player.videoFormat ?: return android.util.Rational(16, 9)
+    
+        if (format.width > 0 && format.height > 0) {
+            // 处理旋转
+            val width = if (format.rotationDegrees == 90 || format.rotationDegrees == 270) {
+                format.height
+            } else {
+                format.width
+            }
+            val height = if (format.rotationDegrees == 90 || format.rotationDegrees == 270) {
+                format.width
+            } else {
+                format.height
+            }
+            return android.util.Rational(width, height)
+        }
+        // 默认16:9
+        return android.util.Rational(16, 9)
+    }
+
     // 获取PiP参数
     fun getPictureInPictureParams(): android.graphics.Rect? {
-        return getVideoViewRect()
+        // 由于获取TextureView位置较复杂，返回null让系统使用默认行为
+        return null
     }
 
     // 初始化播放器，配置加载控制与事件通道
