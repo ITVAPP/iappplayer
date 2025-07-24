@@ -1001,12 +1001,17 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     _wasInPipMode = false;
     
-    // 删除所有全屏恢复逻辑，确保从画中画返回时保持非全屏状态
-    // 不需要任何全屏相关的判断和操作
-    
-    if (_wasControlsEnabledBeforePiP) {
-      setControlsEnabled(true);
+    // 判断是关闭画中画还是返回应用
+    if (!_isPlayerVisible) {
+      // 画中画被关闭，播放器不可见，应该暂停播放
+      pause();
+    } else {
+      // 返回应用，保持当前状态
+      if (_wasControlsEnabledBeforePiP) {
+        setControlsEnabled(true);
+      }
     }
+    
     videoPlayerController?.refresh();
   }
 
