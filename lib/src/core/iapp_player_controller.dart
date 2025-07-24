@@ -775,6 +775,10 @@ class IAppPlayerController {
 
   // 进入全屏模式
   void enterFullScreen() {
+    // 如果退出画中画模式，不允许进入全屏
+    if (isReturningFromPip) {
+      return;
+    }
     _isFullScreen = true;
     _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
   }
@@ -787,6 +791,10 @@ class IAppPlayerController {
 
   // 切换全屏模式
   void toggleFullScreen() {
+    // 如果退出画中画模式，不允许进入全屏
+    if (isReturningFromPip) {
+      return;
+    }
     _isFullScreen = !_isFullScreen;
     if (_isFullScreen) {
       _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
