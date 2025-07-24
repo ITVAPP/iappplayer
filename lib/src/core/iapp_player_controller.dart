@@ -1001,38 +1001,39 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.initialized));
   }
 
-if (currentValue.isPip) {
-  _wasInPipMode = true;
-} else if (_wasInPipMode) {
-  _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
-  _wasInPipMode = false;
-  
-  // 恢复控件状态
-  if (_wasControlsEnabledBeforePiP) {
-    setControlsEnabled(true);
-  }
-  
-  // 退出全屏（确保返回app页面而不是全屏）
-  if (_isFullScreen) {
-    exitFullScreen();
-  }
-  
-  // 根据退出原因决定播放行为
-  if (_lastPipExitReason == 'return') {
-    // 点击返回按钮：继续播放
-    if (!currentValue.isPlaying) {
-      play();
+  if (currentValue.isPip) {
+    _wasInPipMode = true;
+  } else if (_wasInPipMode) {
+    _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+    _wasInPipMode = false;
+    
+    // 恢复控件状态
+    if (_wasControlsEnabledBeforePiP) {
+      setControlsEnabled(true);
     }
-  } else {
-    // 点击关闭按钮或其他情况：暂停播放
-    pause();
+
+   // 如果之前不是全屏，确保现在也不是全屏
+    if (!_wasInFullScreenBeforePiP && _isFullScreen) {
+      // 直接设置状态，不触发UI事件，避免"闪现全屏"
+      _isFullScreen = false;
+    }
+    
+    // 根据退出原因决定播放行为
+    if (_lastPipExitReason == 'return') {
+      // 点击返回按钮：继续播放
+      if (!currentValue.isPlaying) {
+        play();
+      }
+    } else {
+      // 点击关闭按钮或其他情况：暂停播放
+      pause();
+    }
+    
+    // 重置退出原因
+    _lastPipExitReason = null;
+    
+    videoPlayerController?.refresh();
   }
-  
-  // 重置退出原因
-  _lastPipExitReason = null;
-  
-  videoPlayerController?.refresh();
-}
 
   if (_iappPlayerSubtitlesSource?.asmsIsSegmented == true) {
     _loadAsmsSubtitlesSegments(currentValue.position);
