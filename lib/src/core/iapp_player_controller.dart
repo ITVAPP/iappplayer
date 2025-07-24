@@ -250,6 +250,9 @@ class IAppPlayerController {
   // 画中画状态标志
   bool _isReturningFromPip = false;
 
+  // 公开画中画返回状态，供IAppPlayer使用
+  bool get isReturningFromPip => _isReturningFromPip;
+
   // 字幕段缓存
   List<IAppPlayerAsmsSubtitleSegment>? _pendingSubtitleSegments;
 
@@ -1011,7 +1014,7 @@ void _onVideoPlayerChanged() async {
     if (_wasControlsEnabledBeforePiP) {
       setControlsEnabled(true);
     }
-
+    
    // 如果之前不是全屏，确保现在也不是全屏
     if (!_wasInFullScreenBeforePiP && _isFullScreen) {
       // 直接设置状态，不触发UI事件，避免"闪现全屏"
@@ -1020,12 +1023,23 @@ void _onVideoPlayerChanged() async {
     
     // 根据退出原因决定播放行为
     if (_lastPipExitReason == 'return') {
-      // 点击返回按钮：继续播放
+      // 点击返回按钮：继续播放，但确保不会触发全屏
       if (!currentValue.isPlaying) {
+        // 设置标记，防止自动全屏
+        _isReturningFromPip = true;
         play();
+        // 延迟重置标记
+        Future.delayed(Duration(milliseconds: 500), () {
+          _isReturningFromPip = false;
+        });
       }
+    } else if (_lastPipExitReason == 'close') {
+      // 点击关闭按钮：停止播放
+      pause();
+      // 发送画中画关闭事件，UI层可以根据需要处理（比如返回列表页）
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipClosed));
     } else {
-      // 点击关闭按钮或其他情况：暂停播放
+      // 其他情况（比如系统关闭）：暂停播放
       pause();
     }
     
