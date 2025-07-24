@@ -65,7 +65,12 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // 注册生命周期观察者
+    WidgetsBinding.instance.addObserver(this);
+  
+    // 页面初始化后检查并关闭可能存在的画中画
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.checkAndExitPictureInPicture();
+    });
   }
 
   @override
