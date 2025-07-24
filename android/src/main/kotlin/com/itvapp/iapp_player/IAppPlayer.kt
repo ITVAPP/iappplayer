@@ -61,7 +61,7 @@ import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo
 import androidx.media3.exoplayer.DefaultRenderersFactory
-import android.widget.TextureView
+import android.view.TextureView
 import org.chromium.net.CronetEngine
 import java.io.File
 import java.lang.Exception
