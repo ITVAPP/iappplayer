@@ -3,6 +3,7 @@ version '1.6.8'
 
 buildscript {
     ext.media3Version = "1.4.1"
+    ext.jellyfinVersion = "1.6.1+2"
     ext.workVersion = "2.9.0"
     ext.kotlinVersion = "1.9.23"
     
@@ -107,7 +108,7 @@ dependencies {
     implementation "androidx.media3:media3-decoder"
     
     // 🔧 FFmpeg 解码器版本
-    implementation "org.jellyfin.media3:media3-ffmpeg-decoder:$media3Version+1"
+    implementation "org.jellyfin.media3:media3-ffmpeg-decoder:$jellyfinVersion"
     
     // 额外的 Media3 组件
     implementation "androidx.media3:media3-container"
