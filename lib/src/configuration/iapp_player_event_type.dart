@@ -20,13 +20,12 @@ enum IAppPlayerEventType {
   changedResolution,
   pipStart,
   pipStop,
+  pipClosed,
   setupDataSource,
   bufferingStart,
   bufferingUpdate,
   bufferingEnd,
   changedPlaylistItem,
-  /// 切换播放列表随机模式
   togglePlaylistShuffle,
-  /// 播放列表随机模式已改变
   changedPlaylistShuffle,
 }
