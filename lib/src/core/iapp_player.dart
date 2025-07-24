@@ -139,7 +139,7 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
           return;
         }
         onFullScreenChanged(); // 处理全屏切换
-        break;
+       break;
       case IAppPlayerControllerEvent.hideFullscreen:
         onFullScreenChanged(); // 处理全屏切换
         break;
