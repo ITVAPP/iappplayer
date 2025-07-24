@@ -326,7 +326,7 @@ enum VideoFormat {
 }
 
 // 视频播放事件
-class VideoEvent {class VideoEvent {
+class VideoEvent {
   VideoEvent({
     required this.eventType,
     required this.key,
