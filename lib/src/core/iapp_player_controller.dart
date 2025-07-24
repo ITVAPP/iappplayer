@@ -1047,14 +1047,6 @@ void _onVideoPlayerChanged() async {
   _lastVideoPlayerValue = currentValue;
 }
 
-// 禁用画中画
-Future<void>? disablePictureInPicture() {
-  if (videoPlayerController == null) {
-    throw StateError("数据源未初始化");
-  }
-  return videoPlayerController!.disablePictureInPicture();
-}
-
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
   if (videoPlayerController?.value.isPip == true) {
