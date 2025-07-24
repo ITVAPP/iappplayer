@@ -69,26 +69,8 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         stopPipHandler()
     }
 
-    // 设置当前活动，绑定Activity
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activityWeakRef = WeakReference(binding.activity)
-    
-        // 检查并处理现有的画中画
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val activity = binding.activity
-            if (activity.isInPictureInPictureMode) {
-                // 如果应用重新打开时还在画中画模式，退出画中画
-                activity.runOnUiThread {
-                    // 延迟执行，确保Activity完全恢复
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        if (activity.isInPictureInPictureMode) {
-                            // 这会触发画中画监听器，自动处理状态变化
-                            activity.moveTaskToBack(false)
-                        }
-                    }, 300)
-                }
-            }
-        }
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
@@ -450,16 +432,15 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     // 禁用画中画模式，清理媒体会话
     private fun disablePictureInPicture(player: IAppPlayer) {
         stopPipHandler()
-        activityWeakRef?.get()?.moveTaskToBack(false)
         player.onPictureInPictureStatusChanged(false)
         player.disposeMediaSession()
     }
 
     private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val activity = activityWeakRef?.get()
             if (activity == null) return
-    
+
             // 先停止现有的Handler，避免重复创建
             stopPipHandler()
             pipHandler = Handler(Looper.getMainLooper())
@@ -477,7 +458,7 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 }
             }
             pipHandler?.post(pipRunnable!!)
-        }
+            }
     }
 
     private fun dispose(player: IAppPlayer, textureId: Long) {
