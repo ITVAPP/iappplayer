@@ -1419,11 +1419,17 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 如果当前是全屏，需要先退出全屏
     if (_isFullScreen) {
+      // 设置时间戳，启用保护期
+       _pipExitTime = DateTime.now();
+  
       // 退出全屏
       exitFullScreen();
       
       // 等待全屏退出完成
       await Future.delayed(Duration(milliseconds: 500));
+      
+      // 清除时间戳
+      // _pipExitTime = null;
     }
     
     _wasControlsEnabledBeforePiP = _controlsEnabled;
