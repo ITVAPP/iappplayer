@@ -1444,57 +1444,46 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
 
   if (isPipSupported) {
-    // 保存当前的全屏状态
     _wasInFullScreenBeforePiP = _isFullScreen;
     
-    // 如果当前是全屏，需要先退出全屏
     if (_isFullScreen) {
-      // 先获取全屏状态下的位置
-      final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
-          .findRenderObject() as RenderBox?;
-      final Offset position = renderBox.localToGlobal(Offset.zero);
-  
-      // 然后退出全屏
+      // 全屏处理逻辑保持不变
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart, 
+          parameters: {'preparing': true}));
       exitFullScreen();
-  
-      // 使用之前保存的位置启用画中画
-      await videoPlayerController?.enablePictureInPicture(
-       left: position.dx,
-        top: position.dy,
-        width: renderBox.size.width,
-        height: renderBox.size.height,
-      );
+      await Future.delayed(Duration(milliseconds: 500));
     }
     
     _wasControlsEnabledBeforePiP = _controlsEnabled;
     setControlsEnabled(false);
     
-    // 获取视频区域的实际位置和尺寸
+    // 先获取RenderBox
     final RenderBox? renderBox = iappPlayerGlobalKey.currentContext!
         .findRenderObject() as RenderBox?;
     if (renderBox == null) {
-      IAppPlayerUtils.log(
-          "无法显示画中画，RenderBox 为空，请提供有效的全局键");
+      IAppPlayerUtils.log("无法显示画中画，RenderBox 为空，请提供有效的全局键");
       return;
     }
     
     final Offset position = renderBox.localToGlobal(Offset.zero);
     
     if (Platform.isAndroid || Platform.isIOS) {
+      // 先调用原生画中画
       await videoPlayerController?.enablePictureInPicture(
         left: position.dx,
         top: position.dy,
         width: renderBox.size.width,
         height: renderBox.size.height,
       );
+      
+      // 成功后再发送事件
       _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
       return;
     } else {
       IAppPlayerUtils.log("当前平台不支持画中画");
     }
   } else {
-    IAppPlayerUtils.log(
-        "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
+    IAppPlayerUtils.log("设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
   }
 }
 
