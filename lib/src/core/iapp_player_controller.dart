@@ -955,102 +955,88 @@ class IAppPlayerController {
   }
 
   // 处理播放器状态变化
-  void _onVideoPlayerChanged() async {
-    if (_disposed) {
-      return;
-    }
-
-    final currentValue = videoPlayerController?.value;
-    if (currentValue == null) {
-      return;
-    }
-
-    if (_lastVideoPlayerValue != null) {
-      // 检查关键值是否有变化
-      final hasPositionChanged = currentValue.position != _lastVideoPlayerValue!.position;
-      final hasPlayingChanged = currentValue.isPlaying != _lastVideoPlayerValue!.isPlaying;
-      final hasBufferingChanged = currentValue.isBuffering != _lastVideoPlayerValue!.isBuffering;
-      final hasErrorChanged = currentValue.hasError != _lastVideoPlayerValue!.hasError;
-      
-      // 如果没有任何变化，直接返回
-      if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged) {
-        return;
-      }
-    }
-
-    if (currentValue.hasError && _videoPlayerValueOnError == null) {
-      _videoPlayerValueOnError = currentValue;
-      _postEvent(
-        IAppPlayerEvent(
-          IAppPlayerEventType.exception,
-          parameters: <String, dynamic>{
-            "exception": currentValue.errorDescription
-          },
-        ),
-      );
-    }
-
-    if (currentValue.initialized && !_hasCurrentDataSourceInitialized) {
-      _hasCurrentDataSourceInitialized = true;
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.initialized));
-    }
-
-    if (currentValue.isPip) {
-      _wasInPipMode = true;
-    } else if (_wasInPipMode) {
-      // 退出画中画模式
-      _wasInPipMode = false;
-      
-      // 暂停播放（用户关闭画中画时的预期行为）
-      if (isPlaying() == true) {
-        pause();
-      }
-      
-      // 恢复全屏状态
-      if (_wasInFullScreenBeforePiP) {
-        // 如果进入画中画前是全屏，保持全屏
-        if (!_isFullScreen) {
-          enterFullScreen();
-        }
-      } else {
-        // 如果进入画中画前不是全屏，确保退出全屏
-        if (_isFullScreen) {
-          exitFullScreen();
-        }
-      }
-      
-      // 恢复控件状态
-      if (_wasControlsEnabledBeforePiP) {
-        setControlsEnabled(true);
-      }
-      
-      // 刷新播放器
-      videoPlayerController?.refresh();
-      
-      // 发送画中画停止事件
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
-    }
-
-    if (_iappPlayerSubtitlesSource?.asmsIsSegmented == true) {
-      _loadAsmsSubtitlesSegments(currentValue.position);
-    }
-
-    final int now = DateTime.now().millisecondsSinceEpoch;
-    if (now - _lastPositionSelection > 500) {
-      _lastPositionSelection = now;
-      _postEvent(
-        IAppPlayerEvent(
-          IAppPlayerEventType.progress,
-          parameters: <String, dynamic>{
-            _progressParameter: currentValue.position,
-            _durationParameter: currentValue.duration
-          },
-        ),
-      );
-    }
-
-    _lastVideoPlayerValue = currentValue;
+void _onVideoPlayerChanged() async {
+  if (_disposed) {
+    return;
   }
+
+  final currentValue = videoPlayerController?.value;
+  if (currentValue == null) {
+    return;
+  }
+
+  if (_lastVideoPlayerValue != null) {
+    // 检查关键值是否有变化
+    final hasPositionChanged = currentValue.position != _lastVideoPlayerValue!.position;
+    final hasPlayingChanged = currentValue.isPlaying != _lastVideoPlayerValue!.isPlaying;
+    final hasBufferingChanged = currentValue.isBuffering != _lastVideoPlayerValue!.isBuffering;
+    final hasErrorChanged = currentValue.hasError != _lastVideoPlayerValue!.hasError;
+    
+    // 如果没有任何变化，直接返回
+    if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged) {
+      return;
+    }
+  }
+
+  if (currentValue.hasError && _videoPlayerValueOnError == null) {
+    _videoPlayerValueOnError = currentValue;
+    _postEvent(
+      IAppPlayerEvent(
+        IAppPlayerEventType.exception,
+        parameters: <String, dynamic>{
+          "exception": currentValue.errorDescription
+        },
+      ),
+    );
+  }
+
+  if (currentValue.initialized && !_hasCurrentDataSourceInitialized) {
+    _hasCurrentDataSourceInitialized = true;
+    _postEvent(IAppPlayerEvent(IAppPlayerEventType.initialized));
+  }
+
+  if (currentValue.isPip) {
+    _wasInPipMode = true;
+  } else if (_wasInPipMode) {
+    _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+    _wasInPipMode = false;
+    
+    // 修复：恢复之前的全屏状态，而不是改变它
+    if (_wasInFullScreenBeforePiP && !_isFullScreen) {
+      // 如果之前是全屏，现在不是，则进入全屏
+      enterFullScreen();
+    } else if (!_wasInFullScreenBeforePiP && _isFullScreen) {
+      // 如果之前不是全屏，现在是，则退出全屏
+      exitFullScreen();
+    }
+    // 如果状态一致，不做任何改变
+    
+    if (_wasControlsEnabledBeforePiP) {
+      setControlsEnabled(true);
+    }
+    videoPlayerController?.refresh();
+  }
+
+  if (_iappPlayerSubtitlesSource?.asmsIsSegmented == true) {
+    _loadAsmsSubtitlesSegments(currentValue.position);
+  }
+
+  final int now = DateTime.now().millisecondsSinceEpoch;
+  if (now - _lastPositionSelection > 500) {
+    _lastPositionSelection = now;
+    _postEvent(
+      IAppPlayerEvent(
+        IAppPlayerEventType.progress,
+        parameters: <String, dynamic>{
+          _progressParameter: currentValue.position,
+          _durationParameter: currentValue.duration
+        },
+      ),
+    );
+  }
+
+  _lastVideoPlayerValue = currentValue;
+}
 
   // 添加事件监听器
   void addEventsListener(Function(IAppPlayerEvent) eventListener) {
@@ -1368,7 +1354,7 @@ class IAppPlayerController {
       final Offset position = renderBox.localToGlobal(Offset.zero);
       
       if (Platform.isAndroid) {
-        // 使用实际的位置和尺寸
+        // 统一Android和iOS的实现方式
         await videoPlayerController?.enablePictureInPicture(
           left: position.dx,
           top: position.dy,
@@ -1380,14 +1366,12 @@ class IAppPlayerController {
       }
       
       if (Platform.isIOS) {
-        await videoPlayerController?.enablePictureInPicture(
+        return videoPlayerController?.enablePictureInPicture(
           left: position.dx,
           top: position.dy,
           width: renderBox.size.width,
           height: renderBox.size.height,
         );
-        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
-        return;
       } else {
         IAppPlayerUtils.log("当前平台不支持画中画");
       }
