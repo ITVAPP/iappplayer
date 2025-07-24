@@ -134,12 +134,8 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   void onControllerEvent(IAppPlayerControllerEvent event) {
     switch (event) {
       case IAppPlayerControllerEvent.openFullscreen:
-        // 如果正在画中画模式，忽略全屏事件
-        if (widget.controller.videoPlayerController?.value.isPip == true) {
-          assert(() {
-            IAppPlayerUtils.log('画中画模式下忽略全屏事件');
-            return true;
-          }());
+        // 如果正在从画中画返回，忽略全屏事件
+        if (widget.controller.isReturningFromPip) {
           return;
         }
         onFullScreenChanged(); // 处理全屏切换
