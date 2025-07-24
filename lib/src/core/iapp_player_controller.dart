@@ -965,7 +965,6 @@ class IAppPlayerController {
 
     // 根据事件类型管理画中画保护状态
     switch (iappPlayerEvent.iappPlayerEventType) {
-
       case IAppPlayerEventType.pipStop:
         // 退出画中画，启用保护
         _isReturningFromPip = true;
@@ -1439,15 +1438,11 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 如果当前是全屏，需要先退出全屏
     if (_isFullScreen) {
-      // 发送准备进入画中画的事件，启用保护
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart, 
-          parameters: {'preparing': true}));
-      
       // 退出全屏
       exitFullScreen();
       
       // 等待全屏退出完成
-      await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(Duration(milliseconds: 1000));
     }
     
     _wasControlsEnabledBeforePiP = _controlsEnabled;
