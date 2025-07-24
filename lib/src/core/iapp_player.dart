@@ -167,14 +167,20 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   /// 处理全屏切换
   Future<void> onFullScreenChanged() async {
     final controller = widget.controller;
+  
+    // 如果正在进入画中画，不要处理全屏变化
+    if (controller.isReturningFromPip) {
+      return;
+    }
+  
     if (controller.isFullScreen && !_isFullScreen) {
-      _isFullScreen = true;
-      controller.postEvent(IAppPlayerEvent(IAppPlayerEventType.openFullscreen)); // 发送全屏事件
-      await _pushFullScreenWidget(context); // 推送全屏页面
+        _isFullScreen = true;
+      controller.postEvent(IAppPlayerEvent(IAppPlayerEventType.openFullscreen));
+      await _pushFullScreenWidget(context);
     } else if (_isFullScreen) {
-      Navigator.of(context, rootNavigator: true).pop(); // 退出全屏
+      Navigator.of(context, rootNavigator: true).pop();
       _isFullScreen = false;
-      controller.postEvent(IAppPlayerEvent(IAppPlayerEventType.hideFullscreen)); // 发送退出全屏事件
+      controller.postEvent(IAppPlayerEvent(IAppPlayerEventType.hideFullscreen));
     }
   }
 
