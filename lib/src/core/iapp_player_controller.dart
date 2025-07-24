@@ -170,12 +170,6 @@ class IAppPlayerController {
   
   // 画中画退出原因
   String? _lastPipExitReason;
-  
-  // 画中画状态标志
-  bool _isReturningFromPip = false;
-
-  // 公开画中画返回状态，供IAppPlayer使用
-  bool get isReturningFromPip => _isReturningFromPip;
 
   // 全局键
   GlobalKey? _iappPlayerGlobalKey;
@@ -252,6 +246,12 @@ class IAppPlayerController {
 
   // 直播流检测缓存
   bool? _cachedIsLiveStream;
+  
+  // 画中画状态标志
+  bool _isReturningFromPip = false;
+
+  // 公开画中画返回状态，供IAppPlayer使用
+  bool get isReturningFromPip => _isReturningFromPip;
 
   // 字幕段缓存
   List<IAppPlayerAsmsSubtitleSegment>? _pendingSubtitleSegments;
@@ -775,18 +775,6 @@ class IAppPlayerController {
 
   // 进入全屏模式
   void enterFullScreen() {
-    // 如果正在画中画模式，不允许进入全屏
-    if (videoPlayerController?.value.isPip == true) {
-      IAppPlayerUtils.log("画中画模式下不允许进入全屏");
-      return;
-    }
-    
-    // 如果刚从画中画返回，阻止全屏
-    if (isReturningFromPip) {
-      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
-      return;
-    }
-    
     _isFullScreen = true;
     _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
   }
@@ -799,18 +787,6 @@ class IAppPlayerController {
 
   // 切换全屏模式
   void toggleFullScreen() {
-    // 如果正在画中画模式，不允许进入全屏
-    if (videoPlayerController?.value.isPip == true) {
-      IAppPlayerUtils.log("画中画模式下不允许进入全屏");
-      return;
-    }
-    
-    // 如果刚从画中画返回，阻止全屏
-    if (isReturningFromPip) {
-      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
-      return;
-    }
-    
     _isFullScreen = !_isFullScreen;
     if (_isFullScreen) {
       _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
@@ -963,32 +939,6 @@ class IAppPlayerController {
       return;
     }
 
-    // 根据事件类型管理画中画保护状态
-    switch (iappPlayerEvent.iappPlayerEventType) {
-      case IAppPlayerEventType.pipStart:
-        if (iappPlayerEvent.parameters?['preparing'] == true) {
-          // 准备进入画中画，启用短期保护
-          _isReturningFromPip = true;
-          Future.delayed(Duration(milliseconds: 600), () {
-            if (!_disposed) {
-              _isReturningFromPip = false;
-            }
-          });
-        }
-        break;
-      case IAppPlayerEventType.pipStop:
-        // 退出画中画，启用保护
-        _isReturningFromPip = true;
-        Future.delayed(Duration(milliseconds: 2000), () {
-          if (!_disposed) {
-            _isReturningFromPip = false;
-          }
-        });
-        break;
-      default:
-        break;
-    }
-
     if (iappPlayerEvent.iappPlayerEventType == 
         IAppPlayerEventType.changedPlaylistShuffle) {
       _playlistShuffleMode = iappPlayerEvent.parameters?['shuffleMode'] ?? false;
@@ -1062,6 +1012,10 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     _wasInPipMode = false;
     
+    // 立即设置返回标记，防止任何自动全屏行为
+    // 这必须在所有其他操作之前设置
+    _isReturningFromPip = true;
+    
     // 恢复控件状态
     if (_wasControlsEnabledBeforePiP) {
       setControlsEnabled(true);
@@ -1110,6 +1064,14 @@ void _onVideoPlayerChanged() async {
     Future.delayed(Duration(milliseconds: 100), () {
       if (!_disposed) {
         videoPlayerController?.refresh();
+      }
+    });
+    
+    // 延迟重置返回标记
+    // 给足够的时间让所有可能的全屏事件被阻止
+    Future.delayed(Duration(milliseconds: 1000), () {
+      if (!_disposed) {
+        _isReturningFromPip = false;
       }
     });
   }
@@ -1449,15 +1411,17 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 如果当前是全屏，需要先退出全屏
     if (_isFullScreen) {
-      // 发送准备进入画中画的事件，启用保护
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart, 
-          parameters: {'preparing': true}));
+      // 先设置标记，防止画中画过程中的全屏状态变化
+      _isReturningFromPip = true;
       
       // 退出全屏
       exitFullScreen();
       
       // 等待全屏退出完成
       await Future.delayed(Duration(milliseconds: 500));
+      
+      // 重置标记
+      _isReturningFromPip = false;
     }
     
     _wasControlsEnabledBeforePiP = _controlsEnabled;
