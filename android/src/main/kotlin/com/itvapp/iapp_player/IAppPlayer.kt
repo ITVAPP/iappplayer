@@ -147,7 +147,7 @@ internal class IAppPlayer(
     // 获取视频视图位置的方法
     fun getVideoViewRect(): android.graphics.Rect? {
         // 方案1：如果有TextureView引用
-        textureView?.let { view ->
+        textureView?.let { view: TextureView ->
             if (view.isAttachedToWindow) {
                 val location = IntArray(2)
                 view.getLocationOnScreen(location)
