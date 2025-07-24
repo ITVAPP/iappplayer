@@ -1448,30 +1448,24 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     _wasInFullScreenBeforePiP = _isFullScreen;
     _wasControlsEnabledBeforePiP = _controlsEnabled;
     
-    // 如果当前是全屏，发送准备事件
-    if (_isFullScreen) {
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart, 
-          parameters: {'preparing': true}));
-    }
-    
     // 禁用控件
     setControlsEnabled(false);
     
-    // 设置全局键（供原生端使用）
+    // 设置全局键
     _iappPlayerGlobalKey = iappPlayerGlobalKey;
     
-    if (Platform.isAndroid || Platform.isIOS) {
-      // 不再传递位置参数，让原生端自动识别
-      await videoPlayerController?.enablePictureInPicture();
+    // 关键修改：如果当前是全屏，先退出全屏再进入画中画
+    if (_isFullScreen) {
+      // 先退出全屏
+      exitFullScreen();
       
-      // 如果之前是全屏，现在退出
-      if (_isFullScreen) {
-        Future.delayed(Duration(milliseconds: 300), () {
-          if (!_disposed) {
-            exitFullScreen();
-          }
-        });
-      }
+      // 等待全屏退出动画完成和视图层级稳定
+      await Future.delayed(Duration(milliseconds: 400));
+    }
+    
+    if (Platform.isAndroid || Platform.isIOS) {
+      // 现在视图层级已经稳定，可以安全进入画中画
+      await videoPlayerController?.enablePictureInPicture();
       
       _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
       return;
