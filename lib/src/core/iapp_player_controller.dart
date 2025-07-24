@@ -954,7 +954,7 @@ class IAppPlayerController {
     }
   }
 
-  // 处理播放器状态变化
+// 处理播放器状态变化
 void _onVideoPlayerChanged() async {
   if (_disposed) {
     return;
@@ -1001,15 +1001,8 @@ void _onVideoPlayerChanged() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     _wasInPipMode = false;
     
-    // 修复：恢复之前的全屏状态，而不是改变它
-    if (_wasInFullScreenBeforePiP && !_isFullScreen) {
-      // 如果之前是全屏，现在不是，则进入全屏
-      enterFullScreen();
-    } else if (!_wasInFullScreenBeforePiP && _isFullScreen) {
-      // 如果之前不是全屏，现在是，则退出全屏
-      exitFullScreen();
-    }
-    // 如果状态一致，不做任何改变
+    // 删除所有全屏恢复逻辑，确保从画中画返回时保持非全屏状态
+    // 不需要任何全屏相关的判断和操作
     
     if (_wasControlsEnabledBeforePiP) {
       setControlsEnabled(true);
