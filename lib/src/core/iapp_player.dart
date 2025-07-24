@@ -65,7 +65,12 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // 注册生命周期观察者
+    WidgetsBinding.instance.addObserver(this);
+  
+    // 页面初始化后检查并关闭可能存在的画中画
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.checkAndExitPictureInPicture();
+    });
   }
 
   @override
@@ -127,6 +132,10 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
 
   /// 处理控制器事件，更新UI或全屏状态
   void onControllerEvent(IAppPlayerControllerEvent event) {
+    // 如果正在从画中画返回，忽略事件
+    if (widget.controller.isReturningFromPip) {
+        return;
+    }
     switch (event) {
       case IAppPlayerControllerEvent.openFullscreen:
       case IAppPlayerControllerEvent.hideFullscreen:
