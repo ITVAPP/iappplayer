@@ -1465,16 +1465,17 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
               _bufferedParameter: event.buffered,
             }));
         break;
-    case VideoEventType.bufferingEnd:
-      _handleBufferingEnd();
-      break;
-    case VideoEventType.pipStop:
-      _lastPipExitReason = event.pipExitReason;
-      break;
-    default:
-      break;
+      case VideoEventType.bufferingEnd:
+        _handleBufferingEnd();
+        break;
+      case VideoEventType.pipStop:
+        // 只保存退出原因，让 _onVideoPlayerChanged 统一处理所有状态变更
+        _lastPipExitReason = event.pipExitReason;
+        break;
+      default:
+        break;
+    }
   }
-}
 
   // 处理缓冲开始
   void _handleBufferingStart() {
