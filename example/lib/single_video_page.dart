@@ -40,76 +40,85 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   }
 
   Future<void> _initializePlayer() async {
-    // 安全读取字幕，即使失败也不影响播放
-    final subtitleContent = await safeLoadSubtitle('assets/subtitles/video1.srt');
-    
-    // 修复：使用正确的本地资源路径
-    final result = await IAppPlayerConfig.createPlayer(
-      url: 'assets/videos/video1.mp4',
-      dataSourceType: IAppPlayerDataSourceType.file,
-      title: 'Superman (1941)',
-      imageUrl: 'https://www.itvapp.net/images/logo-1.png',
-      subtitleContent: subtitleContent, // 可能为null，但不影响播放
-      enableFullscreen: true, // 添加全屏功能
-      eventListener: (event) {
-        if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
-          setState(() {
-            _isLoading = false;
-            _isPlaying = _controller?.isPlaying() ?? false;
-          });
-          // 初始化后检查方向
-          handleOrientationChange();
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
-          // 监听播放事件
-          if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+    try {
+      // 安全读取字幕，即使失败也不影响播放
+      final subtitleContent = await safeLoadSubtitle('assets/subtitles/video1.srt');
+      
+      // 修复：使用正确的本地资源路径
+      final result = await IAppPlayerConfig.createPlayer(
+        url: 'assets/videos/video1.mp4',
+        dataSourceType: IAppPlayerDataSourceType.file,
+        title: 'Superman (1941)',
+        imageUrl: 'https://www.itvapp.net/images/logo-1.png',
+        subtitleContent: subtitleContent, // 可能为null，但不影响播放
+        enableFullscreen: true, // 添加全屏功能
+        eventListener: (event) {
+          if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
             setState(() {
-              _isPlaying = true;
+              _isLoading = false;
+              _isPlaying = _controller?.isPlaying() ?? false;
             });
+            // 初始化后检查方向
+            handleOrientationChange();
+          } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
+            // 监听播放事件
+            if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+              setState(() {
+                _isPlaying = true;
+              });
+            }
+          } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
+            // 监听暂停事件
+            if (_isPlaying) {  // 【优化】只在状态真正改变时更新
+              setState(() {
+                _isPlaying = false;
+              });
+            }
+          } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStart) {
+            // 监听进入画中画
+            if (!_isPipMode) {  // 【优化】只在状态真正改变时更新
+              setState(() {
+                _isPipMode = true;
+              });
+            }
+          } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStop) {
+            // 监听退出画中画
+            if (_isPipMode) {  // 【优化】只在状态真正改变时更新
+              setState(() {
+                _isPipMode = false;
+              });
+            }
           }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
-          // 监听暂停事件
-          if (_isPlaying) {  // 【优化】只在状态真正改变时更新
-            setState(() {
-              _isPlaying = false;
-            });
-          }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStart) {
-          // 监听进入画中画
-          if (!_isPipMode) {  // 【优化】只在状态真正改变时更新
-            setState(() {
-              _isPipMode = true;
-            });
-          }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStop) {
-          // 监听退出画中画
-          if (_isPipMode) {  // 【优化】只在状态真正改变时更新
-            setState(() {
-              _isPipMode = false;
-            });
-          }
-        }
-      },
-      preferredDecoderType: _getDecoderType(),
-      autoDetectFullscreenDeviceOrientation: true,
-      deviceOrientationsOnFullScreen: [
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ],
-      deviceOrientationsAfterFullScreen: [
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ],
-    );
+        },
+        preferredDecoderType: _getDecoderType(),
+        autoDetectFullscreenDeviceOrientation: true,
+        deviceOrientationsOnFullScreen: [
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ],
+        deviceOrientationsAfterFullScreen: [
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+        ],
+      );
 
-    if (mounted) {
-      setState(() {
-        _controller = result.activeController;
-        if (_controller != null) {
-          _isLoading = false;
-          // 关键修改：设置播放器的 GlobalKey 以启用画中画功能
-          _controller!.setIAppPlayerGlobalKey(_playerGlobalKey!);
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _controller = result.activeController;
+          _isLoading = false;  // 无论成功与否都要设置加载完成
+          if (_controller != null) {
+            // 关键修改：设置播放器的 GlobalKey 以启用画中画功能
+            _controller!.setIAppPlayerGlobalKey(_playerGlobalKey!);
+          }
+        });
+      }
+    } catch (e) {
+      print('Player initialization failed: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;  // 错误时也要设置加载完成
+        });
+      }
     }
   }
 
@@ -129,6 +138,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     setState(() {
       _currentDecoder = newDecoder;
       _isLoading = true;
+      _isPipMode = false;  // 重置画中画状态
     });
     
     // 重新初始化播放器
