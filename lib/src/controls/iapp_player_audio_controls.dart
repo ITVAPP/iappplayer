@@ -135,7 +135,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 定义紧凑模式歌曲信息间距
   static const double kCompactSongInfoSpacing = 4.0;
   // 定义紧凑模式区域间距
-  static const double kCompactSectionSpacing = 10.0;
+  static const double kCompactSectionSpacing = 8.0;
   // 定义紧凑模式进度条高度
   static const double kCompactProgressHeight = 6.0;
   // 定义紧凑模式顶部栏高度
