@@ -19,7 +19,6 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
   IAppPlayerController? _controller;
   bool _isLoading = true;
   bool _isPlaying = false; // 添加播放状态跟踪
-  String? _currentLyric; // 添加当前歌词状态
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -70,18 +69,20 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
           handleOrientationChange();
         } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
           // 监听播放事件
-          setState(() {
-            _isPlaying = true;
-          });
+          if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPlaying = true;
+            });
+          }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
           // 监听暂停事件
-          setState(() {
-            _isPlaying = false;
-          });
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.progress) {
-          // 监听播放进度，更新歌词
-          _updateCurrentLyric();
+          if (_isPlaying) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPlaying = false;
+            });
+          }
         }
+        // 【优化】移除progress事件监听，歌词更新由独立组件处理
       },
       autoDetectFullscreenDeviceOrientation: true,
       deviceOrientationsOnFullScreen: [
@@ -98,29 +99,6 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
       setState(() {
         _controller = result.activeController;
       });
-    }
-  }
-
-  // 更新当前歌词
-  void _updateCurrentLyric() {
-    if (_controller == null || !mounted) return;
-    
-    // 获取当前正在渲染的字幕
-    final subtitle = _controller!.renderedSubtitle;
-    if (subtitle != null && subtitle.texts != null && subtitle.texts!.isNotEmpty) {
-      final newLyric = subtitle.texts!.join(' ');
-      if (newLyric != _currentLyric) {
-        setState(() {
-          _currentLyric = newLyric;
-        });
-      }
-    } else {
-      // 处理没有歌词的情况
-      if (_currentLyric != null && _currentLyric!.isNotEmpty) {
-        setState(() {
-          _currentLyric = null;
-        });
-      }
     }
   }
 
@@ -239,46 +217,8 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                                 color: Colors.white.withOpacity(0.6),
                               ),
                             ),
-                            // 显示当前歌词（修改：增强动画效果）
-                            if (_currentLyric != null && _currentLyric!.isNotEmpty) ...[
-                              SizedBox(height: UIConstants.spaceSM),
-                              AnimatedSwitcher(
-                                duration: Duration(milliseconds: 500),
-                                switchInCurve: Curves.easeIn,
-                                switchOutCurve: Curves.easeOut,
-                                transitionBuilder: (Widget child, Animation<double> animation) {
-                                  // 组合淡入淡出和缩放动画
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: ScaleTransition(
-                                      scale: Tween<double>(
-                                        begin: 0.95,
-                                        end: 1.0,
-                                      ).animate(
-                                        CurvedAnimation(
-                                          parent: animation,
-                                          curve: Curves.easeOutCubic,
-                                        ),
-                                      ),
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  _currentLyric!,
-                                  key: ValueKey(_currentLyric),
-                                  style: TextStyle(
-                                    fontSize: UIConstants.fontMD,
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontStyle: FontStyle.italic,
-                                    height: 1.5, // 增加行高
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                            // 【优化】使用独立的歌词显示组件
+                            LyricDisplay(controller: _controller),
                           ],
                         ),
                       ),

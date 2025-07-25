@@ -61,24 +61,32 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
           handleOrientationChange();
         } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
           // 监听播放事件
-          setState(() {
-            _isPlaying = true;
-          });
+          if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPlaying = true;
+            });
+          }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
           // 监听暂停事件
-          setState(() {
-            _isPlaying = false;
-          });
+          if (_isPlaying) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPlaying = false;
+            });
+          }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStart) {
           // 监听进入画中画
-          setState(() {
-            _isPipMode = true;
-          });
+          if (!_isPipMode) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPipMode = true;
+            });
+          }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStop) {
           // 监听退出画中画
-          setState(() {
-            _isPipMode = false;
-          });
+          if (_isPipMode) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPipMode = false;
+            });
+          }
         }
       },
       preferredDecoderType: _getDecoderType(),
@@ -98,6 +106,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
         _controller = result.activeController;
         if (_controller != null) {
           _isLoading = false;
+          // 关键修改：设置播放器的 GlobalKey 以启用画中画功能
+          _controller!.setIAppPlayerGlobalKey(_playerGlobalKey!);
         }
       });
     }
@@ -228,30 +238,18 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           color: Colors.white.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(UIConstants.radiusMD),
                         ),
-                        child: Column(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Text(
-                              l10n.decoderSelection,
-                              style: TextStyle(
-                                fontSize: UIConstants.fontMD,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
+                            _buildDecoderOption(
+                              l10n.hardwareDecoder,
+                              DecoderState.hardware,
+                              Icons.memory,
                             ),
-                            SizedBox(height: UIConstants.spaceSM),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildDecoderOption(
-                                  l10n.hardwareDecoder,
-                                  DecoderState.hardware,
-                                  Icons.memory,
-                                ),
-                                _buildDecoderOption(
-                                  l10n.softwareDecoder,
-                                  DecoderState.software,
-                                  Icons.computer,
-                                ),
-                              ],
+                            _buildDecoderOption(
+                              l10n.softwareDecoder,
+                              DecoderState.software,
+                              Icons.computer,
                             ),
                           ],
                         ),
@@ -376,65 +374,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                     ? const Color(0xFF667eea) 
                     : Colors.white.withOpacity(0.6),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 画中画选项按钮
-  Widget _buildPipOption() {
-    final l10n = AppLocalizations.of(context);
-    
-    return GestureDetector(
-      onTap: _controller != null && !_isLoading && _playerGlobalKey != null
-          ? () {
-              if (_isPipMode) {
-                _controller!.disablePictureInPicture();
-              } else {
-                _controller!.enablePictureInPicture(_playerGlobalKey!);
-              }
-            }
-          : null,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: UIConstants.spaceMD,
-          vertical: UIConstants.spaceSM,
-        ),
-        decoration: BoxDecoration(
-          color: _isPipMode 
-              ? const Color(0xFF667eea).withOpacity(0.3)
-              : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
-          border: Border.all(
-            color: _isPipMode 
-                ? const Color(0xFF667eea)
-                : Colors.white.withOpacity(0.1),
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              _isPipMode
-                  ? Icons.picture_in_picture_alt_outlined
-                  : Icons.picture_in_picture_alt_rounded,
-              color: _isPipMode 
-                  ? const Color(0xFF667eea) 
-                  : Colors.white.withOpacity(0.6),
-              size: UIConstants.iconMD,
-            ),
-            SizedBox(height: UIConstants.spaceXS),
-            Text(
-              _isPipMode ? l10n.exitPictureInPicture : l10n.pictureInPicture,
-              style: TextStyle(
-                fontSize: UIConstants.fontSM,
-                color: _isPipMode 
-                    ? const Color(0xFF667eea) 
-                    : Colors.white.withOpacity(0.6),
-                fontWeight: _isPipMode ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],

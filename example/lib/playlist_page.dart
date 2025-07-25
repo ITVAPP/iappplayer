@@ -56,28 +56,32 @@ class _PlaylistExampleState extends State<PlaylistExample>
           handleOrientationChange();
         } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
           final index = event.parameters?['index'] as int?;
-          if (index != null) {
+          if (index != null && index != _currentIndex) {  // 【优化】只在索引真正改变时更新
             setState(() {
               _currentIndex = index;
             });
           }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistShuffle) {
           final shuffleMode = event.parameters?['shuffleMode'] as bool?;
-          if (shuffleMode != null) {
+          if (shuffleMode != null && shuffleMode != _shuffleMode) {  // 【优化】只在模式真正改变时更新
             setState(() {
               _shuffleMode = shuffleMode;
             });
           }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
           // 监听播放事件
-          setState(() {
-            _isPlaying = true;
-          });
+          if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPlaying = true;
+            });
+          }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
           // 监听暂停事件
-          setState(() {
-            _isPlaying = false;
-          });
+          if (_isPlaying) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPlaying = false;
+            });
+          }
         }
       },
       shuffleMode: false,
@@ -290,12 +294,12 @@ class _PlaylistExampleState extends State<PlaylistExample>
                 ),
                 child: Column(
                   children: [
-                    // 播放控制按钮行
+                    // 播放控制按钮行 - 【优化】使用通用组件
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // 上一个 - 修复：添加索引更新
-                        _buildCircleButton(
+                        // 上一个
+                        CircleControlButton(
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playPrevious();
@@ -306,7 +310,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           icon: Icons.skip_previous_rounded,
                         ),
                         // 播放/暂停
-                        _buildCircleButton(
+                        CircleControlButton(
                           onPressed: _controller != null && !_isLoading
                               ? () {
                                   if (_isPlaying) {
@@ -321,8 +325,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
                               : Icons.play_arrow_rounded,
                           isPrimary: true,
                         ),
-                        // 下一个 - 修复：添加索引更新
-                        _buildCircleButton(
+                        // 下一个
+                        CircleControlButton(
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playNext();
@@ -476,48 +480,6 @@ class _PlaylistExampleState extends State<PlaylistExample>
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCircleButton({
-    required VoidCallback? onPressed,
-    required IconData icon,
-    bool isPrimary = false,
-  }) {
-    return Container(
-      width: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall, // 修改：调小按钮尺寸
-      height: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall, // 修改：调小按钮尺寸
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: isPrimary ? LinearGradient(
-          colors: [
-            const Color(0xFF667eea),
-            const Color(0xFF764ba2),
-          ],
-        ) : null,
-        color: isPrimary ? null : Colors.white.withOpacity(0.1),
-        boxShadow: isPrimary ? [
-          BoxShadow(
-            color: const Color(0xFF667eea).withOpacity(0.3),
-            blurRadius: UIConstants.shadowMD,
-            offset: Offset(0, UIConstants.shadowSM),
-          ),
-        ] : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: Center(
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: isPrimary ? UIConstants.iconLG : UIConstants.iconMD, // 修改：调整图标大小
-            ),
-          ),
         ),
       ),
     );

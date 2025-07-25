@@ -24,447 +24,259 @@ class AppLocalizations {
     Locale('ru', 'RU'), // 俄语
   ];
   
-  // 根据语言返回对应的翻译
-  String get appTitle {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? 'IApp Player 範例' : 'IApp Player 示例';
-      case 'ja':
-        return 'IApp Player サンプル';
-      case 'fr':
-        return 'Exemple IApp Player';
-      case 'es':
-        return 'Ejemplo de IApp Player';
-      case 'pt':
-        return 'Exemplo IApp Player';
-      case 'ru':
-        return 'Пример IApp Player';
-      default:
-        return 'IApp Player Example';
+  // 使用Map结构存储所有翻译，大幅减少代码冗余
+  static final Map<String, Map<String, String>> _localizedValues = {
+    'en': {
+      'appTitle': 'IApp Player Example',
+      'videoPlayer': 'Video Player',
+      'videoPlayerSubtitle': 'Support hardware/software decoding',
+      'videoList': 'Video Playlist',
+      'videoListSubtitle': 'Support shuffle and sequential play',
+      'musicPlayer': 'Music Player',
+      'musicPlayerSubtitle': 'Support LRC lyrics display',
+      'musicList': 'Music Playlist',
+      'musicListSubtitle': 'Alternative playback UI',
+      'hardwareDecoder': 'Hardware',
+      'softwareDecoder': 'Software',
+      'pausePlay': 'Pause',
+      'continuePlay': 'Play',
+      'fullscreen': 'Fullscreen',
+      'exitFullscreen': 'Exit Fullscreen',
+      'playlist': 'Playlist',
+      'videoNumber': 'Video %s',
+      'shufflePlay': 'Shuffle',
+      'sequentialPlay': 'Sequential',
+      'fullscreenPlay': 'Fullscreen Play',
+      'pictureInPicture': 'Picture-in-Picture',
+      'exitPictureInPicture': 'Exit Picture-in-Picture',
+    },
+    'zh_CN': {
+      'appTitle': 'IApp Player 示例',
+      'videoPlayer': '视频播放器',
+      'videoPlayerSubtitle': '支持切换软硬件解码',
+      'videoList': '视频列表',
+      'videoListSubtitle': '支持随机和顺序播放',
+      'musicPlayer': '音乐播放器',
+      'musicPlayerSubtitle': '支持LRC歌词显示',
+      'musicList': '音乐列表',
+      'musicListSubtitle': '另一种播放UI的展示',
+      'hardwareDecoder': '硬件解码',
+      'softwareDecoder': '软件解码',
+      'pausePlay': '暂停播放',
+      'continuePlay': '继续播放',
+      'fullscreen': '全屏观看',
+      'exitFullscreen': '退出全屏',
+      'playlist': '播放列表',
+      'videoNumber': '视频 %s',
+      'shufflePlay': '随机播放',
+      'sequentialPlay': '顺序播放',
+      'fullscreenPlay': '全屏播放',
+      'pictureInPicture': '画中画',
+      'exitPictureInPicture': '退出画中画',
+    },
+    'zh_TW': {
+      'appTitle': 'IApp Player 範例',
+      'videoPlayer': '影片播放器',
+      'videoPlayerSubtitle': '支援切換軟硬體解碼',
+      'videoList': '影片清單',
+      'videoListSubtitle': '支援隨機和順序播放',
+      'musicPlayer': '音樂播放器',
+      'musicPlayerSubtitle': '支援LRC歌詞顯示',
+      'musicList': '音樂清單',
+      'musicListSubtitle': '另一種播放UI的展示',
+      'hardwareDecoder': '硬體解碼',
+      'softwareDecoder': '軟體解碼',
+      'pausePlay': '暫停播放',
+      'continuePlay': '繼續播放',
+      'fullscreen': '全螢幕觀看',
+      'exitFullscreen': '退出全螢幕',
+      'playlist': '播放清單',
+      'videoNumber': '影片 %s',
+      'shufflePlay': '隨機播放',
+      'sequentialPlay': '順序播放',
+      'fullscreenPlay': '全螢幕播放',
+      'pictureInPicture': '畫中畫',
+      'exitPictureInPicture': '退出畫中畫',
+    },
+    'ja': {
+      'appTitle': 'IApp Player サンプル',
+      'videoPlayer': 'ビデオプレーヤー',
+      'videoPlayerSubtitle': 'ハードウェア/ソフトウェアデコードの切り替えをサポート',
+      'videoList': 'ビデオプレイリスト',
+      'videoListSubtitle': 'シャッフルと順次再生をサポート',
+      'musicPlayer': '音楽プレーヤー',
+      'musicPlayerSubtitle': 'LRC歌詞表示をサポート',
+      'musicList': '音楽プレイリスト',
+      'musicListSubtitle': '別の再生UIの表示',
+      'hardwareDecoder': 'ハードウェア',
+      'softwareDecoder': 'ソフトウェア',
+      'pausePlay': '一時停止',
+      'continuePlay': '再生',
+      'fullscreen': 'フルスクリーン',
+      'exitFullscreen': 'フルスクリーン終了',
+      'playlist': 'プレイリスト',
+      'videoNumber': 'ビデオ %s',
+      'shufflePlay': 'シャッフル',
+      'sequentialPlay': '順次再生',
+      'fullscreenPlay': 'フルスクリーン再生',
+      'pictureInPicture': 'ピクチャー・イン・ピクチャー',
+      'exitPictureInPicture': 'PiPを終了',
+    },
+    'fr': {
+      'appTitle': 'Exemple IApp Player',
+      'videoPlayer': 'Lecteur Vidéo',
+      'videoPlayerSubtitle': 'Supporte le décodage matériel/logiciel',
+      'videoList': 'Liste de Vidéos',
+      'videoListSubtitle': 'Supporte la lecture aléatoire et séquentielle',
+      'musicPlayer': 'Lecteur de Musique',
+      'musicPlayerSubtitle': 'Supporte l\'affichage des paroles LRC',
+      'musicList': 'Liste de Musique',
+      'musicListSubtitle': 'Interface de lecture alternative',
+      'hardwareDecoder': 'Matériel',
+      'softwareDecoder': 'Logiciel',
+      'pausePlay': 'Pause',
+      'continuePlay': 'Lecture',
+      'fullscreen': 'Plein Écran',
+      'exitFullscreen': 'Quitter Plein Écran',
+      'playlist': 'Liste de Lecture',
+      'videoNumber': 'Vidéo %s',
+      'shufflePlay': 'Aléatoire',
+      'sequentialPlay': 'Séquentiel',
+      'fullscreenPlay': 'Lecture Plein Écran',
+      'pictureInPicture': 'Picture-in-Picture',
+      'exitPictureInPicture': 'Quitter Picture-in-Picture',
+    },
+    'es': {
+      'appTitle': 'Ejemplo de IApp Player',
+      'videoPlayer': 'Reproductor de Video',
+      'videoPlayerSubtitle': 'Soporta decodificación hardware/software',
+      'videoList': 'Lista de Videos',
+      'videoListSubtitle': 'Soporta reproducción aleatoria y secuencial',
+      'musicPlayer': 'Reproductor de Música',
+      'musicPlayerSubtitle': 'Soporta visualización de letras LRC',
+      'musicList': 'Lista de Música',
+      'musicListSubtitle': 'Interfaz de reproducción alternativa',
+      'hardwareDecoder': 'Hardware',
+      'softwareDecoder': 'Software',
+      'pausePlay': 'Pausar',
+      'continuePlay': 'Reproducir',
+      'fullscreen': 'Pantalla Completa',
+      'exitFullscreen': 'Salir de Pantalla Completa',
+      'playlist': 'Lista de Reproducción',
+      'videoNumber': 'Video %s',
+      'shufflePlay': 'Aleatorio',
+      'sequentialPlay': 'Secuencial',
+      'fullscreenPlay': 'Reproducir en Pantalla Completa',
+      'pictureInPicture': 'Picture-in-Picture',
+      'exitPictureInPicture': 'Salir de Picture-in-Picture',
+    },
+    'pt': {
+      'appTitle': 'Exemplo IApp Player',
+      'videoPlayer': 'Reprodutor de Vídeo',
+      'videoPlayerSubtitle': 'Suporta decodificação hardware/software',
+      'videoList': 'Lista de Vídeos',
+      'videoListSubtitle': 'Suporta reprodução aleatória e sequencial',
+      'musicPlayer': 'Reprodutor de Música',
+      'musicPlayerSubtitle': 'Suporta exibição de letras LRC',
+      'musicList': 'Lista de Música',
+      'musicListSubtitle': 'Interface de reprodução alternativa',
+      'hardwareDecoder': 'Hardware',
+      'softwareDecoder': 'Software',
+      'pausePlay': 'Pausar',
+      'continuePlay': 'Reproduzir',
+      'fullscreen': 'Tela Cheia',
+      'exitFullscreen': 'Sair da Tela Cheia',
+      'playlist': 'Lista de Reprodução',
+      'videoNumber': 'Vídeo %s',
+      'shufflePlay': 'Aleatório',
+      'sequentialPlay': 'Sequencial',
+      'fullscreenPlay': 'Reproduzir em Tela Cheia',
+      'pictureInPicture': 'Picture-in-Picture',
+      'exitPictureInPicture': 'Sair do Picture-in-Picture',
+    },
+    'ru': {
+      'appTitle': 'Пример IApp Player',
+      'videoPlayer': 'Видеоплеер',
+      'videoPlayerSubtitle': 'Поддержка аппаратного/программного декодирования',
+      'videoList': 'Видео плейлист',
+      'videoListSubtitle': 'Поддержка случайного и последовательного воспроизведения',
+      'musicPlayer': 'Музыкальный плеер',
+      'musicPlayerSubtitle': 'Поддержка отображения текстов LRC',
+      'musicList': 'Музыкальный плейлист',
+      'musicListSubtitle': 'Альтернативный интерфейс воспроизведения',
+      'hardwareDecoder': 'Аппаратный',
+      'softwareDecoder': 'Программный',
+      'pausePlay': 'Пауза',
+      'continuePlay': 'Воспроизвести',
+      'fullscreen': 'Полный экран',
+      'exitFullscreen': 'Выйти из полноэкранного режима',
+      'playlist': 'Плейлист',
+      'videoNumber': 'Видео %s',
+      'shufflePlay': 'Случайный порядок',
+      'sequentialPlay': 'По порядку',
+      'fullscreenPlay': 'Полноэкранное воспроизведение',
+      'pictureInPicture': 'Картинка в картинке',
+      'exitPictureInPicture': 'Выйти из картинки в картинке',
+    },
+  };
+  
+  // 获取当前语言键值（处理地区代码）
+  String get _languageKey {
+    if (locale.languageCode == 'zh') {
+      // 中文需要区分简体和繁体
+      return locale.countryCode == 'TW' ? 'zh_TW' : 'zh_CN';
     }
+    return locale.languageCode;
   }
   
-  String get videoPlayer {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '影片播放器' : '视频播放器';
-      case 'ja':
-        return 'ビデオプレーヤー';
-      case 'fr':
-        return 'Lecteur Vidéo';
-      case 'es':
-        return 'Reproductor de Video';
-      case 'pt':
-        return 'Reprodutor de Vídeo';
-      case 'ru':
-        return 'Видеоплеер';
-      default:
-        return 'Video Player';
+  // 通用获取翻译的方法
+  String _getValue(String key) {
+    final languageMap = _localizedValues[_languageKey];
+    if (languageMap != null && languageMap.containsKey(key)) {
+      return languageMap[key]!;
     }
+    // 如果找不到翻译，返回英文
+    final englishMap = _localizedValues['en'];
+    if (englishMap != null && englishMap.containsKey(key)) {
+      return englishMap[key]!;
+    }
+    // 最后降级返回key本身
+    return key;
   }
   
-  String get videoPlayerSubtitle {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '支援切換軟硬體解碼' : '支持切换软硬件解码';
-      case 'ja':
-        return 'ハードウェア/ソフトウェアデコードの切り替えをサポート';
-      case 'fr':
-        return 'Supporte le décodage matériel/logiciel';
-      case 'es':
-        return 'Soporta decodificación hardware/software';
-      case 'pt':
-        return 'Suporta decodificação hardware/software';
-      case 'ru':
-        return 'Поддержка аппаратного/программного декодирования';
-      default:
-        return 'Support hardware/software decoding';
-    }
-  }
+  // 根据语言返回对应的翻译 - 保持原有API不变
+  String get appTitle => _getValue('appTitle');
+  String get videoPlayer => _getValue('videoPlayer');
+  String get videoPlayerSubtitle => _getValue('videoPlayerSubtitle');
+  String get videoList => _getValue('videoList');
+  String get videoListSubtitle => _getValue('videoListSubtitle');
+  String get musicPlayer => _getValue('musicPlayer');
+  String get musicPlayerSubtitle => _getValue('musicPlayerSubtitle');
+  String get musicList => _getValue('musicList');
+  String get musicListSubtitle => _getValue('musicListSubtitle');
+  String get hardwareDecoder => _getValue('hardwareDecoder');
+  String get softwareDecoder => _getValue('softwareDecoder');
+  String get pausePlay => _getValue('pausePlay');
+  String get continuePlay => _getValue('continuePlay');
+  String get fullscreen => _getValue('fullscreen');
+  String get exitFullscreen => _getValue('exitFullscreen');
+  String get playlist => _getValue('playlist');
+  String get shufflePlay => _getValue('shufflePlay');
+  String get sequentialPlay => _getValue('sequentialPlay');
+  String get fullscreenPlay => _getValue('fullscreenPlay');
+  String get pictureInPicture => _getValue('pictureInPicture');
+  String get exitPictureInPicture => _getValue('exitPictureInPicture');
   
-  String get videoList {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '影片清單' : '视频列表';
-      case 'ja':
-        return 'ビデオプレイリスト';
-      case 'fr':
-        return 'Liste de Vidéos';
-      case 'es':
-        return 'Lista de Videos';
-      case 'pt':
-        return 'Lista de Vídeos';
-      case 'ru':
-        return 'Видео плейлист';
-      default:
-        return 'Video Playlist';
-    }
-  }
-  
-  String get videoListSubtitle {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '支援隨機和順序播放' : '支持随机和顺序播放';
-      case 'ja':
-        return 'シャッフルと順次再生をサポート';
-      case 'fr':
-        return 'Supporte la lecture aléatoire et séquentielle';
-      case 'es':
-        return 'Soporta reproducción aleatoria y secuencial';
-      case 'pt':
-        return 'Suporta reprodução aleatória e sequencial';
-      case 'ru':
-        return 'Поддержка случайного и последовательного воспроизведения';
-      default:
-        return 'Support shuffle and sequential play';
-    }
-  }
-  
-  String get musicPlayer {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '音樂播放器' : '音乐播放器';
-      case 'ja':
-        return '音楽プレーヤー';
-      case 'fr':
-        return 'Lecteur de Musique';
-      case 'es':
-        return 'Reproductor de Música';
-      case 'pt':
-        return 'Reprodutor de Música';
-      case 'ru':
-        return 'Музыкальный плеер';
-      default:
-        return 'Music Player';
-    }
-  }
-  
-  String get musicPlayerSubtitle {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '支援LRC歌詞顯示' : '支持LRC歌词显示';
-      case 'ja':
-        return 'LRC歌詞表示をサポート';
-      case 'fr':
-        return 'Supporte l\'affichage des paroles LRC';
-      case 'es':
-        return 'Soporta visualización de letras LRC';
-      case 'pt':
-        return 'Suporta exibição de letras LRC';
-      case 'ru':
-        return 'Поддержка отображения текстов LRC';
-      default:
-        return 'Support LRC lyrics display';
-    }
-  }
-  
-  String get musicList {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '音樂清單' : '音乐列表';
-      case 'ja':
-        return '音楽プレイリスト';
-      case 'fr':
-        return 'Liste de Musique';
-      case 'es':
-        return 'Lista de Música';
-      case 'pt':
-        return 'Lista de Música';
-      case 'ru':
-        return 'Музыкальный плейлист';
-      default:
-        return 'Music Playlist';
-    }
-  }
-  
-  String get musicListSubtitle {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '另一種播放UI的展示' : '另一种播放UI的展示';
-      case 'ja':
-        return '別の再生UIの表示';
-      case 'fr':
-        return 'Interface de lecture alternative';
-      case 'es':
-        return 'Interfaz de reproducción alternativa';
-      case 'pt':
-        return 'Interface de reprodução alternativa';
-      case 'ru':
-        return 'Альтернативный интерфейс воспроизведения';
-      default:
-        return 'Alternative playback UI';
-    }
-  }
-  
-  String get decoderSelection {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '解碼器選擇' : '解码器选择';
-      case 'ja':
-        return 'デコーダー選択';
-      case 'fr':
-        return 'Sélection du Décodeur';
-      case 'es':
-        return 'Selección de Decodificador';
-      case 'pt':
-        return 'Seleção de Decodificador';
-      case 'ru':
-        return 'Выбор декодера';
-      default:
-        return 'Decoder Selection';
-    }
-  }
-  
-  String get hardwareDecoder {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '硬體解碼' : '硬件解码';
-      case 'ja':
-        return 'ハードウェア';
-      case 'fr':
-        return 'Matériel';
-      case 'es':
-        return 'Hardware';
-      case 'pt':
-        return 'Hardware';
-      case 'ru':
-        return 'Аппаратный';
-      default:
-        return 'Hardware';
-    }
-  }
-  
-  String get softwareDecoder {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '軟體解碼' : '软件解码';
-      case 'ja':
-        return 'ソフトウェア';
-      case 'fr':
-        return 'Logiciel';
-      case 'es':
-        return 'Software';
-      case 'pt':
-        return 'Software';
-      case 'ru':
-        return 'Программный';
-      default:
-        return 'Software';
-    }
-  }
-  
-  String get pausePlay {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '暫停播放' : '暂停播放';
-      case 'ja':
-        return '一時停止';
-      case 'fr':
-        return 'Pause';
-      case 'es':
-        return 'Pausar';
-      case 'pt':
-        return 'Pausar';
-      case 'ru':
-        return 'Пауза';
-      default:
-        return 'Pause';
-    }
-  }
-  
-  String get continuePlay {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '繼續播放' : '继续播放';
-      case 'ja':
-        return '再生';
-      case 'fr':
-        return 'Lecture';
-      case 'es':
-        return 'Reproducir';
-      case 'pt':
-        return 'Reproduzir';
-      case 'ru':
-        return 'Воспроизвести';
-      default:
-        return 'Play';
-    }
-  }
-  
-  String get fullscreen {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '全螢幕觀看' : '全屏观看';
-      case 'ja':
-        return 'フルスクリーン';
-      case 'fr':
-        return 'Plein Écran';
-      case 'es':
-        return 'Pantalla Completa';
-      case 'pt':
-        return 'Tela Cheia';
-      case 'ru':
-        return 'Полный экран';
-      default:
-        return 'Fullscreen';
-    }
-  }
-  
-  String get exitFullscreen {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '退出全螢幕' : '退出全屏';
-      case 'ja':
-        return 'フルスクリーン終了';
-      case 'fr':
-        return 'Quitter Plein Écran';
-      case 'es':
-        return 'Salir de Pantalla Completa';
-      case 'pt':
-        return 'Sair da Tela Cheia';
-      case 'ru':
-        return 'Выйти из полноэкранного режима';
-      default:
-        return 'Exit Fullscreen';
-    }
-  }
-  
-  String get playlist {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '播放清單' : '播放列表';
-      case 'ja':
-        return 'プレイリスト';
-      case 'fr':
-        return 'Liste de Lecture';
-      case 'es':
-        return 'Lista de Reproducción';
-      case 'pt':
-        return 'Lista de Reprodução';
-      case 'ru':
-        return 'Плейлист';
-      default:
-        return 'Playlist';
-    }
-  }
-  
+  // 带参数的翻译方法
   String videoNumber(int number) {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '影片 $number' : '视频 $number';
-      case 'ja':
-        return 'ビデオ $number';
-      case 'fr':
-        return 'Vidéo $number';
-      case 'es':
-        return 'Video $number';
-      case 'pt':
-        return 'Vídeo $number';
-      case 'ru':
-        return 'Видео $number';
-      default:
-        return 'Video $number';
-    }
+    final template = _getValue('videoNumber');
+    return template.replaceAll('%s', number.toString());
   }
   
-  String get shufflePlay {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '隨機播放' : '随机播放';
-      case 'ja':
-        return 'シャッフル';
-      case 'fr':
-        return 'Aléatoire';
-      case 'es':
-        return 'Aleatorio';
-      case 'pt':
-        return 'Aleatório';
-      case 'ru':
-        return 'Случайный порядок';
-      default:
-        return 'Shuffle';
-    }
-  }
-  
-  String get sequentialPlay {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '順序播放' : '顺序播放';
-      case 'ja':
-        return '順次再生';
-      case 'fr':
-        return 'Séquentiel';
-      case 'es':
-        return 'Secuencial';
-      case 'pt':
-        return 'Sequencial';
-      case 'ru':
-        return 'По порядку';
-      default:
-        return 'Sequential';
-    }
-  }
-  
+  // 保持原有的复合方法
   String playlistStatus(int current, int total, bool shuffleMode) {
     final mode = shuffleMode ? shufflePlay : sequentialPlay;
     return '$current / $total • $mode';
-  }
-  
-  String get fullscreenPlay {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '全螢幕播放' : '全屏播放';
-      case 'ja':
-        return 'フルスクリーン再生';
-      case 'fr':
-        return 'Lecture Plein Écran';
-      case 'es':
-        return 'Reproducir en Pantalla Completa';
-      case 'pt':
-        return 'Reproduzir em Tela Cheia';
-      case 'ru':
-        return 'Полноэкранное воспроизведение';
-      default:
-        return 'Fullscreen Play';
-    }
-  }
-  
-  String get pictureInPicture {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '畫中畫' : '画中画';
-      case 'ja':
-        return 'ピクチャー・イン・ピクチャー';
-      case 'fr':
-        return 'Picture-in-Picture';
-      case 'es':
-        return 'Picture-in-Picture';
-      case 'pt':
-        return 'Picture-in-Picture';
-      case 'ru':
-        return 'Картинка в картинке';
-      default:
-        return 'Picture-in-Picture';
-    }
-  }
-  
-  String get exitPictureInPicture {
-    switch (locale.languageCode) {
-      case 'zh':
-        return locale.countryCode == 'TW' ? '退出畫中畫' : '退出画中画';
-      case 'ja':
-        return 'PiPを終了';
-      case 'fr':
-        return 'Quitter Picture-in-Picture';
-      case 'es':
-        return 'Salir de Picture-in-Picture';
-      case 'pt':
-        return 'Sair do Picture-in-Picture';
-      case 'ru':
-        return 'Выйти из картинки в картинке';
-      default:
-        return 'Exit Picture-in-Picture';
-    }
   }
 }
 

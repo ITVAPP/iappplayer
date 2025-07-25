@@ -22,7 +22,6 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   int _currentIndex = 0;
   bool _shuffleMode = false;
   bool _isPlaying = false; // 添加播放状态跟踪
-  String? _currentLyric; // 当前歌词
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -72,33 +71,34 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
           handleOrientationChange();
         } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
           final index = event.parameters?['index'] as int?;
-          if (index != null) {
+          if (index != null && index != _currentIndex) {  // 【优化】只在索引真正改变时更新
             setState(() {
               _currentIndex = index;
-              _currentLyric = null; // 切换歌曲时清空歌词
             });
           }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistShuffle) {
           final shuffleMode = event.parameters?['shuffleMode'] as bool?;
-          if (shuffleMode != null) {
+          if (shuffleMode != null && shuffleMode != _shuffleMode) {  // 【优化】只在模式真正改变时更新
             setState(() {
               _shuffleMode = shuffleMode;
             });
           }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
           // 监听播放事件
-          setState(() {
-            _isPlaying = true;
-          });
+          if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPlaying = true;
+            });
+          }
         } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
           // 监听暂停事件
-          setState(() {
-            _isPlaying = false;
-          });
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.progress) {
-          // 监听播放进度，更新歌词
-          _updateCurrentLyric();
+          if (_isPlaying) {  // 【优化】只在状态真正改变时更新
+            setState(() {
+              _isPlaying = false;
+            });
+          }
         }
+        // 【优化】移除progress事件监听，歌词更新由独立组件处理
       },
       shuffleMode: false,
       loopVideos: true,
@@ -121,29 +121,6 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     }
   }
 
-  // 更新当前歌词
-  void _updateCurrentLyric() {
-    if (_controller == null || !mounted) return;
-    
-    // 获取当前正在渲染的字幕
-    final subtitle = _controller!.renderedSubtitle;
-    if (subtitle != null && subtitle.texts != null && subtitle.texts!.isNotEmpty) {
-      final newLyric = subtitle.texts!.join(' ');
-      if (newLyric != _currentLyric) {
-        setState(() {
-          _currentLyric = newLyric;
-        });
-      }
-    } else {
-      // 处理没有歌词的情况
-      if (_currentLyric != null && _currentLyric!.isNotEmpty) {
-        setState(() {
-          _currentLyric = null;
-        });
-      }
-    }
-  }
-
   // 修复：添加更新当前索引的方法
   void _updateCurrentIndex() {
     if (_playlistController != null && mounted) {
@@ -151,7 +128,6 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
       if (newIndex != _currentIndex) {
         setState(() {
           _currentIndex = newIndex;
-          _currentLyric = null; // 切换歌曲时清空歌词
         });
       }
     }
@@ -267,46 +243,8 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                                 color: Colors.white.withOpacity(0.6),
                               ),
                             ),
-                            // 显示当前歌词（修改：增强动画效果）
-                            if (_currentLyric != null && _currentLyric!.isNotEmpty) ...[
-                              SizedBox(height: UIConstants.spaceSM),
-                              AnimatedSwitcher(
-                                duration: Duration(milliseconds: 500),
-                                switchInCurve: Curves.easeIn,
-                                switchOutCurve: Curves.easeOut,
-                                transitionBuilder: (Widget child, Animation<double> animation) {
-                                  // 组合淡入淡出和缩放动画
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: ScaleTransition(
-                                      scale: Tween<double>(
-                                        begin: 0.95,
-                                        end: 1.0,
-                                      ).animate(
-                                        CurvedAnimation(
-                                          parent: animation,
-                                          curve: Curves.easeOutCubic,
-                                        ),
-                                      ),
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  _currentLyric!,
-                                  key: ValueKey(_currentLyric),
-                                  style: TextStyle(
-                                    fontSize: UIConstants.fontMD,
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontStyle: FontStyle.italic,
-                                    height: 1.5, // 增加行高
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                            // 【优化】使用独立的歌词显示组件
+                            LyricDisplay(controller: _controller),
                           ],
                         ),
                       ),
@@ -326,23 +264,27 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                 ),
                 child: Column(
                   children: [
-                    // 播放控制按钮行 - 调小按钮尺寸
+                    // 播放控制按钮行 - 【优化】使用通用组件
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // 上一首 - 修复：添加索引更新
-                        _buildCircleButton(
+                        // 上一首
+                        CircleControlButton(
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playPrevious();
-                                  // 延迟更新索引和歌词
+                                  // 延迟更新索引
                                   Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                                 }
                               : null,
                           icon: Icons.skip_previous_rounded,
+                          gradientColors: [
+                            const Color(0xFFfa709a),
+                            const Color(0xFFfee140),
+                          ],
                         ),
                         // 播放/暂停
-                        _buildCircleButton(
+                        CircleControlButton(
                           onPressed: _controller != null && !_isLoading
                               ? () {
                                   if (_isPlaying) {
@@ -356,17 +298,25 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
                           isPrimary: true,
+                          gradientColors: [
+                            const Color(0xFFfa709a),
+                            const Color(0xFFfee140),
+                          ],
                         ),
-                        // 下一首 - 修复：添加索引更新
-                        _buildCircleButton(
+                        // 下一首
+                        CircleControlButton(
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playNext();
-                                  // 延迟更新索引和歌词
+                                  // 延迟更新索引
                                   Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                                 }
                               : null,
                           icon: Icons.skip_next_rounded,
+                          gradientColors: [
+                            const Color(0xFFfa709a),
+                            const Color(0xFFfee140),
+                          ],
                         ),
                       ],
                     ),
@@ -402,48 +352,6 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCircleButton({
-    required VoidCallback? onPressed,
-    required IconData icon,
-    bool isPrimary = false,
-  }) {
-    return Container(
-      width: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall,
-      height: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: isPrimary ? LinearGradient(
-          colors: [
-            const Color(0xFFfa709a),
-            const Color(0xFFfee140),
-          ],
-        ) : null,
-        color: isPrimary ? null : Colors.white.withOpacity(0.1),
-        boxShadow: isPrimary ? [
-          BoxShadow(
-            color: const Color(0xFFfa709a).withOpacity(0.3),
-            blurRadius: UIConstants.shadowMD,
-            offset: Offset(0, UIConstants.shadowSM),
-          ),
-        ] : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: Center(
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: isPrimary ? UIConstants.iconLG : UIConstants.iconMD,
-            ),
           ),
         ),
       ),

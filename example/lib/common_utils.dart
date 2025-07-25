@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iapp_player/iapp_player.dart';
+import 'dart:async';
 
 // UI常量定义 - 集中管理所有硬编码数字
 class UIConstants {
@@ -162,6 +163,188 @@ class ModernControlButton extends StatelessWidget {
   }
 }
 
+// 【新增】通用圆形按钮组件 - 提取重复代码
+class CircleControlButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final bool isPrimary;
+  final List<Color>? gradientColors;
+
+  const CircleControlButton({
+    Key? key,
+    required this.onPressed,
+    required this.icon,
+    this.isPrimary = false,
+    this.gradientColors,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // 使用默认渐变色
+    final defaultGradient = gradientColors ?? [
+      const Color(0xFF667eea),
+      const Color(0xFF764ba2),
+    ];
+
+    return Container(
+      width: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall,
+      height: isPrimary ? UIConstants.buttonSizeNormal : UIConstants.buttonSizeSmall,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: isPrimary ? LinearGradient(colors: defaultGradient) : null,
+        color: isPrimary ? null : Colors.white.withOpacity(0.1),
+        boxShadow: isPrimary ? [
+          BoxShadow(
+            color: defaultGradient[0].withOpacity(0.3),
+            blurRadius: UIConstants.shadowMD,
+            offset: Offset(0, UIConstants.shadowSM),
+          ),
+        ] : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: isPrimary ? UIConstants.iconLG : UIConstants.iconMD,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 【新增】歌词显示组件 - 独立管理歌词渲染，避免影响整个页面
+class LyricDisplay extends StatefulWidget {
+  final IAppPlayerController? controller;
+  final TextStyle? style;
+  final int maxLines;
+
+  const LyricDisplay({
+    Key? key,
+    required this.controller,
+    this.style,
+    this.maxLines = 2,
+  }) : super(key: key);
+
+  @override
+  State<LyricDisplay> createState() => _LyricDisplayState();
+}
+
+class _LyricDisplayState extends State<LyricDisplay> {
+  String? _currentLyric;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startListening();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startListening() {
+    // 使用定时器定期检查歌词变化，但只在播放时运行
+    _timer?.cancel();
+    if (widget.controller != null) {
+      // 初始检查
+      _updateCurrentLyric();
+      // 每100ms检查一次歌词更新，优化：只在播放状态下运行
+      _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+        if (widget.controller?.isPlaying() ?? false) {
+          _updateCurrentLyric();
+        }
+      });
+    }
+  }
+
+  void _updateCurrentLyric() {
+    if (widget.controller == null || !mounted) return;
+    
+    final subtitle = widget.controller!.renderedSubtitle;
+    if (subtitle != null && subtitle.texts != null && subtitle.texts!.isNotEmpty) {
+      final newLyric = subtitle.texts!.join(' ');
+      // 【优化】只在歌词真正改变时才更新状态
+      if (newLyric != _currentLyric) {
+        setState(() {
+          _currentLyric = newLyric;
+        });
+      }
+    } else if (_currentLyric != null) {
+      // 清空歌词
+      setState(() {
+        _currentLyric = null;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(LyricDisplay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _startListening();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_currentLyric == null || _currentLyric!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // 【优化】使用RepaintBoundary限制重绘范围
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.only(top: UIConstants.spaceSM),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          switchInCurve: Curves.easeIn,
+          switchOutCurve: Curves.easeOut,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(
+                  begin: 0.95,
+                  end: 1.0,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: child,
+              ),
+            );
+          },
+          child: Text(
+            _currentLyric!,
+            key: ValueKey(_currentLyric),
+            style: widget.style ?? TextStyle(
+              fontSize: UIConstants.fontMD,
+              color: Colors.white.withOpacity(0.9),
+              fontStyle: FontStyle.italic,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: widget.maxLines,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // 安全读取字幕内容的辅助函数
 Future<String?> safeLoadSubtitle(String path) async {
   try {
@@ -171,4 +354,3 @@ Future<String?> safeLoadSubtitle(String path) async {
     return null;
   }
 }
- 
