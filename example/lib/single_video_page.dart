@@ -171,7 +171,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       // 移除全局缓存清理，避免影响其他页面
       if (_controller != null) {
         // 先退出画中画模式
-        if (_isPipMode && _controller!.isVideoInitialized()) {
+        if (_isPipMode && (_controller!.isVideoInitialized() ?? false)) {
           try {
             await _controller!.disablePictureInPicture();
             _isPipMode = false; // 立即更新状态
