@@ -139,7 +139,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 定义紧凑模式进度条高度
   static const double kCompactProgressHeight = 6.0;
   // 定义紧凑模式顶部栏高度
-  static const double kCompactTopBarHeight = 22.0;
+  static const double kCompactTopBarHeight = 20.0;
   // 定义紧凑模式按钮尺寸（统一播放按钮和控制按钮）
   static const double kCompactButtonSize = 28.0;
   // 定义紧凑模式播放/暂停图标尺寸
