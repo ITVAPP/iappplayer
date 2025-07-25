@@ -28,6 +28,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   bool _isPlaying = false; // 添加播放状态跟踪
   bool _isPipMode = false; // 添加画中画状态跟踪
   GlobalKey? _playerGlobalKey; // 添加：播放器全局键
+  Key _playerContainerKey = UniqueKey(); // 添加：用于强制重建播放器
+  bool _isSwitchingDecoder = false; // 添加：防止重复切换
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -35,7 +37,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   @override
   void initState() {
     super.initState();
-    _playerGlobalKey = GlobalKey(); // 初始化全局键
+    _playerGlobalKey = GlobalKey(); // 初始化时就创建全局键
     _initializePlayer();
   }
 
@@ -133,24 +135,34 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
 
   // 切换解码器
   void _switchDecoder(DecoderState newDecoder) async {
-    if (_currentDecoder == newDecoder) return;
+    if (_currentDecoder == newDecoder || _isSwitchingDecoder) return;
     
-    setState(() {
-      _currentDecoder = newDecoder;
-      _isLoading = true;
-      _isPipMode = false;  // 重置画中画状态
-    });
+    _isSwitchingDecoder = true; // 设置切换标志
     
-    // 重新初始化播放器
-    await _releasePlayer();
-    _playerGlobalKey = GlobalKey(); // 重新创建全局键
-    await _initializePlayer();
+    try {
+      // 先释放旧的播放器
+      await _releasePlayer();
+      
+      setState(() {
+        _currentDecoder = newDecoder;
+        _isLoading = true;
+        _isPipMode = false;  // 重置画中画状态
+        _playerGlobalKey = GlobalKey(); // 在 setState 内创建新的 GlobalKey
+        _playerContainerKey = UniqueKey(); // 强制重建播放器容器
+      });
+      
+      // 重新初始化播放器
+      await _initializePlayer();
+    } finally {
+      _isSwitchingDecoder = false; // 确保标志被重置
+    }
   }
 
   @override
   void dispose() {
     _releasePlayer();
-    _playerGlobalKey = null; // 清理全局键
+    // 只在组件销毁时才清理 GlobalKey
+    _playerGlobalKey = null;
     super.dispose();
   }
 
@@ -158,6 +170,17 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     try {
       // 移除全局缓存清理，避免影响其他页面
       if (_controller != null) {
+        // 先退出画中画模式
+        if (_isPipMode && _controller!.isVideoInitialized()) {
+          try {
+            await _controller!.disablePictureInPicture();
+            _isPipMode = false; // 立即更新状态
+          } catch (e) {
+            print('Exit PiP failed: $e');
+            _isPipMode = false; // 即使失败也要重置状态
+          }
+        }
+        
         if (_controller!.isPlaying() ?? false) {
           await _controller!.pause();
           await _controller!.setVolume(0);
@@ -224,6 +247,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           child: AspectRatio(
                             aspectRatio: 16 / 9,
                             child: Container(
+                              key: _playerContainerKey, // 添加key以强制重建
                               color: Colors.black,
                               child: _controller != null
                                   ? IAppPlayer(
@@ -347,7 +371,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     final isSelected = _currentDecoder == decoder;
     
     return GestureDetector(
-      onTap: () => _switchDecoder(decoder),
+      onTap: _isSwitchingDecoder ? null : () => _switchDecoder(decoder),
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: UIConstants.spaceLG,
@@ -372,7 +396,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
               icon,
               color: isSelected 
                   ? const Color(0xFF667eea) 
-                  : Colors.white.withOpacity(0.6),
+                  : Colors.white.withOpacity(_isSwitchingDecoder ? 0.3 : 0.6),
               size: UIConstants.iconMD,
             ),
             SizedBox(width: UIConstants.spaceSM),
@@ -382,7 +406,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                 fontSize: UIConstants.fontSM,
                 color: isSelected 
                     ? const Color(0xFF667eea) 
-                    : Colors.white.withOpacity(0.6),
+                    : Colors.white.withOpacity(_isSwitchingDecoder ? 0.3 : 0.6),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
