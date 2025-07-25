@@ -775,6 +775,13 @@ class IAppPlayerController {
 
   // 进入全屏模式
   void enterFullScreen() {
+  
+    // 如果刚从画中画返回，阻止全屏
+    if (isReturningFromPip) {
+      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
+      return;
+    }
+    
     _isFullScreen = true;
     _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
   }
@@ -787,6 +794,13 @@ class IAppPlayerController {
 
   // 切换全屏模式
   void toggleFullScreen() {
+  
+    // 如果刚从画中画返回，阻止全屏
+    if (isReturningFromPip) {
+      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
+      return;
+    }
+    
     _isFullScreen = !_isFullScreen;
     if (_isFullScreen) {
       _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
@@ -942,7 +956,7 @@ class IAppPlayerController {
     // 根据事件类型管理画中画保护状态
     if (iappPlayerEvent.iappPlayerEventType == 
         IAppPlayerEventType.pipStop) {
-        // 退出画中画，启用保护
+        // 退出画中画
         _isReturningFromPip = true;
         Future.delayed(Duration(milliseconds: 2000), () {
           if (!_disposed) {
@@ -1046,10 +1060,10 @@ void _onVideoPlayerChanged() async {
     }
     
     // 刷新播放器
-    videoPlayerController?.refresh();
+    // videoPlayerController?.refresh();
     
     // 发送画中画停止事件
-    _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+   //  _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     
     // 根据退出原因决定播放行为
     if (_lastPipExitReason == 'return') {
@@ -1073,7 +1087,7 @@ void _onVideoPlayerChanged() async {
     _lastPipExitReason = null;
     
     // 延迟刷新，避免立即触发状态更新
-    Future.delayed(Duration(milliseconds: 100), () {
+    Future.delayed(Duration(milliseconds: 300), () {
       if (!_disposed) {
         videoPlayerController?.refresh();
       }
@@ -1413,9 +1427,6 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     _wasInFullScreenBeforePiP = _isFullScreen;
     _wasControlsEnabledBeforePiP = _controlsEnabled;
     
-    // 设置标志，防止在退出全屏时触发其他操作
-    _isReturningFromPip = true;
-    
     // 禁用控件
     setControlsEnabled(false);
     
@@ -1428,13 +1439,6 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       
       // 4. 发送事件
       _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
-      
-      // 5. 短暂延迟后清除保护标志
-      Future.delayed(Duration(milliseconds: 800), () {
-        if (!_disposed) {
-          _isReturningFromPip = false;
-        }
-      });
       
       return;
     } else {
