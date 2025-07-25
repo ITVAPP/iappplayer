@@ -257,6 +257,9 @@ class IAppPlayerController {
   static const int _subtitleWindowSize = 300; // 保留前后300条字幕
   static const Duration _subtitleWindowDuration = Duration(minutes: 10); // 保留前后10分钟的字幕
 
+  // 标记是否刚从画中画退出
+  bool _hasJustExitedPip = false;
+
   // 构造函数，初始化配置和数据源
   IAppPlayerController(
     this.iappPlayerConfiguration, {
@@ -1002,39 +1005,8 @@ void _onVideoPlayerChanged() async {
   if (currentValue.isPip) {
     _wasInPipMode = true;
   } else if (_wasInPipMode) {
-    // 退出画中画模式
+    // 从画中画模式退出
     _wasInPipMode = false;
-
-    // 处理画中画退出
-    await checkAndExitPictureInPicture();
-    
-    // 恢复控件状态
-    if (_wasControlsEnabledBeforePiP) {
-      setControlsEnabled(true);
-    }
-    
-    // 根据退出原因决定播放行为
-    if (_lastPipExitReason == 'return') {
-      // 点击返回按钮：保持或恢复播放状态
-      if (!currentValue.isPlaying && _wasPlayingBeforePause == true) {
-        // 如果之前在播放，恢复播放
-        play();
-      }
-      // 如果正在播放，保持播放状态
-    } else if (_lastPipExitReason == 'close') {
-      // 点击关闭按钮：暂停播放
-      pause();
-    } else {
-      // 其他情况（如系统关闭）：暂停播放
-      pause();
-    }
-    
-      // 发送画中画关闭事件，UI层可以根据需要处理
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
-    
-    // 重置退出原因
-    _lastPipExitReason = null;
-    
     // 延迟刷新，避免立即触发状态更新
     Future.delayed(Duration(milliseconds: 300), () {
       if (!_disposed) {
@@ -1067,9 +1039,10 @@ void _onVideoPlayerChanged() async {
 
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
-  // 退出全屏
-  _isFullScreen = false;
-  _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
+  // 退出全屏（如果在全屏状态）
+  if (_isFullScreen) {
+    exitFullScreen();
+  }
   if (videoPlayerController?.value.isPip == true) {
     await disablePictureInPicture();
   }
@@ -1331,8 +1304,25 @@ Future<void> checkAndExitPictureInPicture() async {
 
   // 设置生命周期状态
   void setAppLifecycleState(AppLifecycleState appLifecycleState) {
+    final previousState = _appLifecycleState;
+    _appLifecycleState = appLifecycleState;
+    
+    // App从后台回到前台时
+    if (previousState != AppLifecycleState.resumed && 
+        appLifecycleState == AppLifecycleState.resumed) {
+      // 如果刚从画中画退出且不应该是全屏状态
+      if (_hasJustExitedPip && !_isFullScreen) {
+        _hasJustExitedPip = false;
+        // 延迟发送退出全屏事件，确保UI已准备好
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (!_disposed) {
+            _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
+          }
+        });
+      }
+    }
+    
     if (_isAutomaticPlayPauseHandled()) {
-      _appLifecycleState = appLifecycleState;
       if (appLifecycleState == AppLifecycleState.resumed) {
         if (_wasPlayingBeforePause == true && _isPlayerVisible) {
           play();
@@ -1381,6 +1371,11 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 禁用控件
     setControlsEnabled(false);
+
+    // 进入画中画时退出全屏（避免状态混乱）
+    if (_isFullScreen) {
+      exitFullScreen();
+    }
     
     // 设置全局键
     _iappPlayerGlobalKey = iappPlayerGlobalKey;
@@ -1468,12 +1463,53 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
         _handleBufferingEnd();
         break;
       case VideoEventType.pipStop:
-        // 只保存退出原因，让 _onVideoPlayerChanged 统一处理所有状态变更
+        // 保存退出原因
         _lastPipExitReason = event.pipExitReason;
+        
+        // 立即处理画中画退出
+        await _processPipExit();
         break;
       default:
         break;
     }
+  }
+
+  // 处理画中画退出
+  Future<void> _processPipExit() async {
+    if (_disposed) {
+      return;
+    }
+
+    // 标记刚从画中画退出
+    _hasJustExitedPip = true;
+    
+    // 退出画中画和全屏
+    await checkAndExitPictureInPicture();
+    
+    // 恢复控件状态
+    if (_wasControlsEnabledBeforePiP) {
+      setControlsEnabled(true);
+    }
+    
+    // 根据退出原因决定播放行为
+    if (_lastPipExitReason == 'return') {
+      // 返回按钮：保持播放状态
+      if (!isPlaying()! && _wasPlayingBeforePause == true) {
+        await play();
+      }
+    } else if (_lastPipExitReason == 'close') {
+      // 关闭按钮：暂停播放
+      await pause();
+    } else {
+      // 默认行为（系统关闭等）
+      await pause();
+    }
+    
+    // 发送事件
+    _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+    
+    // 重置退出原因
+    _lastPipExitReason = null;
   }
 
   // 处理缓冲开始
