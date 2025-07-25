@@ -5,6 +5,8 @@ import 'package:iapp_player/iapp_player.dart';
 // 导入通用工具类和语言类
 import 'app_localizations.dart';
 import 'common_utils.dart';
+import 'player_widgets.dart';
+import 'player_lifecycle_mixin.dart';
 
 // 解码器类型状态管理
 enum DecoderState {
@@ -12,7 +14,7 @@ enum DecoderState {
   software,
 }
 
-// 单视频播放示例
+// 单视频播放示例 - 使用新的组件和Mixin简化代码
 class SingleVideoExample extends StatefulWidget {
   const SingleVideoExample({Key? key}) : super(key: key);
 
@@ -21,66 +23,44 @@ class SingleVideoExample extends StatefulWidget {
 }
 
 class _SingleVideoExampleState extends State<SingleVideoExample> 
-    with WidgetsBindingObserver, PlayerOrientationMixin {
-  IAppPlayerController? _controller;
-  bool _isLoading = true;
+    with WidgetsBindingObserver, PlayerOrientationMixin, PlayerLifecycleMixin {
   DecoderState _currentDecoder = DecoderState.hardware;
-  bool _isPlaying = false; // 添加播放状态跟踪
-  bool _isPipMode = false; // 添加画中画状态跟踪
-  GlobalKey? _playerGlobalKey; // 添加：播放器全局键
-
-  @override
-  IAppPlayerController? get controller => _controller;
+  bool _isPipMode = false;
+  GlobalKey? _playerGlobalKey;
 
   @override
   void initState() {
     super.initState();
-    _playerGlobalKey = GlobalKey(); // 初始化全局键
-    _initializePlayer();
+    WidgetsBinding.instance.addObserver(this);
+    _playerGlobalKey = GlobalKey();
   }
 
-  Future<void> _initializePlayer() async {
-    // 安全读取字幕，即使失败也不影响播放
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    handleOrientationChange();
+  }
+
+  @override
+  Future<void> initializePlayer() async {
+    // 安全读取字幕
     final subtitleContent = await safeLoadSubtitle('assets/subtitles/video1.srt');
     
-    // 修复：使用正确的本地资源路径
-    final result = await IAppPlayerConfig.createPlayer(
+    // 创建播放器配置
+    final config = IAppPlayerConfig(
       url: 'assets/videos/video1.mp4',
       dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Superman (1941)',
       imageUrl: 'https://www.itvapp.net/images/logo-1.png',
-      subtitleContent: subtitleContent, // 可能为null，但不影响播放
-      enableFullscreen: true, // 添加全屏功能
-      eventListener: (event) {
-        if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
-          setState(() {
-            _isLoading = false;
-            _isPlaying = _controller?.isPlaying() ?? false;
-          });
-          // 初始化后检查方向
-          handleOrientationChange();
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
-          // 监听播放事件
-          setState(() {
-            _isPlaying = true;
-          });
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
-          // 监听暂停事件
-          setState(() {
-            _isPlaying = false;
-          });
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStart) {
-          // 监听进入画中画
-          setState(() {
-            _isPipMode = true;
-          });
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStop) {
-          // 监听退出画中画
-          setState(() {
-            _isPipMode = false;
-          });
-        }
-      },
+      subtitleContent: subtitleContent,
+      enableFullscreen: true,
+      eventListener: handlePlayerEvent,
       preferredDecoderType: _getDecoderType(),
       autoDetectFullscreenDeviceOrientation: true,
       deviceOrientationsOnFullScreen: [
@@ -93,12 +73,23 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       ],
     );
 
-    if (mounted) {
+    await createPlayer(config);
+  }
+
+  @override
+  void onPlayerInitialized() {
+    handleOrientationChange();
+  }
+
+  @override
+  void handleCustomEvent(IAppPlayerEvent event) {
+    if (event.iappPlayerEventType == IAppPlayerEventType.pipStart) {
       setState(() {
-        _controller = result.activeController;
-        if (_controller != null) {
-          _isLoading = false;
-        }
+        _isPipMode = true;
+      });
+    } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStop) {
+      setState(() {
+        _isPipMode = false;
       });
     }
   }
@@ -118,37 +109,20 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     
     setState(() {
       _currentDecoder = newDecoder;
-      _isLoading = true;
     });
     
-    // 重新初始化播放器
-    await _releasePlayer();
-    _playerGlobalKey = GlobalKey(); // 重新创建全局键
-    await _initializePlayer();
+    _playerGlobalKey = GlobalKey();
+    await retryPlay();
   }
 
-  @override
-  void dispose() {
-    _releasePlayer();
-    _playerGlobalKey = null; // 清理全局键
-    super.dispose();
-  }
-
-  Future<void> _releasePlayer() async {
-    try {
-      // 移除全局缓存清理，避免影响其他页面
-      if (_controller != null) {
-        if (_controller!.isPlaying() ?? false) {
-          await _controller!.pause();
-          await _controller!.setVolume(0);
-        }
-        await Future.microtask(() {
-          _controller!.dispose();
-        });
-        _controller = null;
-      }
-    } catch (e) {
-      print('Player cleanup failed: $e');
+  // 切换画中画
+  void _togglePip() {
+    if (controller == null || isLoading || _playerGlobalKey == null) return;
+    
+    if (_isPipMode) {
+      controller!.disablePictureInPicture();
+    } else {
+      controller!.enablePictureInPicture(_playerGlobalKey!);
     }
   }
 
@@ -158,26 +132,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(l10n.videoPlayer),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFF1A1F3A),
-              const Color(0xFF0A0E21),
-            ],
-          ),
-        ),
+      appBar: TransparentAppBar(title: l10n.videoPlayer),
+      body: GradientBackground(
         child: SafeArea(
           child: Column(
             children: [
@@ -187,38 +143,19 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                   child: Column(
                     children: [
                       // 播放器区域
-                      Container(
-                        margin: EdgeInsets.all(UIConstants.spaceMD),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: UIConstants.shadowMD,
-                              offset: Offset(0, UIConstants.shadowSM),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-                          child: AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Container(
-                              color: Colors.black,
-                              child: _controller != null
-                                  ? IAppPlayer(
-                                      key: _playerGlobalKey, // 关键修改：绑定 GlobalKey 到 Widget
-                                      controller: _controller!,
-                                    )
-                                  : const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
+                      PlayerContainer(
+                        aspectRatio: 16 / 9,
+                        child: errorMessage != null
+                            ? PlayerErrorWidget(
+                                message: errorMessage!,
+                                onRetry: retryPlay,
+                              )
+                            : controller != null
+                                ? IAppPlayer(
+                                    key: _playerGlobalKey,
+                                    controller: controller!,
+                                  )
+                                : PlayerLoadingIndicator(),
                       ),
                       // 解码器选择器
                       Container(
@@ -251,66 +188,41 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                                   DecoderState.software,
                                   Icons.computer,
                                 ),
-                                _buildPipOption(),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceMD), // 统一间距
+                      SizedBox(height: UIConstants.spaceMD),
                     ],
                   ),
                 ),
               ),
-              // 控制按钮区域 - 固定在底部
-              Container(
-                padding: EdgeInsets.all(UIConstants.spaceLG),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(UIConstants.radiusXL),
+              // 控制按钮区域
+              PlayerControlPanel(
+                children: [
+                  PlayPauseButton(
+                    isPlaying: isPlaying,
+                    isLoading: isLoading || controller == null,
+                    onPressed: togglePlayPause,
                   ),
-                ),
-                child: Column(
-                  children: [
-                    // 播放/暂停按钮
-                    ModernControlButton(
-                      onPressed: _controller != null && !_isLoading
-                          ? () {
-                              if (_isPlaying) {
-                                _controller!.pause();
-                              } else {
-                                _controller!.play();
-                              }
-                            }
-                          : null,
-                      icon: _isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      label: _isPlaying ? l10n.pausePlay : l10n.continuePlay,
-                      isPrimary: true,
-                    ),
-                    SizedBox(height: UIConstants.spaceMD),
-                    // 全屏按钮
-                    ModernControlButton(
-                      onPressed: _controller != null && !_isLoading
-                          ? () {
-                              if (_controller!.isFullScreen) {
-                                _controller!.exitFullScreen();
-                              } else {
-                                _controller!.enterFullScreen();
-                              }
-                            }
-                          : null,
-                      icon: _controller?.isFullScreen ?? false
-                          ? Icons.fullscreen_exit_rounded
-                          : Icons.fullscreen_rounded,
-                      label: _controller?.isFullScreen ?? false 
-                          ? l10n.exitFullscreen 
-                          : l10n.fullscreen,
-                    ),
-                  ],
-                ),
+                  SizedBox(height: UIConstants.spaceMD),
+                  // 画中画按钮（移到全屏按钮上面）
+                  ModernControlButton(
+                    onPressed: controller != null && !isLoading ? _togglePip : null,
+                    icon: _isPipMode
+                        ? Icons.picture_in_picture_alt_outlined
+                        : Icons.picture_in_picture_alt_rounded,
+                    label: _isPipMode ? l10n.exitPictureInPicture : l10n.pictureInPicture,
+                  ),
+                  SizedBox(height: UIConstants.spaceMD),
+                  // 全屏按钮
+                  FullscreenButton(
+                    isFullscreen: controller?.isFullScreen ?? false,
+                    isLoading: isLoading || controller == null,
+                    onPressed: toggleFullscreen,
+                  ),
+                ],
               ),
             ],
           ),
@@ -319,6 +231,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     );
   }
 
+  // 修改解码器选项为横向布局（图标和文字在同一行）
   Widget _buildDecoderOption(String label, DecoderState decoder, IconData icon) {
     final isSelected = _currentDecoder == decoder;
     
@@ -326,8 +239,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       onTap: () => _switchDecoder(decoder),
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: UIConstants.spaceMD,
-          vertical: UIConstants.spaceSM,
+          horizontal: UIConstants.spaceLG,
+          vertical: UIConstants.spaceSM + 2,
         ),
         decoration: BoxDecoration(
           color: isSelected 
@@ -341,7 +254,8 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
             width: 1.5,
           ),
         ),
-        child: Column(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
@@ -350,72 +264,15 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                   : Colors.white.withOpacity(0.6),
               size: UIConstants.iconMD,
             ),
-            SizedBox(height: UIConstants.spaceXS),
+            SizedBox(width: UIConstants.spaceSM),
             Text(
               label,
               style: TextStyle(
-                fontSize: UIConstants.fontSM,
+                fontSize: UIConstants.fontMD,
                 color: isSelected 
                     ? const Color(0xFF667eea) 
                     : Colors.white.withOpacity(0.6),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 画中画选项按钮
-  Widget _buildPipOption() {
-    return GestureDetector(
-      onTap: _controller != null && !_isLoading && _playerGlobalKey != null
-          ? () {
-              if (_isPipMode) {
-                _controller!.disablePictureInPicture();
-              } else {
-                _controller!.enablePictureInPicture(_playerGlobalKey!);
-              }
-            }
-          : null,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: UIConstants.spaceMD,
-          vertical: UIConstants.spaceSM,
-        ),
-        decoration: BoxDecoration(
-          color: _isPipMode 
-              ? const Color(0xFF667eea).withOpacity(0.3)
-              : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
-          border: Border.all(
-            color: _isPipMode 
-                ? const Color(0xFF667eea)
-                : Colors.white.withOpacity(0.1),
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              _isPipMode
-                  ? Icons.picture_in_picture_alt_outlined
-                  : Icons.picture_in_picture_alt_rounded,
-              color: _isPipMode 
-                  ? const Color(0xFF667eea) 
-                  : Colors.white.withOpacity(0.6),
-              size: UIConstants.iconMD,
-            ),
-            SizedBox(height: UIConstants.spaceXS),
-            Text(
-              _isPipMode ? '退出画中画' : '画中画',
-              style: TextStyle(
-                fontSize: UIConstants.fontSM,
-                color: _isPipMode 
-                    ? const Color(0xFF667eea) 
-                    : Colors.white.withOpacity(0.6),
-                fontWeight: _isPipMode ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
