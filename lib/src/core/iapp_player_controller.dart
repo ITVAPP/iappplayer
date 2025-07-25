@@ -1004,6 +1004,9 @@ void _onVideoPlayerChanged() async {
   } else if (_wasInPipMode) {
     // 退出画中画模式
     _wasInPipMode = false;
+
+    // 处理画中画退出
+    await checkAndExitPictureInPicture();
     
     // 恢复控件状态
     if (_wasControlsEnabledBeforePiP) {
@@ -1021,12 +1024,13 @@ void _onVideoPlayerChanged() async {
     } else if (_lastPipExitReason == 'close') {
       // 点击关闭按钮：暂停播放
       pause();
-      // 发送画中画关闭事件，UI层可以根据需要处理
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     } else {
       // 其他情况（如系统关闭）：暂停播放
       pause();
     }
+    
+      // 发送画中画关闭事件，UI层可以根据需要处理
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     
     // 重置退出原因
     _lastPipExitReason = null;
@@ -1063,8 +1067,11 @@ void _onVideoPlayerChanged() async {
 
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
-  if (videoPlayerController?.value.isPip == true) {
+  // 退出全屏（如果在全屏状态）
+  if (_isFullScreen) {
     exitFullScreen();
+  }
+  if (videoPlayerController?.value.isPip == true) {
     await disablePictureInPicture();
   }
 }
@@ -1463,7 +1470,6 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       break;
     case VideoEventType.pipStop:
       _lastPipExitReason = event.pipExitReason;
-      await checkAndExitPictureInPicture();
       break;
     default:
       break;
