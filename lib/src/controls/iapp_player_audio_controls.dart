@@ -393,8 +393,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   }
 
   // 生成随机渐变色
-  void _generateRandomGradient() {
-    if (_gradientColors != null) return;
+  void _generateRandomGradient({bool force = false}) {
+    if (_gradientColors != null && !force) return;
     
     final hue1 = _random.nextDouble() * 360;
     final hue2 = (hue1 + 30 + _random.nextDouble() * 60) % 360;
@@ -1943,9 +1943,20 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       final currentShuffleMode = _iappPlayerController!.playlistShuffleMode;
       
       if (_cachedPlaylistIndex != currentIndex || _cachedShuffleMode != currentShuffleMode) {
+        // 检测到歌曲切换
+        final bool songChanged = _cachedPlaylistIndex != null && 
+                                _cachedPlaylistIndex != currentIndex;
+        
         _cachedPlaylistIndex = currentIndex;
         _cachedShuffleMode = currentShuffleMode;
         shouldUpdate = true;
+        
+        // 如果是扩展模式且歌曲切换，更新渐变背景
+        if (songChanged && 
+            _currentDisplayMode == PlayerDisplayMode.expanded && 
+            _animationsInitialized) {
+          _generateRandomGradient(force: true);
+        }
       }
     }
     
