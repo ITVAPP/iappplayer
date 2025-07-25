@@ -1034,7 +1034,7 @@ void _onVideoPlayerChanged() async {
   _lastVideoPlayerValue = currentValue;
 }
 
-// 检查并退出画中画模式
+// 检查并退出画中画模式（增强版本）
 Future<void> checkAndExitPictureInPicture() async {
   try {
     // 先尝试退出画中画
@@ -1366,6 +1366,9 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     _wasInFullScreenBeforePiP = _isFullScreen;
     _wasControlsEnabledBeforePiP = _controlsEnabled;
     
+    // 保存播放状态（重要：确保返回时能恢复播放）
+    _wasPlayingBeforePause = isPlaying();
+    
     // 禁用控件
     setControlsEnabled(false);
     
@@ -1466,14 +1469,11 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     }
   }
 
-  // 处理画中画退出
+  // 处理画中画退出（增强版本）
   Future<void> _processPipExit() async {
     if (_disposed) {
       return;
     }
-    
-    // 保存当前播放状态
-    final wasPlaying = isPlaying() ?? false;
     
     // 退出画中画和全屏
     await checkAndExitPictureInPicture();
@@ -1485,8 +1485,8 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 根据退出原因决定播放行为
     if (_lastPipExitReason == 'return') {
-      // 返回按钮：恢复之前的播放状态
-      if (wasPlaying) {
+      // 返回按钮：保持播放状态
+      if (!isPlaying()! && _wasPlayingBeforePause == true) {
         await play();
       }
     } else if (_lastPipExitReason == 'close') {
