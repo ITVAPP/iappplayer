@@ -498,7 +498,7 @@ class IAppPlayerController {
     }
   }
 
-  // 清理过期字幕
+  // 清理过期字幕（滑动窗口机制）
   void _cleanupOldSubtitles(Duration currentPosition) {
     if (subtitlesLines.length <= _subtitleWindowSize) {
       return;
@@ -517,46 +517,22 @@ class IAppPlayerController {
 
     // 如果仍然超过数量限制，保留最近的字幕
     if (subtitlesLines.length > _subtitleWindowSize) {
-      // 先检查是否需要排序
-      bool needsSort = false;
-      for (int i = 1; i < subtitlesLines.length; i++) {
-        final prevStart = subtitlesLines[i-1].start?.inMilliseconds ?? 0;
-        final currStart = subtitlesLines[i].start?.inMilliseconds ?? 0;
-        if (prevStart > currStart) {
-          needsSort = true;
+      // 按时间排序
+      subtitlesLines.sort((a, b) {
+        final aStart = a.start?.inMilliseconds ?? 0;
+        final bStart = b.start?.inMilliseconds ?? 0;
+        return aStart.compareTo(bStart);
+      });
+
+      // 找到当前位置在列表中的索引
+      int currentIndex = 0;
+      for (int i = 0; i < subtitlesLines.length; i++) {
+        if (subtitlesLines[i].start != null && 
+            subtitlesLines[i].start!.inMilliseconds > currentPosition.inMilliseconds) {
+          currentIndex = i;
           break;
         }
       }
-      
-      // 只在必要时排序
-      if (needsSort) {
-        subtitlesLines.sort((a, b) {
-          final aStart = a.start?.inMilliseconds ?? 0;
-          final bStart = b.start?.inMilliseconds ?? 0;
-          return aStart.compareTo(bStart);
-        });
-      }
-
-      // 二分查找当前位置
-      int currentIndex = 0;
-      int left = 0;
-      int right = subtitlesLines.length - 1;
-      
-      while (left <= right) {
-        int mid = (left + right) ~/ 2;
-        final midStart = subtitlesLines[mid].start;
-        
-        if (midStart == null) {
-          left = mid + 1;
-        } else if (midStart.inMilliseconds <= currentPosition.inMilliseconds) {
-          currentIndex = mid;
-          left = mid + 1;
-        } else {
-          right = mid - 1;
-        }
-      }
-      
-      // 如果所有字幕都在当前位置之后，currentIndex 保持为 0
 
       // 计算保留范围
       final halfWindow = _subtitleWindowSize ~/ 2;
@@ -1390,9 +1366,6 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     _wasInFullScreenBeforePiP = _isFullScreen;
     _wasControlsEnabledBeforePiP = _controlsEnabled;
     
-    // 保存播放状态（重要：确保返回时能恢复播放）
-    _wasPlayingBeforePause = isPlaying();
-    
     // 禁用控件
     setControlsEnabled(false);
     
@@ -1499,6 +1472,9 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       return;
     }
     
+    // 保存当前播放状态
+    final wasPlaying = isPlaying() ?? false;
+    
     // 退出画中画和全屏
     await checkAndExitPictureInPicture();
     
@@ -1509,8 +1485,8 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 根据退出原因决定播放行为
     if (_lastPipExitReason == 'return') {
-      // 返回按钮：保持播放状态
-      if (!isPlaying()! && _wasPlayingBeforePause == true) {
+      // 返回按钮：恢复之前的播放状态
+      if (wasPlaying) {
         await play();
       }
     } else if (_lastPipExitReason == 'close') {
