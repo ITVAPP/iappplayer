@@ -1,7 +1,7 @@
 group 'com.itvapp.iapp_player.iapp_player'
 version '1.6.8'
 buildscript {
-    ext.media3Version = "1.6.1"
+    ext.media3Version = "1.7.1"
     ext.workVersion = "2.9.0"
     ext.kotlinVersion = "1.9.23"
     
