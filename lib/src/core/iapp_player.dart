@@ -67,9 +67,13 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
   
-    // 页面初始化后检查并关闭可能存在的画中画
+    // 页面初始化后延迟检查并关闭可能存在的画中画
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.controller.checkAndExitPictureInPicture();
+      Future.delayed(Duration(milliseconds: 300), () {
+        if (mounted) {
+          widget.controller.checkAndExitPictureInPicture();
+        }
+      });
     });
   }
 
@@ -396,6 +400,15 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     widget.controller.setAppLifecycleState(state); // 更新生命周期状态
+    
+    // 当应用恢复到前台时，再次检查画中画状态
+    if (state == AppLifecycleState.resumed) {
+      Future.delayed(Duration(milliseconds: 500), () {
+        if (mounted) {
+          widget.controller.checkAndExitPictureInPicture();
+        }
+      });
+    }
   }
 }
 
