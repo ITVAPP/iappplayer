@@ -164,7 +164,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                         height: UIConstants.musicPlayerSquareSize,
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceXL),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(UIConstants.radiusSM),
+                          borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                           color: Colors.black,
                           boxShadow: [
                             // 发光效果
