@@ -72,18 +72,14 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const double kModalBorderRadius = 22.0;
   // 定义模态框头部高度
   static const double kModalHeaderHeight = 48.0;
-  // 定义播放列表项高度
-  static const double kModalItemHeight = 30.0;
   // 定义模态框标题字体大小
   static const double kModalTitleFontSize = 18.0;
-  // 定义播放列表项字体大小
-  static const double kModalItemFontSize = 16.0;
-  // 定义播放指示器图标尺寸
-  static const double kPlayIndicatorIconSize = 20.0;
+  // 定义标准字体大小（用于标题和列表项）
+  static const double kStandardFontSize = 16.0;
+  // 定义小图标尺寸（用于播放指示器和紧凑模式小图标）
+  static const double kSmallIconSize = 20.0;
   // 定义模态框背景透明度
   static const double kModalBackgroundOpacity = 0.95;
-  // 定义播放列表项悬停透明度
-  static const double kModalItemHoverOpacity = 0.08;
 
   // 定义播放列表主题色
   static const Color kPlaylistPrimaryColor = Color(0xFFFF0000);
@@ -91,8 +87,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   static const Color kPlaylistBackgroundColor = Color(0xFF1A1A1A);
   // 定义播放列表表面颜色
   static const Color kPlaylistSurfaceColor = Color(0xFF2A2A2A);
-  // 定义播放列表项圆角
-  static const double kPlaylistItemRadius = 12.0;
+  // 定义标准圆角半径（用于封面和列表项）
+  static const double kStandardBorderRadius = 12.0;
   // 定义播放列表项垂直间距
   static const double kPlaylistItemVerticalMargin = 1.0;
 
@@ -105,17 +101,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
 
   // 定义时间文本尺寸减量
   static const double kTimeTextSizeDecrease = 1.0;
-  // 定义时间与进度条水平间距
-  static const double kTimeProgressSpacing = 8.0;
 
   // 定义扩展模式高度阈值
   static const double kExpandedModeThreshold = 200.0;
   // 定义封面尺寸
   static const double kCoverSize = 100.0;
-  // 定义标题字体大小
-  static const double kTitleFontSize = 16.0;
-  // 定义封面圆角
-  static const double kCoverBorderRadius = 12.0;
   // 定义紧凑模式最小高度
   static const double kCompactModeMinHeight = 120.0;
   // 定义紧凑模式最大高度
@@ -145,17 +135,13 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 定义紧凑模式歌曲信息间距
   static const double kCompactSongInfoSpacing = 4.0;
   // 定义紧凑模式区域间距
-  static const double kCompactSectionSpacing = 12.0;
+  static const double kCompactSectionSpacing = 10.0;
   // 定义紧凑模式进度条高度
   static const double kCompactProgressHeight = 6.0;
   // 定义紧凑模式顶部栏高度
   static const double kCompactTopBarHeight = 22.0;
-  // 定义紧凑模式播放按钮尺寸
-  static const double kCompactPlayButtonSize = 28.0;
-  // 定义紧凑模式控制按钮尺寸
-  static const double kCompactControlButtonSize = 28.0;
-  // 定义紧凑模式小图标尺寸
-  static const double kCompactSmallIconSize = 20.0;
+  // 定义紧凑模式按钮尺寸（统一播放按钮和控制按钮）
+  static const double kCompactButtonSize = 28.0;
   // 定义紧凑模式播放/暂停图标尺寸
   static const double kCompactPlayPauseIconSize = 22.0;
 
@@ -164,7 +150,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 定义封面模式图标尺寸
   static const double kSquareModeIconSize = 32.0;
   // 定义封面模式按钮透明度
-  static const double kSquareModeButtonOpacity = 0.5;
+  static const double kSquareModeButtonOpacity = 0.7;
 
   // 定义双击检测超时时间
   static const Duration kDoubleTapTimeout = Duration(milliseconds: 300);
@@ -222,7 +208,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     topRight: Radius.circular(kModalBorderRadius),
   );
   // 定义封面圆角
-  static const BorderRadius _coverBorderRadius = BorderRadius.all(Radius.circular(kCoverBorderRadius));
+  static const BorderRadius _coverBorderRadius = BorderRadius.all(Radius.circular(kStandardBorderRadius));
   // 定义列表项圆角
   static const BorderRadius _itemBorderRadius = BorderRadius.all(Radius.circular(8));
 
@@ -231,7 +217,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 定义双倍宽度间距占位
   static const SizedBox _spacingDoubleWidthBox = SizedBox(width: kSpacingDouble);
   // 定义时间与进度条间距占位
-  static const SizedBox _timeSpacingBox = SizedBox(width: kTimeProgressSpacing);
+  static const SizedBox _timeSpacingBox = SizedBox(width: kSpacingUnit);
 
   // 缓存音乐图标
   static final Widget _musicNoteIcon = Icon(
@@ -397,7 +383,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
     _responsivePlayPauseIconSize = _getResponsiveSize(kPlayPauseIconSize);
     _responsiveTextSize = _getResponsiveSize(kTextSizeBase);
     _responsiveErrorIconSize = _getResponsiveSize(kErrorIconSize);
-    _responsiveTitleFontSize = _getResponsiveSize(kTitleFontSize);
+    _responsiveTitleFontSize = _getResponsiveSize(kStandardFontSize);
   }
 
   @override
@@ -997,13 +983,13 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                     _iappPlayerController!.togglePlaylistShuffle();
                     setState(() {});
                   },
-                  size: kCompactSmallIconSize,
+                  size: kSmallIconSize,
                 ),
                 _spacingUnitBox,
                 _buildCompactIconButton(
                   icon: Icons.queue_music,
                   onTap: _showPlaylistMenu,
-                  size: kCompactSmallIconSize,
+                  size: kSmallIconSize,
                 ),
                 if (_controlsConfiguration.enableFullscreen)
                   _spacingUnitBox,
@@ -1015,7 +1001,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                       ? _controlsConfiguration.fullscreenDisableIcon
                       : _controlsConfiguration.fullscreenEnableIcon,
                   onTap: _toggleFullscreen,
-                  size: kCompactSmallIconSize,
+                  size: kSmallIconSize,
                 ),
             ],
           ),
@@ -1092,7 +1078,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ? _playPrevious 
               : null,
             enabled: _iappPlayerController!.playlistController?.hasPrevious ?? false,
-            size: kCompactControlButtonSize,
+            size: kCompactButtonSize,
           ),
           _spacingDoubleBox2,
           _buildCompactPlayPauseButton(),
@@ -1103,7 +1089,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
               ? _playNext 
               : null,
             enabled: _iappPlayerController!.playlistController?.hasNext ?? false,
-            size: kCompactControlButtonSize,
+            size: kCompactButtonSize,
           ),
         ] else ...[
           if (!isLive) ...[
@@ -1167,8 +1153,8 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
       key: const Key("iapp_player_audio_controls_play_pause_button"),
       onTap: _onPlayPause,
       child: Container(
-        width: kCompactPlayButtonSize,
-        height: kCompactPlayButtonSize,
+        width: kCompactButtonSize,
+        height: kCompactButtonSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: _controlsConfiguration.iconsColor,
@@ -1656,7 +1642,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
             translations.playlistUnavailable,
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
-              fontSize: kModalItemFontSize,
+              fontSize: kStandardFontSize,
             ),
           ),
         ),
@@ -1762,7 +1748,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
           color: isCurrentItem 
             ? kPlaylistPrimaryColor.withOpacity(0.15)
             : Colors.transparent,
-          borderRadius: BorderRadius.circular(kPlaylistItemRadius),
+          borderRadius: BorderRadius.circular(kStandardBorderRadius),
           border: Border.all(
             color: isCurrentItem 
               ? kPlaylistPrimaryColor.withOpacity(0.3)
@@ -1787,7 +1773,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                     child: const Icon(
                       Icons.play_arrow_rounded,
                       color: kPlaylistPrimaryColor,
-                      size: kPlayIndicatorIconSize,
+                      size: kSmallIconSize,
                     ),
                   )
                 : Text(
@@ -1809,7 +1795,7 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
                     title,
                     style: TextStyle(
                       color: isCurrentItem ? Colors.white : Colors.white.withOpacity(0.9),
-                      fontSize: kModalItemFontSize,
+                      fontSize: kStandardFontSize,
                       fontWeight: isCurrentItem ? FontWeight.w600 : FontWeight.normal,
                     ),
                     maxLines: 1,
