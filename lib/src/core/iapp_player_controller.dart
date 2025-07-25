@@ -170,12 +170,6 @@ class IAppPlayerController {
   
   // 画中画退出原因
   String? _lastPipExitReason;
-  
-  // 画中画状态标志
-  bool _isReturningFromPip = false;
-
-  // 公开画中画返回状态，供IAppPlayer使用
-  bool get isReturningFromPip => _isReturningFromPip;
 
   // 全局键
   GlobalKey? _iappPlayerGlobalKey;
@@ -938,18 +932,6 @@ class IAppPlayerController {
     if (_disposed) {
       return;
     }
-    
-    // 根据事件类型管理画中画保护状态
-    if (iappPlayerEvent.iappPlayerEventType == 
-        IAppPlayerEventType.pipStop) {
-        // 退出画中画
-        _isReturningFromPip = true;
-        Future.delayed(Duration(milliseconds: 2000), () {
-          if (!_disposed) {
-            _isReturningFromPip = false;
-          }
-        });
-    }
 
     if (iappPlayerEvent.iappPlayerEventType == 
         IAppPlayerEventType.changedPlaylistShuffle) {
@@ -992,9 +974,10 @@ void _onVideoPlayerChanged() async {
     final hasPlayingChanged = currentValue.isPlaying != _lastVideoPlayerValue!.isPlaying;
     final hasBufferingChanged = currentValue.isBuffering != _lastVideoPlayerValue!.isBuffering;
     final hasErrorChanged = currentValue.hasError != _lastVideoPlayerValue!.hasError;
+    final hasPipChanged = currentValue.isPip != _lastVideoPlayerValue!.isPip;
     
     // 如果没有任何变化，直接返回
-    if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged) {
+    if (!hasPositionChanged && !hasPlayingChanged && !hasBufferingChanged && !hasErrorChanged && !hasPipChanged) {
       return;
     }
   }
@@ -1039,7 +1022,7 @@ void _onVideoPlayerChanged() async {
       // 点击关闭按钮：暂停播放
       pause();
       // 发送画中画关闭事件，UI层可以根据需要处理
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipClosed));
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     } else {
       // 其他情况（如系统关闭）：暂停播放
       pause();
@@ -1081,6 +1064,7 @@ void _onVideoPlayerChanged() async {
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
   if (videoPlayerController?.value.isPip == true) {
+    exitFullScreen();
     await disablePictureInPicture();
   }
 }
@@ -1479,7 +1463,7 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       break;
     case VideoEventType.pipStop:
       _lastPipExitReason = event.pipExitReason;
-      exitFullScreen();
+      await checkAndExitPictureInPicture();
       break;
     default:
       break;
