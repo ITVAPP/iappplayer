@@ -518,7 +518,7 @@ private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
                 if (currentActivity != null && currentActivity.isInPictureInPictureMode) {
                     pipHandler?.postDelayed(this, 500)
                 } else {
-                    // 退出画中画，延迟300ms判断Activity状态
+                    // 退出画中画
                     pipHandler?.postDelayed({
                         val activityRef = activityWeakRef?.get()
                         val isActivityVisible = activityRef != null && 
@@ -536,7 +536,7 @@ private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
                         }
                         player.disposeMediaSession()
                         stopPipHandler()
-                    }, 300)  // 延迟300ms让Activity状态稳定
+                    }, 600) 
                 }
             }
         }
