@@ -434,6 +434,11 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     widget.controller.setAppLifecycleState(state); // 更新生命周期状态
+    
+    // 当应用恢复到前台时，再次检查画中画状态
+    if (state == AppLifecycleState.resumed && mounted) {
+      widget.controller.checkAndExitPictureInPicture();
+    }
   }
 }
 
