@@ -33,8 +33,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly) bool isInitialized; // 初始化完成状态
 /// 视频资源标识
 @property(nonatomic, readonly) NSString* key; // 视频资源唯一标识
-/// 失败重试次数
-@property(nonatomic, readonly) int failedCount; // 播放失败重试计数
 /// 视频播放层
 @property(nonatomic) AVPlayerLayer* _playerLayer; // 播放器显示层
 /// 是否启用画中画
@@ -112,8 +110,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)disablePictureInPicture; // 禁用画中画模式
 /// 获取绝对播放位置（毫秒）
 - (int64_t)absolutePosition; // 返回绝对播放位置
-/// 将 CMTime 转换为毫秒
-- (int64_t)FLTCMTimeToMillis:(CMTime)time; // CMTime 转毫秒
 /// 清除播放器资源
 - (void)clear; // 清除播放器资源
 /// 释放播放器资源（不含事件通道）

@@ -42,12 +42,14 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
 
 - (void)detachFromEngineForRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
     // 清理所有播放器资源，移除纹理映射
+    [_playerToTextureIdMap removeAllObjects];
+    
+    // 然后清理播放器
     for (NSNumber* textureId in _players.allKeys) {
         IAppPlayer* player = _players[textureId];
         [player disposeSansEventChannel];
     }
     [_players removeAllObjects];
-    [_playerToTextureIdMap removeAllObjects];
 }
 
 #pragma mark - FlutterPlatformViewFactory protocol
@@ -78,8 +80,9 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
     [eventChannel setStreamHandler:player];
     player.eventChannel = eventChannel;
     _players[@(textureId)] = player;
-    NSValue* playerPointer = [NSValue valueWithNonretainedObject:player];
-    _playerToTextureIdMap[playerPointer] = @(textureId);
+    // 使用强引用避免野指针问题
+    NSString* playerAddress = [NSString stringWithFormat:@"%p", player];
+    _playerToTextureIdMap[playerAddress] = @(textureId);
     result(@{@"textureId" : @(textureId)});
 }
 
@@ -87,16 +90,23 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
     // 配置远程通知，设置播放器为通知对象
     _notificationPlayer = player;
     [self stopOtherUpdateListener:player];
-    NSDictionary* dataSource = [_dataSourceDict objectForKey:[self getTextureId:player]];
+    
+    // 缓存textureId，避免重复查找
+    NSString* textureIdString = [self getTextureId:player];
+    NSDictionary* dataSource = [_dataSourceDict objectForKey:textureIdString];
+    
+    // 检查是否显示通知，优化null检查
     BOOL showNotification = false;
-    id showNotificationObject = [dataSource objectForKey:@"showNotification"];
-    if (showNotificationObject != [NSNull null]) {
-        showNotification = [[dataSource objectForKey:@"showNotification"] boolValue];
+    id showNotificationObject = dataSource[@"showNotification"];
+    if (showNotificationObject && showNotificationObject != [NSNull null]) {
+        showNotification = [showNotificationObject boolValue];
     }
-    NSString* title = dataSource[@"title"];
-    NSString* author = dataSource[@"author"];
-    NSString* imageUrl = dataSource[@"imageUrl"];
+    
     if (showNotification) {
+        NSString* title = dataSource[@"title"];
+        NSString* author = dataSource[@"author"];
+        NSString* imageUrl = dataSource[@"imageUrl"];
+        
         [self setRemoteCommandsNotificationActive];
         [self setupRemoteCommands:player];
         [self setupRemoteCommandNotification:player, title, author, imageUrl];
@@ -212,8 +222,8 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
 
 - (NSString*)getTextureId:(IAppPlayer*)player {
     // 通过反向映射快速获取播放器的纹理ID
-    NSValue* playerPointer = [NSValue valueWithNonretainedObject:player];
-    NSNumber* textureId = _playerToTextureIdMap[playerPointer];
+    NSString* playerAddress = [NSString stringWithFormat:@"%p", player];
+    NSNumber* textureId = _playerToTextureIdMap[playerAddress];
     return textureId ? [textureId stringValue] : nil;
 }
 
@@ -263,11 +273,13 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
     // 处理Flutter方法调用，分发到对应功能
     if ([@"init" isEqualToString:call.method]) {
+        // 先清理映射关系
+        [_playerToTextureIdMap removeAllObjects];
+        // 然后清理播放器
         for (NSNumber* textureId in _players) {
             [_players[textureId] dispose];
         }
         [_players removeAllObjects];
-        [_playerToTextureIdMap removeAllObjects];
         result(nil);
     } else if ([@"create" isEqualToString:call.method]) {
         IAppPlayer* player = [[IAppPlayer alloc] initWithFrame:CGRectZero];
@@ -307,26 +319,27 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
             NSNumber* maxCacheSize = dataSource[@"maxCacheSize"];
             NSString* videoExtension = dataSource[@"videoExtension"];
             int overriddenDuration = 0;
-            if ([dataSource objectForKey:@"overriddenDuration"] != [NSNull null]) {
-                overriddenDuration = [dataSource[@"overriddenDuration"] intValue];
+            
+            // null检查
+            id overriddenDurationObj = dataSource[@"overriddenDuration"];
+            if (overriddenDurationObj && overriddenDurationObj != [NSNull null]) {
+                overriddenDuration = [overriddenDurationObj intValue];
             }
             
             // 解码器类型参数
             int preferredDecoderType = 1; // 默认硬解优先
-            if ([dataSource objectForKey:@"preferredDecoderType"] != [NSNull null]) {
-                NSNumber* decoderTypeNum = dataSource[@"preferredDecoderType"];
-                if (decoderTypeNum) {
-                    int decoderType = [decoderTypeNum intValue];
-                    if (decoderType >= 0 && decoderType <= 2) {
-                        preferredDecoderType = decoderType;
-                    }
+            id decoderTypeObj = dataSource[@"preferredDecoderType"];
+            if (decoderTypeObj && decoderTypeObj != [NSNull null]) {
+                int decoderType = [decoderTypeObj intValue];
+                if (decoderType >= 0 && decoderType <= 2) {
+                    preferredDecoderType = decoderType;
                 }
             }
             
             BOOL useCache = false;
-            id useCacheObject = [dataSource objectForKey:@"useCache"];
-            if (useCacheObject != [NSNull null]) {
-                useCache = [[dataSource objectForKey:@"useCache"] boolValue];
+            id useCacheObject = dataSource[@"useCache"];
+            if (useCacheObject && useCacheObject != [NSNull null]) {
+                useCache = [useCacheObject boolValue];
                 if (useCache) {
                     [_cacheManager setMaxCacheSize:maxCacheSize];
                 }
@@ -354,9 +367,12 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
             [player clear];
             [self disposeNotificationData:player];
             [self setRemoteCommandsNotificationNotActive];
-            NSValue* playerPointer = [NSValue valueWithNonretainedObject:player];
-            [_playerToTextureIdMap removeObjectForKey:playerPointer];
+            
+            // 移除映射关系
+            NSString* playerAddress = [NSString stringWithFormat:@"%p", player];
+            [_playerToTextureIdMap removeObjectForKey:playerAddress];
             [_players removeObjectForKey:@(textureId)];
+            
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                 if (!player.disposed) {
                     [player dispose];

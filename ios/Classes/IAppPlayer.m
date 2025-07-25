@@ -14,7 +14,6 @@ static const int RETRY_DELAY_MS = 500; // 重试延迟（毫秒）
 static const int BUFFERING_UPDATE_THROTTLE_MS = 600; // 缓冲更新节流时间（毫秒）
 
 // 解码器优先级常量
-static const int DECODER_AUTO = 0;
 static const int DECODER_HARDWARE_FIRST = 1;
 static const int DECODER_SOFTWARE_FIRST = 2;
 
@@ -41,6 +40,8 @@ AVPictureInPictureController *_pipController; // 画中画控制器
     int _maxBufferMs;
     int _bufferForPlaybackMs;
     int _bufferForPlaybackAfterRebufferMs;
+    // 线程安全锁
+    NSLock* _observerLock; // 观察者操作锁
 }
 
 /// 初始化播放器，设置默认状态和行为
@@ -79,6 +80,9 @@ AVPictureInPictureController *_pipController; // 画中画控制器
     _bufferForPlaybackMs = 2500;  // 2.5秒
     _bufferForPlaybackAfterRebufferMs = 5000;  // 5秒
     
+    // 初始化线程安全锁
+    _observerLock = [[NSLock alloc] init];
+    
     return self;
 }
 
@@ -103,29 +107,38 @@ AVPictureInPictureController *_pipController; // 画中画控制器
 
 /// 为播放项添加 KVO 和通知观察者
 - (void)addObservers:(AVPlayerItem*)item {
-    if (!self._observersAdded && item && !_disposed){
-        [_player addObserver:self forKeyPath:@"rate" options:0 context:nil]; // 播放速率观察
-        [item addObserver:self forKeyPath:@"loadedTimeRanges" options:0 context:timeRangeContext]; // 加载时间范围观察
-        [item addObserver:self forKeyPath:@"status" options:0 context:statusContext]; // 播放状态观察
-        [item addObserver:self forKeyPath:@"presentationSize" options:0 context:presentationSizeContext]; // 视频尺寸观察
-        [item addObserver:self
-               forKeyPath:@"playbackLikelyToKeepUp"
-                  options:0
-                  context:playbackLikelyToKeepUpContext]; // 播放缓冲充足观察
-        [item addObserver:self
-               forKeyPath:@"playbackBufferEmpty"
-                  options:0
-                  context:playbackBufferEmptyContext]; // 缓冲区空观察
-        [item addObserver:self
-               forKeyPath:@"playbackBufferFull"
-                  options:0
-                  context:playbackBufferFullContext]; // 缓冲区满观察
-        [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(itemDidPlayToEndTime:)
-                                                     name:AVPlayerItemDidPlayToEndTimeNotification
-                                                   object:item]; // 播放结束通知
-        self._observersAdded = true; // 更新观察状态
-        _currentObservedItem = item; // 记录当前观察项
+    [_observerLock lock];
+    @try {
+        // 确保不重复添加观察者，且播放项有效
+        if (!self._observersAdded && item && !_disposed && item != _currentObservedItem) {
+            // 先记录新的观察项
+            _currentObservedItem = item;
+            
+            [_player addObserver:self forKeyPath:@"rate" options:0 context:nil]; // 播放速率观察
+            [item addObserver:self forKeyPath:@"loadedTimeRanges" options:0 context:timeRangeContext]; // 加载时间范围观察
+            [item addObserver:self forKeyPath:@"status" options:0 context:statusContext]; // 播放状态观察
+            [item addObserver:self forKeyPath:@"presentationSize" options:0 context:presentationSizeContext]; // 视频尺寸观察
+            [item addObserver:self
+                   forKeyPath:@"playbackLikelyToKeepUp"
+                      options:0
+                      context:playbackLikelyToKeepUpContext]; // 播放缓冲充足观察
+            [item addObserver:self
+                   forKeyPath:@"playbackBufferEmpty"
+                      options:0
+                      context:playbackBufferEmptyContext]; // 缓冲区空观察
+            [item addObserver:self
+                   forKeyPath:@"playbackBufferFull"
+                      options:0
+                      context:playbackBufferFullContext]; // 缓冲区满观察
+            [[NSNotificationCenter defaultCenter] addObserver:self
+                                                     selector:@selector(itemDidPlayToEndTime:)
+                                                         name:AVPlayerItemDidPlayToEndTimeNotification
+                                                       object:item]; // 播放结束通知
+            self._observersAdded = true; // 更新观察状态
+        }
+    }
+    @finally {
+        [_observerLock unlock];
     }
 }
 
@@ -134,7 +147,6 @@ AVPictureInPictureController *_pipController; // 画中画控制器
     _isInitialized = false; // 重置初始化状态
     _isPlaying = false; // 重置播放状态
     _disposed = false; // 重置释放状态
-    _failedCount = 0; // 重置失败次数
     _key = nil; // 重置密钥
     
     // 重置重试相关状态
@@ -166,35 +178,75 @@ AVPictureInPictureController *_pipController; // 画中画控制器
 
 /// 移除播放器和播放项的观察者
 - (void)removeObservers {
-    if (self._observersAdded){
-        [_player removeObserver:self forKeyPath:@"rate" context:nil]; // 移除播放速率观察
-        
-        /// 使用当前观察项移除 KVO 观察者
-        if (_currentObservedItem != nil) {
+    [_observerLock lock];
+    @try {
+        if (self._observersAdded) {
             @try {
-                [_currentObservedItem removeObserver:self forKeyPath:@"status" context:statusContext]; // 移除状态观察
-                [_currentObservedItem removeObserver:self forKeyPath:@"presentationSize" context:presentationSizeContext]; // 移除尺寸观察
-                [_currentObservedItem removeObserver:self
-                                           forKeyPath:@"loadedTimeRanges"
-                                              context:timeRangeContext]; // 移除加载时间观察
-                [_currentObservedItem removeObserver:self
-                                           forKeyPath:@"playbackLikelyToKeepUp"
-                                              context:playbackLikelyToKeepUpContext]; // 移除缓冲充足观察
-                [_currentObservedItem removeObserver:self
-                                           forKeyPath:@"playbackBufferEmpty"
-                                              context:playbackBufferEmptyContext]; // 移除缓冲空观察
-                [_currentObservedItem removeObserver:self
-                                           forKeyPath:@"playbackBufferFull"
-                                              context:playbackBufferFullContext]; // 移除缓冲满观察
+                [_player removeObserver:self forKeyPath:@"rate" context:nil]; // 移除播放速率观察
             }
             @catch (NSException *exception) {
-                // 防止移除不存在的观察者时崩溃
-                NSLog(@"移除观察者异常: %@", exception.description);
+                NSLog(@"移除 rate 观察者异常: %@", exception.description);
             }
+            
+            /// 使用当前观察项移除 KVO 观察者
+            if (_currentObservedItem != nil) {
+                @try {
+                    [_currentObservedItem removeObserver:self forKeyPath:@"status" context:statusContext]; // 移除状态观察
+                }
+                @catch (NSException *exception) {
+                    NSLog(@"移除 status 观察者异常: %@", exception.description);
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self forKeyPath:@"presentationSize" context:presentationSizeContext]; // 移除尺寸观察
+                }
+                @catch (NSException *exception) {
+                    NSLog(@"移除 presentationSize 观察者异常: %@", exception.description);
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self
+                                               forKeyPath:@"loadedTimeRanges"
+                                                  context:timeRangeContext]; // 移除加载时间观察
+                }
+                @catch (NSException *exception) {
+                    NSLog(@"移除 loadedTimeRanges 观察者异常: %@", exception.description);
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self
+                                               forKeyPath:@"playbackLikelyToKeepUp"
+                                                  context:playbackLikelyToKeepUpContext]; // 移除缓冲充足观察
+                }
+                @catch (NSException *exception) {
+                    NSLog(@"移除 playbackLikelyToKeepUp 观察者异常: %@", exception.description);
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self
+                                               forKeyPath:@"playbackBufferEmpty"
+                                                  context:playbackBufferEmptyContext]; // 移除缓冲空观察
+                }
+                @catch (NSException *exception) {
+                    NSLog(@"移除 playbackBufferEmpty 观察者异常: %@", exception.description);
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self
+                                               forKeyPath:@"playbackBufferFull"
+                                                  context:playbackBufferFullContext]; // 移除缓冲满观察
+                }
+                @catch (NSException *exception) {
+                    NSLog(@"移除 playbackBufferFull 观察者异常: %@", exception.description);
+                }
+            }
+            [[NSNotificationCenter defaultCenter] removeObserver:self]; // 移除通知
+            self._observersAdded = false; // 更新观察状态
+            _currentObservedItem = nil; // 清空观察项
         }
-        [[NSNotificationCenter defaultCenter] removeObserver:self]; // 移除通知
-        self._observersAdded = false; // 更新观察状态
-        _currentObservedItem = nil; // 清空观察项
+    }
+    @finally {
+        [_observerLock unlock];
     }
 }
 
@@ -362,6 +414,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         _overriddenDuration = overriddenDuration; // 设置覆盖时长
     }
     
+    // 先应用缓冲参数，再判断是否为HLS
+    [self applyBufferParametersToItem:item];
+    
     // 检测是否为HLS直播流并进行配置
     NSString* urlString = url.absoluteString.lowercaseString;
     if ([urlString containsString:@".m3u8"] || [urlString containsString:@"application/vnd.apple.mpegurl"]) {
@@ -445,9 +500,6 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     _stalledCount = 0; // 重置卡顿计数
     _isStalledCheckStarted = false; // 重置卡顿检查状态
     _playerRate = 1; // 初始化播放速率
-    
-    // 应用缓冲参数
-    [self applyBufferParametersToItem:item];
     
     // 配置解码器优先级
     [self configureDecoderPriority:item];
@@ -629,15 +681,15 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     });
 }
 
-// 执行重试操作（尝试复用现有资源）
+// 执行重试操作
 - (void)performRetry {
     if (_disposed || !_currentMediaURL) return; // 已释放或无URL退出
     
     // 停止当前播放
     [_player pause]; // 暂停播放
     
-    // 尝试直接 seek 到开始位置而不是重建所有对象
-    if (_player.currentItem && _player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
+    // 对于非直播流，尝试直接 seek 到开始位置而不是重建所有对象
+    if (![self isLiveStream] && _player.currentItem && _player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
         // 如果当前项目状态良好，只需重新开始
         [_player.currentItem seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
             if (finished && self->_wasPlayingBeforeError) {
@@ -647,7 +699,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         return;
     }
     
-    // 如果无法复用，则重新创建播放项
+    // 如果无法复用或是直播流，则重新创建播放项
     AVPlayerItem* item;
     if (_currentUseCache && _currentCacheManager) {
         item = [_currentCacheManager getCachingPlayerItemForNormalPlayback:_currentMediaURL 
@@ -675,6 +727,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         
         item = [AVPlayerItem playerItemWithAsset:asset]; // 创建播放项
     }
+    
+    // 应用缓冲参数
+    [self applyBufferParametersToItem:item];
     
     // 如果是HLS流，配置优化参数
     NSString* urlString = _currentMediaURL.absoluteString.lowercaseString;
@@ -1207,12 +1262,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 /// 释放所有资源
 - (void)dispose {
+    _disposed = true; // 先标记已释放，防止并发问题
     [self pause]; // 暂停
     [self disposeSansEventChannel]; // 释放资源
     [_eventChannel setStreamHandler:nil]; // 删除事件通道
     [self disablePictureInPicture]; // 禁用画中画
     [self setPictureInPicture:false]; // 清除画中画状态
-    _disposed = true; // 标记已释放
 }
 
 @end
