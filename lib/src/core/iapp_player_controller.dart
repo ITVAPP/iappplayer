@@ -1067,10 +1067,9 @@ void _onVideoPlayerChanged() async {
 
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
-  // 退出全屏（如果在全屏状态）
-  if (_isFullScreen) {
-    exitFullScreen();
-  }
+  // 退出全屏
+  _isFullScreen = false;
+  _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
   if (videoPlayerController?.value.isPip == true) {
     await disablePictureInPicture();
   }
