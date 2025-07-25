@@ -257,9 +257,6 @@ class IAppPlayerController {
   static const int _subtitleWindowSize = 300; // 保留前后300条字幕
   static const Duration _subtitleWindowDuration = Duration(minutes: 10); // 保留前后10分钟的字幕
 
-  // 标记是否刚从画中画退出
-  bool _hasJustExitedPip = false;
-
   // 构造函数，初始化配置和数据源
   IAppPlayerController(
     this.iappPlayerConfiguration, {
@@ -1304,23 +1301,7 @@ Future<void> checkAndExitPictureInPicture() async {
 
   // 设置生命周期状态
   void setAppLifecycleState(AppLifecycleState appLifecycleState) {
-    final previousState = _appLifecycleState;
     _appLifecycleState = appLifecycleState;
-    
-    // App从后台回到前台时
-    if (previousState != AppLifecycleState.resumed && 
-        appLifecycleState == AppLifecycleState.resumed) {
-      // 如果刚从画中画退出且不应该是全屏状态
-      if (_hasJustExitedPip && !_isFullScreen) {
-        _hasJustExitedPip = false;
-        // 延迟发送退出全屏事件，确保UI已准备好
-        Future.delayed(Duration(milliseconds: 100), () {
-          if (!_disposed) {
-            _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
-          }
-        });
-      }
-    }
     
     if (_isAutomaticPlayPauseHandled()) {
       if (appLifecycleState == AppLifecycleState.resumed) {
@@ -1480,10 +1461,7 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       return;
     }
 
-    // 标记刚从画中画退出
-    _hasJustExitedPip = true;
-    
-    // 退出画中画和全屏
+    // 退出画中画
     await checkAndExitPictureInPicture();
     
     // 恢复控件状态
@@ -1507,6 +1485,10 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 发送事件
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+    
+    // 无论之前是否全屏，都确保退出全屏状态
+    // 这是修复的关键：画中画退出后立即发送退出全屏事件
+    _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
     
     // 重置退出原因
     _lastPipExitReason = null;
