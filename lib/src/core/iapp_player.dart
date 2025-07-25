@@ -1,12 +1,12 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:iapp_player/iapp_player.dart';
 import 'package:iapp_player/src/configuration/iapp_player_controller_event.dart';
 import 'package:iapp_player/src/core/iapp_player_utils.dart';
 import 'package:iapp_player/src/core/iapp_player_with_controls.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:visibility_detector/visibility_detector.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 /// 渲染视频播放器的组件
 class IAppPlayer extends StatefulWidget {
@@ -163,15 +163,14 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   /// 处理全屏切换
   Future<void> onFullScreenChanged() async {
     final controller = widget.controller;
-  
     if (controller.isFullScreen && !_isFullScreen) {
-        _isFullScreen = true;
-      controller.postEvent(IAppPlayerEvent(IAppPlayerEventType.openFullscreen));
-      await _pushFullScreenWidget(context);
+      _isFullScreen = true;
+      controller.postEvent(IAppPlayerEvent(IAppPlayerEventType.openFullscreen)); // 发送全屏事件
+      await _pushFullScreenWidget(context); // 推送全屏页面
     } else if (_isFullScreen) {
-      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context, rootNavigator: true).pop(); // 退出全屏
       _isFullScreen = false;
-      controller.postEvent(IAppPlayerEvent(IAppPlayerEventType.hideFullscreen));
+      controller.postEvent(IAppPlayerEvent(IAppPlayerEventType.hideFullscreen)); // 发送退出全屏事件
     }
   }
 
