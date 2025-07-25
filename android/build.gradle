@@ -2,6 +2,7 @@ group 'com.itvapp.iapp_player.iapp_player'
 version '1.6.8'
 buildscript {
     ext.media3Version = "1.7.1"
+    ext.jellyfinVersion = "1.6.1+2"
     ext.workVersion = "2.9.0"
     ext.kotlinVersion = "1.9.23"
     
@@ -66,6 +67,12 @@ android {
     packagingOptions {
         pickFirst 'META-INF/**'
         pickFirst 'lib/*/libc++_shared.so'
+        // 处理 Media3 可能的冲突
+        pickFirst 'META-INF/DEPENDENCIES'
+        pickFirst 'META-INF/LICENSE'
+        pickFirst 'META-INF/LICENSE.txt'
+        pickFirst 'META-INF/NOTICE'
+        pickFirst 'META-INF/NOTICE.txt'
     }
 }
 dependencies {
@@ -93,7 +100,7 @@ dependencies {
     implementation "androidx.media3:media3-decoder:$media3Version"
     
     // 解码器扩展
-    implementation "org.jellyfin.media3:media3-ffmpeg-decoder:${media3Version}+1"
+    implementation "org.jellyfin.media3:media3-ffmpeg-decoder:$jellyfinVersion"
     
     // 额外的 Media3 组件
     implementation "androidx.media3:media3-container:$media3Version"
