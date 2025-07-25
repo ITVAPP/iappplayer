@@ -364,36 +364,50 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     // 设置播放器通知，配置标题、作者和图片等
     private fun setupNotification(iappPlayer: IAppPlayer) {
         try {
-            val textureId = getTextureId(iappPlayer)
-            if (textureId != null) {
-                val dataSource = dataSources[textureId]
-                // 修复：使用内容比较而非引用比较
-                if (textureId == currentNotificationTextureId && 
-                    currentNotificationDataSource != null && 
-                    dataSource != null && 
-                    currentNotificationDataSource == dataSource) {
-                    return
-                }
-                currentNotificationDataSource = dataSource
-                currentNotificationTextureId = textureId
-                removeOtherNotificationListeners()
-                val showNotification = getParameter(dataSource, SHOW_NOTIFICATION_PARAMETER, false)
-                if (showNotification) {
-                    val title = getParameter(dataSource, TITLE_PARAMETER, "")
-                    val author = getParameter(dataSource, AUTHOR_PARAMETER, "")
-                    val imageUrl = getParameter(dataSource, IMAGE_URL_PARAMETER, "")
-                    val notificationChannelName =
-                        getParameter<String?>(dataSource, NOTIFICATION_CHANNEL_NAME_PARAMETER, null)
-                    val activityName =
-                        getParameter(dataSource, ACTIVITY_NAME_PARAMETER, "MainActivity")
-                    iappPlayer.setupPlayerNotification(
-                        flutterState?.applicationContext!!,
-                        title, author, imageUrl, notificationChannelName, activityName
-                    )
-                }
+            val textureId = getTextureId(iappPlayer) ?: return
+            val dataSource = dataSources[textureId] ?: return
+            
+            if (textureId == currentNotificationTextureId && 
+                dataSource === currentNotificationDataSource) {
+                // 同一个对象引用，无需更新
+                return
+            }
+            
+            // 检查内容是否相同
+            if (textureId == currentNotificationTextureId && 
+                currentNotificationDataSource != null &&
+                areDataSourcesEqual(dataSource, currentNotificationDataSource!!)) {
+                return
+            }
+            
+            currentNotificationDataSource = dataSource
+            currentNotificationTextureId = textureId
+            removeOtherNotificationListeners()
+            
+            val showNotification = getParameter(dataSource, SHOW_NOTIFICATION_PARAMETER, false)
+            if (showNotification) {
+                val title = getParameter(dataSource, TITLE_PARAMETER, "")
+                val author = getParameter(dataSource, AUTHOR_PARAMETER, "")
+                val imageUrl = getParameter(dataSource, IMAGE_URL_PARAMETER, "")
+                val notificationChannelName =
+                    getParameter<String?>(dataSource, NOTIFICATION_CHANNEL_NAME_PARAMETER, null)
+                val activityName =
+                    getParameter(dataSource, ACTIVITY_NAME_PARAMETER, "MainActivity")
+                iappPlayer.setupPlayerNotification(
+                    flutterState?.applicationContext!!,
+                    title, author, imageUrl, notificationChannelName, activityName
+                )
             }
         } catch (exception: Exception) {
         }
+    }
+
+    // 比较两个数据源是否相等
+    private fun areDataSourcesEqual(source1: Map<String, Any?>, source2: Map<String, Any?>): Boolean {
+        // 比较关键字段
+        return getParameter(source1, URI_PARAMETER, "") == getParameter(source2, URI_PARAMETER, "") &&
+               getParameter(source1, KEY_PARAMETER, "") == getParameter(source2, KEY_PARAMETER, "") &&
+               getParameter(source1, TITLE_PARAMETER, "") == getParameter(source2, TITLE_PARAMETER, "")
     }
 
     // 移除其他播放器通知监听
@@ -591,8 +605,6 @@ private fun startPictureInPictureListenerTimer(player: IAppPlayer) {
     }
 
     companion object {
-        // 日志标签
-        private const val TAG = "IAppPlayerPlugin"
         // 方法通道名称
         private const val CHANNEL = "iapp_player_channel"
         // 事件通道前缀

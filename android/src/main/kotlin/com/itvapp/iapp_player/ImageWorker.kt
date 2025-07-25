@@ -121,7 +121,7 @@ class ImageWorker(
     private fun processInternalImage(imagePath: String): String? {
         return try {
             val file = File(imagePath)
-            if (!file.exists() || !file.isFile()) {
+            if (!file.exists() || !file.isFile) {
                 return null
             }
             
@@ -159,8 +159,9 @@ class ImageWorker(
         return width > MAX_IMAGE_SIZE_PX || height > MAX_IMAGE_SIZE_PX
     }
 
-    // 调整图片尺寸并保存（保持原格式）
+    // 调整图片尺寸并保存
     private fun resizeAndSaveImage(imageData: ByteArray, fileName: String, extension: String): String? {
+        var bitmap: Bitmap? = null
         return try {
             // 计算采样率
             val options = BitmapFactory.Options().apply {
@@ -172,8 +173,11 @@ class ImageWorker(
             options.inJustDecodeBounds = false
             options.inPreferredConfig = Bitmap.Config.ARGB_8888
             
+            // 尝试使用可复用的Bitmap
+            options.inMutable = true
+            
             // 解码位图
-            val bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size, options)
+            bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.size, options)
                 ?: return null
             
             // 根据原始格式选择压缩参数
@@ -189,7 +193,6 @@ class ImageWorker(
             
             FileOutputStream(file).use { out ->
                 val success = bitmap.compress(format, quality, out)
-                bitmap.recycle() // 及时释放内存
                 
                 if (success) {
                     out.flush()
@@ -201,6 +204,13 @@ class ImageWorker(
             
         } catch (e: Exception) {
             null
+        } finally {
+            // 确保释放bitmap内存
+            bitmap?.let {
+                if (!it.isRecycled) {
+                    it.recycle()
+                }
+            }
         }
     }
 
@@ -313,7 +323,6 @@ class ImageWorker(
     }
 
     companion object {
-        private const val TAG = "ImageWorker"
         private const val DEFAULT_NOTIFICATION_IMAGE_SIZE_PX = 256
         private const val MAX_IN_SAMPLE_SIZE = 16
         private const val MAX_IMAGE_SIZE_PX = 512  // 超过此尺寸才调整大小

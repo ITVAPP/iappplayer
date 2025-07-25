@@ -63,18 +63,16 @@ class CacheWorker(
         }
     }
 
-    // 优化：提取 HTTP 请求头到键值映射
+    // 提取 HTTP 请求头到键值映射
     private fun extractHeaders(data: androidx.work.Data): Map<String, String> {
-        val headers = mutableMapOf<String, String>()
+        val headers = HashMap<String, String>()
         val headerPrefix = IAppPlayerPlugin.HEADER_PARAMETER
         val prefixLength = headerPrefix.length
         
-        for ((key, value) in data.keyValueMap) {
-            if (key.startsWith(headerPrefix) && key.length > prefixLength) {
-                val headerKey = key.substring(prefixLength)
-                val headerValue = value as? String
-                if (headerValue != null) {
-                    headers[headerKey] = headerValue
+        data.keyValueMap.forEach { (key, value) ->
+            if (key.length > prefixLength && key.startsWith(headerPrefix)) {
+                (value as? String)?.let { headerValue ->
+                    headers[key.substring(prefixLength)] = headerValue
                 }
             }
         }
@@ -95,14 +93,12 @@ class CacheWorker(
         val dataSourceFactory = getDataSourceFactory(userAgent, headers)
         
         var dataSpec = DataSpec(uri, 0, preCacheSize)
-        if (cacheKey != null && cacheKey.isNotEmpty()) {
+        if (!cacheKey.isNullOrEmpty()) {
             dataSpec = dataSpec.buildUpon().setKey(cacheKey).build()
         }
         
         val cache = IAppPlayerCache.createCache(context, maxCacheSize)
-        if (cache == null) {
-            throw Exception("缓存创建失败")
-        }
+            ?: throw Exception("缓存创建失败")
         
         val cacheDataSource = CacheDataSource.Factory()
             .setCache(cache)
@@ -122,7 +118,7 @@ class CacheWorker(
         cacheWriter?.cache()
     }
 
-    // 报告缓存进度，优化日志输出频率
+    // 报告缓存进度
     private fun reportCacheProgress(bytesCached: Long, preCacheSize: Long, url: String?) {
         if (preCacheSize > 0) {
             val completedData = (bytesCached * 100f / preCacheSize).toDouble()
@@ -141,9 +137,5 @@ class CacheWorker(
             super.onStopped()
         } catch (exception: Exception) {
         }
-    }
-
-    companion object {
-        private const val TAG = "CacheWorker"
     }
 }

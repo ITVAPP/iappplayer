@@ -11,7 +11,6 @@ import java.lang.Exception
 object IAppPlayerCache {
     @Volatile
     private var instance: SimpleCache? = null
-    private const val TAG = "IAppPlayerCache"
     
     // 初始化并返回媒体播放器缓存实例（单例模式）
     fun createCache(context: Context, cacheFileSize: Long): SimpleCache? {

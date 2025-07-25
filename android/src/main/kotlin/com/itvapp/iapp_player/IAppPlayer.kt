@@ -14,12 +14,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import com.itvapp.iapp_player.DataSourceUtils.getUserAgent
-import com.itvapp.iapp_player.DataSourceUtils.getRtmpDataSourceFactory
-import com.itvapp.iapp_player.DataSourceUtils.getDataSourceFactory
-import io.flutter.plugin.common.EventChannel
-import io.flutter.view.TextureRegistry.SurfaceTextureEntry
-import io.flutter.plugin.common.MethodChannel
+import android.os.Message
+import android.view.Surface
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerNotificationManager
 import androidx.media3.session.MediaSession
@@ -35,7 +31,6 @@ import androidx.media3.ui.PlayerNotificationManager.MediaDescriptionAdapter
 import androidx.media3.ui.PlayerNotificationManager.BitmapCallback
 import androidx.work.OneTimeWorkRequest
 import androidx.media3.common.PlaybackParameters
-import android.view.Surface
 import androidx.lifecycle.Observer
 import androidx.media3.exoplayer.smoothstreaming.SsMediaSource
 import androidx.media3.exoplayer.smoothstreaming.DefaultSsChunkSource
@@ -49,7 +44,6 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ExtractorsFactory
 import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import androidx.media3.extractor.ts.TsExtractor
-import io.flutter.plugin.common.EventChannel.EventSink
 import androidx.work.Data
 import androidx.media3.exoplayer.*
 import androidx.media3.common.AudioAttributes
@@ -73,6 +67,13 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.lang.ref.WeakReference
 import kotlin.math.max
 import kotlin.math.min
+import io.flutter.plugin.common.EventChannel.EventSink
+import io.flutter.plugin.common.EventChannel
+import io.flutter.view.TextureRegistry.SurfaceTextureEntry
+import io.flutter.plugin.common.MethodChannel
+import com.itvapp.iapp_player.DataSourceUtils.getUserAgent
+import com.itvapp.iapp_player.DataSourceUtils.getRtmpDataSourceFactory
+import com.itvapp.iapp_player.DataSourceUtils.getDataSourceFactory
 
 // 视频播放器核心类，管理ExoPlayer及播放相关功能
 internal class IAppPlayer(
@@ -106,7 +107,7 @@ internal class IAppPlayer(
     private val retryDelayMs = 500L // 重试延迟时间（毫秒）
     private var currentMediaSource: MediaSource? = null // 当前媒体源
     private var wasPlayingBeforeError = false // 错误前播放状态
-    private var retryHandler: Handler? = null // 使用可空类型避免内存泄漏
+    private var retryHandler: RetryHandler? = null // 使用静态内部类避免内存泄漏
     @Volatile
     private var isCurrentlyRetrying = false // 是否正在重试
     private val applicationContext: Context = context.applicationContext // 缓存的应用上下文
@@ -123,9 +124,6 @@ internal class IAppPlayer(
     private var currentUserAgent: String? = null // 当前用户代理
     private var isPlayerCreated = false // 播放器是否已创建
     private val BUFFERING_UPDATE_THROTTLE_MS = 600L // 缓冲更新节流时间（毫秒）
-    
-    // 使用弱引用避免内存泄漏
-    private var activityWeakRef: WeakReference<Context>? = null
     
     // 获取视频宽高比 - 保留此方法，因为它被 IAppPlayerPlugin 使用
     fun getVideoAspectRatio(): android.util.Rational? {
@@ -152,10 +150,8 @@ internal class IAppPlayer(
 
     // 初始化播放器，配置加载控制与事件通道
     init {
-        // 优化缓冲区大小，降低内存占用和启动时间
+        // 缓冲区大小
         val loadBuilder = DefaultLoadControl.Builder()
-        
-        // 优化：降低初始缓冲要求，加快视频启动
         val minBufferMs = customDefaultLoadControl.minBufferMs?.takeIf { it > 0 } ?: 30000
         val maxBufferMs = customDefaultLoadControl.maxBufferMs?.takeIf { it > 0 } ?: 30000
         val bufferForPlaybackMs = customDefaultLoadControl.bufferForPlaybackMs?.takeIf { it > 0 } ?: 3000
@@ -168,16 +164,16 @@ internal class IAppPlayer(
             bufferForPlaybackAfterRebufferMs
         )
         
-        // 优化内存分配，优先考虑时间而非大小
+        // 内存分配优先考虑时间
         loadBuilder.setPrioritizeTimeOverSizeThresholds(true)
         
         loadControl = loadBuilder.build()
         
         workManager = WorkManager.getInstance(context)
-        workerObserverMap = ConcurrentHashMap(16, 0.75f, 2) // 设置初始容量和并发级别
+        workerObserverMap = ConcurrentHashMap()
         
-        // 保存弱引用
-        activityWeakRef = WeakReference(context)
+        // 初始化重试Handler
+        retryHandler = RetryHandler(this)
         
         // 设置事件通道与视频表面
         setupEventChannel(eventChannel, textureEntry, result)
@@ -338,8 +334,8 @@ internal class IAppPlayer(
             // 配置Cronet数据源
             val cronetFactory = CronetDataSource.Factory(engine, getExecutorService())
                 .setUserAgent(userAgent)
-                .setConnectionTimeoutMs(3000)
-                .setReadTimeoutMs(15000)
+                .setConnectionTimeoutMs(CONNECT_TIMEOUT_MS)
+                .setReadTimeoutMs(READ_TIMEOUT_MS)
                 .setHandleSetCookieRequests(true)
             
             // 设置自定义请求头
@@ -355,7 +351,7 @@ internal class IAppPlayer(
         }
     }
 
-    // 获取优化的HTTP数据源工厂
+    // HTTP数据源工厂
     private fun getOptimizedDataSourceFactory(
         userAgent: String?,
         headers: Map<String, String>?
@@ -498,11 +494,11 @@ internal class IAppPlayer(
         exoPlayer?.videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT
         // 设置视频表面
         exoPlayer?.setVideoSurface(surface)
-        // 设置音频属性
-        setAudioAttributes(exoPlayer, true)
         // 添加事件监听器
         exoPlayerEventListener = createPlayerListener()
         exoPlayer?.addListener(exoPlayerEventListener!!)
+        // 设置音频属性
+        setAudioAttributes(exoPlayer, true)
     }
 
     // 视频格式枚举
@@ -514,11 +510,16 @@ internal class IAppPlayer(
     private fun detectVideoFormat(url: String): VideoFormat {
         if (url.isEmpty()) return VideoFormat.OTHER
         
-        // 直接使用 endsWith 进行后缀匹配，避免全字符串转换
+        val urlLower = url.lowercase()
+        
+        // 匹配逻辑，避免误判
         return when {
-            url.endsWith(".m3u8", ignoreCase = true) || url.contains(".m3u8?", ignoreCase = true) -> VideoFormat.HLS
-            url.endsWith(".mpd", ignoreCase = true) || url.contains(".mpd?", ignoreCase = true) -> VideoFormat.DASH
-            url.endsWith(".ism", ignoreCase = true) || url.contains(".ism/", ignoreCase = true) -> VideoFormat.SS
+            // HLS: .m3u8 结尾或 .m3u8? 
+            urlLower.endsWith(".m3u8") || urlLower.contains(".m3u8?") -> VideoFormat.HLS
+            // DASH: .mpd 结尾或 .mpd?
+            urlLower.endsWith(".mpd") || urlLower.contains(".mpd?") -> VideoFormat.DASH
+            // SS: .ism 结尾或 .ism/ 或 .ism?
+            urlLower.endsWith(".ism") || urlLower.contains(".ism/") || urlLower.contains(".ism?") -> VideoFormat.SS
             else -> VideoFormat.OTHER
         }
     }
@@ -825,7 +826,6 @@ internal class IAppPlayer(
         workerObserverMap.clear()
     }
 
-    // 创建优化的 ExtractorsFactory
     private fun createOptimizedExtractorsFactory(): ExtractorsFactory {
         return DefaultExtractorsFactory().apply {
             // 增加 TS 流时间戳搜索字节数，提高定位精度
@@ -839,13 +839,12 @@ internal class IAppPlayer(
         }
     }
 
-    // 创建优化的 HLS ExtractorFactory
     private fun createOptimizedHlsExtractorFactory(): DefaultHlsExtractorFactory {
         return DefaultHlsExtractorFactory(
             DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES,
             true // exposeCea608WhenMissingDeclarations
         ).apply {
-            // HLS 特定的优化已在构造函数中配置
+            // 已在构造函数中配置
         }
     }
 
@@ -860,8 +859,6 @@ internal class IAppPlayer(
     ): MediaSource {
         // 推断内容类型
         val type = inferContentType(mediaItem.localConfiguration?.uri, isRtmpStream, isHlsStream, isRtspStream)
-        
-        // 创建优化的 ExtractorsFactory
         val optimizedExtractorsFactory = createOptimizedExtractorsFactory()
         
         // 创建媒体源
@@ -907,7 +904,7 @@ internal class IAppPlayer(
                     .createMediaSource(mediaItem)
             }
             C.CONTENT_TYPE_OTHER -> {
-                // 创建渐进式媒体源，使用优化的 ExtractorsFactory
+                // 创建渐进式媒体源
                 ProgressiveMediaSource.Factory(
                     mediaDataSourceFactory!!,
                     optimizedExtractorsFactory
@@ -1040,23 +1037,9 @@ internal class IAppPlayer(
         retryCount++
         isCurrentlyRetrying = true
         
-        // 重试延迟
-        val delayMs = retryDelayMs
-        
-        // 使用弱引用的Handler避免内存泄漏
-        if (retryHandler == null) {
-            retryHandler = Handler(Looper.getMainLooper())
-        }
-        
-        // 清理重试任务
-        retryHandler?.removeCallbacksAndMessages(null)
-        
-        // 延迟执行重试
-        retryHandler?.postDelayed({
-            if (!isDisposed.get()) {
-                performRetry()
-            }
-        }, delayMs)
+        // 清理并延迟执行重试
+        retryHandler?.removeMessages(MSG_RETRY)
+        retryHandler?.sendEmptyMessageDelayed(MSG_RETRY, retryDelayMs)
     }
 
     // 判断是否为网络错误
@@ -1118,7 +1101,7 @@ internal class IAppPlayer(
         retryCount = 0
         isCurrentlyRetrying = false
         wasPlayingBeforeError = false
-        retryHandler?.removeCallbacksAndMessages(null)
+        retryHandler?.removeMessages(MSG_RETRY)
     }
 
     // 发送缓冲更新事件（带节流）
@@ -1387,8 +1370,6 @@ internal class IAppPlayer(
         currentDataSourceFactory = null
         currentHeaders = null
         currentUserAgent = null
-        activityWeakRef?.clear()
-        activityWeakRef = null
         
         // 释放Cronet引擎
         if (isUsingCronet) {
@@ -1425,10 +1406,21 @@ internal class IAppPlayer(
         }
     }
 
+    // 静态内部类的重试Handler，避免内存泄漏
+    private class RetryHandler(player: IAppPlayer) : Handler(Looper.getMainLooper()) {
+        private val playerRef = WeakReference(player)
+        
+        override fun handleMessage(msg: Message) {
+            if (msg.what == MSG_RETRY) {
+                playerRef.get()?.performRetry()
+            }
+        }
+    }
+
 // 自定义解码器选择器
 private inner class CustomMediaCodecSelector : MediaCodecSelector {
     // 缓存，避免重复计算
-    private val sortedDecodersCache = ConcurrentHashMap<String, List<MediaCodecInfo>>(16, 0.75f, 2)
+    private val sortedDecodersCache = ConcurrentHashMap<String, List<MediaCodecInfo>>()
     
     // 预编译的解码器名称模式
     private val softwareDecoderPrefixes = arrayOf(
@@ -1448,7 +1440,6 @@ private inner class CustomMediaCodecSelector : MediaCodecSelector {
         // 根据解码器类型处理
         return when (preferredDecoderType) {
             SOFTWARE_FIRST -> {
-                // 直接使用 PREFER_SOFTWARE，它已经优化了软件优先
                 MediaCodecSelector.PREFER_SOFTWARE.getDecoderInfos(
                     mimeType, requiresSecureDecoder, requiresTunnelingDecoder
                 )
@@ -1530,6 +1521,13 @@ private inner class CustomMediaCodecSelector : MediaCodecSelector {
         
         // 最大并发图片加载数
         private const val MAX_CONCURRENT_IMAGE_LOADS = 3
+        
+        // 重试消息类型
+        private const val MSG_RETRY = 1
+        
+        // 超时配置（统一管理）
+        private const val CONNECT_TIMEOUT_MS = 3000
+        private const val READ_TIMEOUT_MS = 15000
         
         @Volatile
         private var globalCronetEngine: CronetEngine? = null // Cronet引擎
@@ -1677,22 +1675,23 @@ private object EventMapPool {
     init {
         // 预创建初始对象
         repeat(INITIAL_POOL_SIZE) {
-            pool.offer(HashMap())
+            pool.offer(HashMap(8))
             poolSize.incrementAndGet()
         }
     }
     
     // 获取事件对象
     fun acquire(): MutableMap<String, Any?> {
-        return pool.poll() ?: HashMap()
+        return pool.poll() ?: HashMap(8)
     }
     
     // 释放事件对象
     fun release(map: MutableMap<String, Any?>) {
         if (poolSize.get() < MAX_POOL_SIZE) {
             map.clear()
-            pool.offer(map)
-            poolSize.incrementAndGet()
+            if (pool.offer(map)) {
+                poolSize.incrementAndGet()
+            }
         }
     }
     

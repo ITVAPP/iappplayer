@@ -16,21 +16,14 @@ internal object DataSourceUtils {
     // RTMP 协议及其变体集合
     private val RTMP_SCHEMES = setOf("rtmp", "rtmps", "rtmpe", "rtmpt", "rtmpte", "rtmpts")
     
-    // 超时设置常量（与 IAppPlayer.kt 保持一致）
+    // 超时设置常量
     private const val CONNECT_TIMEOUT_MS = 3000
     private const val READ_TIMEOUT_MS = 15000
     
     // 获取用户代理，优先使用 headers 中的值
     @JvmStatic
     fun getUserAgent(headers: Map<String, String>?): String? {
-        var userAgent = System.getProperty(USER_AGENT_PROPERTY)
-        if (headers != null && headers.containsKey(USER_AGENT)) {
-            val userAgentHeader = headers[USER_AGENT]
-            if (userAgentHeader != null) {
-                userAgent = userAgentHeader
-            }
-        }
-        return userAgent
+        return headers?.get(USER_AGENT) ?: System.getProperty(USER_AGENT_PROPERTY)
     }
     
     // 创建 HTTP 数据源，支持自定义用户代理和请求头
@@ -89,10 +82,12 @@ internal object DataSourceUtils {
     @JvmStatic
     fun getProtocolInfo(uri: Uri?): ProtocolInfo {
         val scheme = uri?.scheme?.lowercase()
-        return ProtocolInfo(
-            isHttp = scheme != null && HTTP_SCHEMES.contains(scheme),
-            isRtmp = scheme != null && RTMP_SCHEMES.contains(scheme),
-            scheme = scheme
-        )
+        
+        return when {
+            scheme == null -> ProtocolInfo(false, false, null)
+            HTTP_SCHEMES.contains(scheme) -> ProtocolInfo(true, false, scheme)
+            RTMP_SCHEMES.contains(scheme) -> ProtocolInfo(false, true, scheme)
+            else -> ProtocolInfo(false, false, scheme)
+        }
     }
 }
