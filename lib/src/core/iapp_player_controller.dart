@@ -1036,10 +1036,29 @@ void _onVideoPlayerChanged() async {
 
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
-  // 退出全屏
-    exitFullScreen();
-  if (videoPlayerController?.value.isPip == true) {
-    await disablePictureInPicture();
+  try {
+    // 先尝试退出画中画
+    if (videoPlayerController?.value.isPip == true) {
+      await disablePictureInPicture();
+      // 等待画中画真正退出（增加等待时间）
+      await Future.delayed(Duration(milliseconds: 300));
+    }
+    
+    // 确保退出全屏（添加多重检查）
+    if (_isFullScreen) {
+      exitFullScreen();
+      // 延迟后再次检查
+      await Future.delayed(Duration(milliseconds: 200));
+      if (_isFullScreen) {
+        // 如果还在全屏，强制退出
+        _isFullScreen = false;
+        _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
+        // 强制刷新UI状态
+        _postControllerEvent(IAppPlayerControllerEvent.changeSubtitles);
+      }
+    }
+  } catch (e) {
+    IAppPlayerUtils.log("退出画中画失败: $e");
   }
 }
 
@@ -1453,6 +1472,9 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       return;
     }
     
+    // 保存当前播放状态
+    final wasPlaying = isPlaying() ?? false;
+    
     // 退出画中画和全屏
     await checkAndExitPictureInPicture();
     
@@ -1463,15 +1485,15 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 根据退出原因决定播放行为
     if (_lastPipExitReason == 'return') {
-      // 返回按钮：保持播放状态
-      if (!isPlaying()! && _wasPlayingBeforePause == true) {
+      // 返回按钮：恢复之前的播放状态
+      if (wasPlaying) {
         await play();
       }
     } else if (_lastPipExitReason == 'close') {
       // 关闭按钮：暂停播放
       await pause();
     } else {
-      // 默认行为（系统关闭等）
+      // 默认行为（系统关闭等）：暂停播放
       await pause();
     }
     
