@@ -775,13 +775,6 @@ class IAppPlayerController {
 
   // 进入全屏模式
   void enterFullScreen() {
-  
-    // 如果刚从画中画返回，阻止全屏
-    if (isReturningFromPip) {
-      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
-      return;
-    }
-    
     _isFullScreen = true;
     _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
   }
@@ -794,13 +787,6 @@ class IAppPlayerController {
 
   // 切换全屏模式
   void toggleFullScreen() {
-  
-    // 如果刚从画中画返回，阻止全屏
-    if (isReturningFromPip) {
-      IAppPlayerUtils.log("画中画返回保护期内，暂时阻止全屏");
-      return;
-    }
-    
     _isFullScreen = !_isFullScreen;
     if (_isFullScreen) {
       _postControllerEvent(IAppPlayerControllerEvent.openFullscreen);
@@ -1036,34 +1022,10 @@ void _onVideoPlayerChanged() async {
     // 退出画中画模式
     _wasInPipMode = false;
     
-    // 暂停播放（用户关闭画中画时的预期行为）
-    if (isPlaying() == true) {
-      pause();
-    }
-    
-    // 恢复全屏状态
-    if (_wasInFullScreenBeforePiP) {
-      // 如果进入画中画前是全屏，保持全屏
-      if (!_isFullScreen) {
-        enterFullScreen();
-      }
-    } else {
-      // 如果进入画中画前不是全屏，确保退出全屏
-      if (_isFullScreen) {
-        exitFullScreen();
-      }
-    }
-    
     // 恢复控件状态
     if (_wasControlsEnabledBeforePiP) {
       setControlsEnabled(true);
     }
-    
-    // 刷新播放器
-    // videoPlayerController?.refresh();
-    
-    // 发送画中画停止事件
-   //  _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
     
     // 根据退出原因决定播放行为
     if (_lastPipExitReason == 'return') {
@@ -1517,6 +1479,7 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       break;
     case VideoEventType.pipStop:
       _lastPipExitReason = event.pipExitReason;
+      exitFullScreen();
       break;
     default:
       break;
