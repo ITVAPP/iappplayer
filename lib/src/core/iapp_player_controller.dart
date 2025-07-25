@@ -1036,10 +1036,8 @@ void _onVideoPlayerChanged() async {
 
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
-  // 退出全屏（如果在全屏状态）
-  if (_isFullScreen) {
+  // 退出全屏
     exitFullScreen();
-  }
   if (videoPlayerController?.value.isPip == true) {
     await disablePictureInPicture();
   }
@@ -1301,9 +1299,8 @@ Future<void> checkAndExitPictureInPicture() async {
 
   // 设置生命周期状态
   void setAppLifecycleState(AppLifecycleState appLifecycleState) {
-    _appLifecycleState = appLifecycleState;
-    
     if (_isAutomaticPlayPauseHandled()) {
+      _appLifecycleState = appLifecycleState;
       if (appLifecycleState == AppLifecycleState.resumed) {
         if (_wasPlayingBeforePause == true && _isPlayerVisible) {
           play();
@@ -1352,11 +1349,6 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 禁用控件
     setControlsEnabled(false);
-
-    // 进入画中画时退出全屏（避免状态混乱）
-    if (_isFullScreen) {
-      exitFullScreen();
-    }
     
     // 设置全局键
     _iappPlayerGlobalKey = iappPlayerGlobalKey;
@@ -1460,8 +1452,8 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     if (_disposed) {
       return;
     }
-
-    // 退出画中画
+    
+    // 退出画中画和全屏
     await checkAndExitPictureInPicture();
     
     // 恢复控件状态
@@ -1485,10 +1477,6 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
     
     // 发送事件
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
-    
-    // 无论之前是否全屏，都确保退出全屏状态
-    // 这是修复的关键：画中画退出后立即发送退出全屏事件
-    _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
     
     // 重置退出原因
     _lastPipExitReason = null;
