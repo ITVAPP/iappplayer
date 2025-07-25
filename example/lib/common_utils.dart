@@ -46,7 +46,7 @@ class UIConstants {
   
   // 音乐播放器专用
   static const double musicPlayerHeight = 120.0;
-  static const double musicPlayerSquareSize = 200.0; // 新增：单首音乐播放的正方形尺寸
+  static const double musicPlayerSquareSize = 180.0; // 新增：单首音乐播放的封面尺寸
 }
 
 // 屏幕旋转处理Mixin - 提取重复的旋转处理逻辑
