@@ -171,12 +171,6 @@ class IAppPlayerController {
   // 画中画退出原因
   String? _lastPipExitReason;
 
-  // 全局键
-  GlobalKey? _iappPlayerGlobalKey;
-
-  // 获取全局键
-  GlobalKey? get iappPlayerGlobalKey => _iappPlayerGlobalKey;
-
   // 视频事件流订阅
   StreamSubscription<VideoEvent>? _videoEventStreamSubscription;
 
@@ -1377,44 +1371,41 @@ Future<void> checkAndExitPictureInPicture() async {
   }
 
   // 启用画中画
-Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
-  if (videoPlayerController == null) {
-    throw StateError("数据源未初始化");
-  }
-
-  final bool isPipSupported =
-      (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
-
-  if (isPipSupported) {
-    // 保存当前状态
-    _wasInFullScreenBeforePiP = _isFullScreen;
-    _wasControlsEnabledBeforePiP = _controlsEnabled;
-    
-    // 保存播放状态（重要：确保返回时能恢复播放）
-    _wasPlayingBeforePause = isPlaying();
-    
-    // 禁用控件
-    setControlsEnabled(false);
-    
-    // 设置全局键
-    _iappPlayerGlobalKey = iappPlayerGlobalKey;
-    
-    if (Platform.isAndroid || Platform.isIOS) {
-      // 3. 现在可以安全进入画中画
-      await videoPlayerController?.enablePictureInPicture();
-      
-      // 4. 发送事件
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
-      
-      return;
-    } else {
-      IAppPlayerUtils.log("当前平台不支持画中画");
+  Future<void>? enablePictureInPicture() async {
+    if (videoPlayerController == null) {
+      throw StateError("数据源未初始化");
     }
-  } else {
-    IAppPlayerUtils.log(
-        "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
+
+    final bool isPipSupported =
+        (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
+
+    if (isPipSupported) {
+      // 保存当前状态
+      _wasInFullScreenBeforePiP = _isFullScreen;
+      _wasControlsEnabledBeforePiP = _controlsEnabled;
+      
+      // 保存播放状态（重要：确保返回时能恢复播放）
+      _wasPlayingBeforePause = isPlaying();
+      
+      // 禁用控件
+      setControlsEnabled(false);
+      
+      if (Platform.isAndroid || Platform.isIOS) {
+        // 进入画中画
+        await videoPlayerController?.enablePictureInPicture();
+        
+        // 发送事件
+        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
+        
+        return;
+      } else {
+        IAppPlayerUtils.log("当前平台不支持画中画");
+      }
+    } else {
+      IAppPlayerUtils.log(
+          "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
+    }
   }
-}
 
   // 禁用画中画
   Future<void>? disablePictureInPicture() {
@@ -1422,11 +1413,6 @@ Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
       throw StateError("数据源未初始化");
     }
     return videoPlayerController!.disablePictureInPicture();
-  }
-
-  // 设置全局键
-  void setIAppPlayerGlobalKey(GlobalKey iappPlayerGlobalKey) {
-    _iappPlayerGlobalKey = iappPlayerGlobalKey;
   }
 
   // 检查画中画支持
