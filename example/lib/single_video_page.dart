@@ -27,7 +27,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   DecoderState _currentDecoder = DecoderState.hardware;
   bool _isPlaying = false; // 添加播放状态跟踪
   bool _isPipMode = false; // 添加画中画状态跟踪
-  GlobalKey? _playerGlobalKey; // 添加：播放器全局键
   Key _playerContainerKey = UniqueKey(); // 添加：用于强制重建播放器
   bool _isSwitchingDecoder = false; // 添加：防止重复切换
 
@@ -37,7 +36,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   @override
   void initState() {
     super.initState();
-    _playerGlobalKey = GlobalKey(); // 初始化时就创建全局键
     _initializePlayer();
   }
 
@@ -108,10 +106,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
         setState(() {
           _controller = result.activeController;
           _isLoading = false;  // 无论成功与否都要设置加载完成
-          if (_controller != null) {
-            // 关键修改：设置播放器的 GlobalKey 以启用画中画功能
-            _controller!.setIAppPlayerGlobalKey(_playerGlobalKey!);
-          }
         });
       }
     } catch (e) {
@@ -147,7 +141,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
         _currentDecoder = newDecoder;
         _isLoading = true;
         _isPipMode = false;  // 重置画中画状态
-        _playerGlobalKey = GlobalKey(); // 在 setState 内创建新的 GlobalKey
         _playerContainerKey = UniqueKey(); // 强制重建播放器容器
       });
       
@@ -161,8 +154,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   @override
   void dispose() {
     _releasePlayer();
-    // 只在组件销毁时才清理 GlobalKey
-    _playerGlobalKey = null;
     super.dispose();
   }
 
@@ -251,7 +242,6 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                               color: Colors.black,
                               child: _controller != null
                                   ? IAppPlayer(
-                                      key: _playerGlobalKey, // 关键修改：绑定 GlobalKey 到 Widget
                                       controller: _controller!,
                                     )
                                   : const Center(
@@ -322,14 +312,14 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                       isPrimary: true,
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    // 画中画按钮
+                    // 画中画按钮 - 简化后的使用方式
                     ModernControlButton(
-                      onPressed: _controller != null && !_isLoading && _playerGlobalKey != null
+                      onPressed: _controller != null && !_isLoading
                           ? () {
                               if (_isPipMode) {
                                 _controller!.disablePictureInPicture();
                               } else {
-                                _controller!.enablePictureInPicture(_playerGlobalKey!);
+                                _controller!.enablePictureInPicture(); // 直接调用，无需GlobalKey
                               }
                             }
                           : null,
