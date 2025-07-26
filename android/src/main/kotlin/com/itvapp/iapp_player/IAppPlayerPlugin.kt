@@ -437,7 +437,7 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             .hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
-    // 启用画中画模式，配置媒体会话
+    // 启用画中画模式
     private fun enablePictureInPicture(player: IAppPlayer) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val activity = activityWeakRef?.get()
@@ -451,64 +451,15 @@ class IAppPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 player.getVideoAspectRatio()?.let { aspectRatio ->
                     pipParamsBuilder.setAspectRatio(aspectRatio)
                 }
-                
-                // 关键修改：自动获取视频视图的位置
-                val sourceRect = Rect()
-                var foundVideoView = false
-                
-                // 查找包含视频的视图
-                val decorView = activity.window.decorView
-                val viewList = mutableListOf<View>()
-                findAllViews(decorView, viewList)
-                
-                // 查找TextureView、SurfaceView或PlayerView
-                for (view in viewList) {
-                    if ((view is TextureView || view is SurfaceView || 
-                        view.javaClass.simpleName.contains("PlayerView", ignoreCase = true)) &&
-                        view.isShown && view.width > 0 && view.height > 0) {
-                        // 使用官方推荐的方法获取视图位置
-                        view.getGlobalVisibleRect(sourceRect)
-                        foundVideoView = true
-                        break
-                    }
-                }
-                
-                // 如果找不到视频视图，使用估算值
-                if (!foundVideoView || sourceRect.isEmpty) {
-                    // 获取播放器纹理ID对应的预期位置
-                    val textureId = playerToTextureId[player]
-                    if (textureId != null) {
-                        // 假设视频在屏幕上方，使用16:9的宽高比
-                        val displayMetrics = activity.resources.displayMetrics
-                        val screenWidth = displayMetrics.widthPixels
-                        val videoHeight = (screenWidth * 9) / 16
-                        sourceRect.set(0, 0, screenWidth, videoHeight)
-                    }
-                }
-                
-                // 设置源矩形提示（这是解决问题的关键）
-                if (!sourceRect.isEmpty) {
-                    pipParamsBuilder.setSourceRectHint(sourceRect)
-                }
             
                 try {
-                    // 进入PiP模式
+                    // 直接进入PiP模式，Android系统会自动捕获Activity中的视频内容
                     activity.enterPictureInPictureMode(pipParamsBuilder.build())
                     startPictureInPictureListenerTimer(player)
                     player.onPictureInPictureStatusChanged(true)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-            }
-        }
-    }
-    
-    // 辅助方法：递归查找所有视图
-    private fun findAllViews(view: View, list: MutableList<View>) {
-        list.add(view)
-        if (view is ViewGroup) {
-            for (i in 0 until view.childCount) {
-                findAllViews(view.getChildAt(i), list)
             }
         }
     }
