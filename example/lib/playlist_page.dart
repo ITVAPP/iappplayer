@@ -4,7 +4,7 @@ import 'package:iapp_player/iapp_player.dart';
 import 'app_localizations.dart';
 import 'common_utils.dart';
 
-// 播放列表示例
+// 播放列表页面组件
 class PlaylistExample extends StatefulWidget {
   const PlaylistExample({Key? key}) : super(key: key);
 
@@ -19,7 +19,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
-  bool _isPlaying = false; // 添加播放状态跟踪
+  bool _isPlaying = false;
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -30,8 +30,9 @@ class _PlaylistExampleState extends State<PlaylistExample>
     _initializePlayer();
   }
 
+  // 初始化播放列表配置和控制器
   Future<void> _initializePlayer() async {
-    // 修复：使用正确的本地资源路径，移除字幕相关代码
+    // 创建多视频播放列表实例
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
         'assets/videos/video1.mp4',
@@ -45,39 +46,45 @@ class _PlaylistExampleState extends State<PlaylistExample>
         'https://www.itvapp.net/images/logo-1.png',
         'https://www.itvapp.net/images/logo-1.png',
       ],
-      enableFullscreen: true, // 添加全屏功能
+      enableFullscreen: true,
       eventListener: (event) {
+        // 监听播放器初始化完成事件
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
             _isPlaying = _controller?.isPlaying() ?? false;
           });
-          // 初始化后检查方向
           handleOrientationChange();
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
+        } 
+        // 监听播放列表项切换事件
+        else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
           final index = event.parameters?['index'] as int?;
-          if (index != null && index != _currentIndex) {  // 【优化】只在索引真正改变时更新
+          if (index != null && index != _currentIndex) {
             setState(() {
               _currentIndex = index;
             });
           }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistShuffle) {
+        } 
+        // 监听播放模式切换事件（随机/顺序）
+        else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistShuffle) {
           final shuffleMode = event.parameters?['shuffleMode'] as bool?;
-          if (shuffleMode != null && shuffleMode != _shuffleMode) {  // 【优化】只在模式真正改变时更新
+          if (shuffleMode != null && shuffleMode != _shuffleMode) {
             setState(() {
               _shuffleMode = shuffleMode;
             });
           }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
-          // 监听播放事件
-          if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+        } 
+        // 监听视频播放开始事件
+        else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
+          if (!_isPlaying) {
             setState(() {
               _isPlaying = true;
             });
           }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
-          // 监听暂停事件
-          if (_isPlaying) {  // 【优化】只在状态真正改变时更新
+        } 
+        // 监听视频暂停事件
+        else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
+          if (_isPlaying) {
             setState(() {
               _isPlaying = false;
             });
@@ -97,6 +104,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
       ],
     );
 
+    // 检查组件挂载状态并更新控制器
     if (mounted) {
       setState(() {
         _controller = result.activeController;
@@ -105,7 +113,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
     }
   }
 
-  // 获取当前视频标题
+  // 根据当前索引获取视频标题
   String _getCurrentVideoTitle(BuildContext context) {
     final titles = ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'];
     if (_currentIndex >= 0 && _currentIndex < titles.length) {
@@ -114,7 +122,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
     return AppLocalizations.of(context).videoNumber(_currentIndex + 1);
   }
 
-  // 修复：添加更新当前索引的方法
+  // 更新当前播放索引状态
   void _updateCurrentIndex() {
     if (_playlistController != null && mounted) {
       final newIndex = _playlistController!.currentDataSourceIndex;
@@ -132,9 +140,9 @@ class _PlaylistExampleState extends State<PlaylistExample>
     super.dispose();
   }
 
+  // 释放播放器和播放列表控制器资源
   Future<void> _releasePlayer() async {
     try {
-      // 移除全局缓存清理
       _playlistController?.dispose();
       _controller = null;
       _playlistController = null;
@@ -173,12 +181,12 @@ class _PlaylistExampleState extends State<PlaylistExample>
         child: SafeArea(
           child: Column(
             children: [
-              // 顶部内容区域
+              // 主要内容区域
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // 播放器区域
+                      // 视频播放器容器
                       Container(
                         margin: EdgeInsets.all(UIConstants.spaceMD),
                         decoration: BoxDecoration(
@@ -209,7 +217,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ),
                         ),
                       ),
-                      // 播放信息卡片 - 显示当前视频标题（修改：移除模式切换按钮）
+                      // 播放信息展示卡片
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
                         padding: EdgeInsets.all(UIConstants.spaceMD),
@@ -231,7 +239,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                         ),
                         child: Row(
                           children: [
-                            // 左侧播放列表按钮 - 可点击打开播放列表
+                            // 播放列表菜单触发按钮
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
@@ -256,8 +264,9 @@ class _PlaylistExampleState extends State<PlaylistExample>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // 显示当前播放视频标题
                                   Text(
-                                    _getCurrentVideoTitle(context), // 显示当前视频标题
+                                    _getCurrentVideoTitle(context),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: UIConstants.fontLG,
@@ -265,8 +274,9 @@ class _PlaylistExampleState extends State<PlaylistExample>
                                     ),
                                   ),
                                   SizedBox(height: UIConstants.spaceXS),
+                                  // 显示播放进度信息
                                   Text(
-                                    '${_currentIndex + 1} / $totalVideos', // 显示播放进度
+                                    '${_currentIndex + 1} / $totalVideos',
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.8),
                                       fontSize: UIConstants.fontSM,
@@ -278,12 +288,12 @@ class _PlaylistExampleState extends State<PlaylistExample>
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceMD), // 统一间距
+                      SizedBox(height: UIConstants.spaceMD),
                     ],
                   ),
                 ),
               ),
-              // 控制按钮区域 - 固定在底部
+              // 固定底部控制按钮区域
               Container(
                 padding: EdgeInsets.all(UIConstants.spaceMD),
                 decoration: BoxDecoration(
@@ -294,22 +304,21 @@ class _PlaylistExampleState extends State<PlaylistExample>
                 ),
                 child: Column(
                   children: [
-                    // 播放控制按钮行 - 【优化】使用通用组件
+                    // 播放控制按钮行
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // 上一个
+                        // 上一曲播放按钮
                         CircleControlButton(
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playPrevious();
-                                  // 延迟更新索引
                                   Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                                 }
                               : null,
                           icon: Icons.skip_previous_rounded,
                         ),
-                        // 播放/暂停
+                        // 播放暂停切换按钮
                         CircleControlButton(
                           onPressed: _controller != null && !_isLoading
                               ? () {
@@ -325,12 +334,11 @@ class _PlaylistExampleState extends State<PlaylistExample>
                               : Icons.play_arrow_rounded,
                           isPrimary: true,
                         ),
-                        // 下一个
+                        // 下一曲播放按钮
                         CircleControlButton(
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playNext();
-                                  // 延迟更新索引
                                   Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                                 }
                               : null,
@@ -339,7 +347,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       ],
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    // 修改：添加播放模式切换按钮
+                    // 播放模式切换按钮
                     ModernControlButton(
                       onPressed: _playlistController != null
                           ? () => _playlistController!.toggleShuffleMode()
@@ -348,7 +356,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       label: _shuffleMode ? l10n.shufflePlay : l10n.sequentialPlay,
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    // 全屏播放按钮
+                    // 全屏模式切换按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
                           ? () {
@@ -376,7 +384,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
     );
   }
 
-  // 显示播放列表菜单
+  // 展示播放列表弹窗菜单
   void _showPlaylistMenu() {
     final l10n = AppLocalizations.of(context);
     
@@ -399,7 +407,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 标题栏
+            // 弹窗标题栏
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: UIConstants.spaceLG,
@@ -440,7 +448,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                 ],
               ),
             ),
-            // 列表内容
+            // 播放列表视频项目展示
             Container(
               height: 260,
               child: ListView.builder(
@@ -469,10 +477,10 @@ class _PlaylistExampleState extends State<PlaylistExample>
                         fontSize: UIConstants.fontSM,
                       ),
                     ),
+                    // 点击切换到指定视频
                     onTap: () {
                       _playlistController?.setupDataSource(index);
                       Navigator.pop(context);
-                      // 修复：更新当前索引
                       Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                     },
                   );
