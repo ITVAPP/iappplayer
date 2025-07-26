@@ -1,5 +1,14 @@
 package com.itvapp.iapp_player
 
+import java.io.File
+import java.lang.ref.WeakReference
+import java.util.HashMap
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,6 +23,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
 import android.view.Surface
 
 import androidx.lifecycle.Observer
@@ -69,17 +79,11 @@ import io.flutter.view.TextureRegistry.SurfaceTextureEntry
 
 import org.chromium.net.CronetEngine
 
-import java.io.File
-import java.lang.ref.WeakReference
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
-
 import kotlin.math.max
 import kotlin.math.min
 
 import com.itvapp.iapp_player.DataSourceUtils.getDataSourceFactory
+import com.itvapp.iapp_player.DataSourceUtils.getProtocolInfo
 import com.itvapp.iapp_player.DataSourceUtils.getRtmpDataSourceFactory
 import com.itvapp.iapp_player.DataSourceUtils.getUserAgent
 
