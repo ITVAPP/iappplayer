@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 
-// 国际化支持类
+// 应用国际化支持类，管理多语言文本翻译
 class AppLocalizations {
   final Locale locale;
   
   AppLocalizations(this.locale);
   
+  // 从上下文获取本地化实例
   static AppLocalizations of(BuildContext context) {
     final localizations = Localizations.of<AppLocalizations>(context, AppLocalizations);
     assert(localizations != null, 'AppLocalizations not found in context');
     return localizations!;
   }
   
-  // 定义支持的语言
+  // 定义应用支持的语言地区列表
   static const List<Locale> supportedLocales = [
-    Locale('en', 'US'),
-    Locale('zh', 'CN'),
+    Locale('en', 'US'), // 英语
+    Locale('zh', 'CN'), // 简体中文
     Locale('zh', 'TW'), // 繁体中文
     Locale('ja', 'JP'), // 日语
     Locale('fr', 'FR'), // 法语
@@ -24,7 +25,7 @@ class AppLocalizations {
     Locale('ru', 'RU'), // 俄语
   ];
   
-  // 使用Map结构存储所有翻译，大幅减少代码冗余
+  // 多语言文本翻译映射表，按语言代码组织
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
       'appTitle': 'IApp Player Example',
@@ -220,31 +221,31 @@ class AppLocalizations {
     },
   };
   
-  // 获取当前语言键值（处理地区代码）
+  // 获取当前语言键值，处理地区代码差异
   String get _languageKey {
     if (locale.languageCode == 'zh') {
-      // 中文需要区分简体和繁体
+      // 区分简体中文和繁体中文
       return locale.countryCode == 'TW' ? 'zh_TW' : 'zh_CN';
     }
     return locale.languageCode;
   }
   
-  // 通用获取翻译的方法
+  // 通用翻译获取方法，支持降级处理
   String _getValue(String key) {
     final languageMap = _localizedValues[_languageKey];
     if (languageMap != null && languageMap.containsKey(key)) {
-      return languageMap[key]!;
+      return languageMap[key]!; // 返回当前语言翻译
     }
-    // 如果找不到翻译，返回英文
+    // 找不到翻译时降级到英文
     final englishMap = _localizedValues['en'];
     if (englishMap != null && englishMap.containsKey(key)) {
       return englishMap[key]!;
     }
-    // 最后降级返回key本身
+    // 最终降级返回键名本身
     return key;
   }
   
-  // 根据语言返回对应的翻译 - 保持原有API不变
+  // 应用标题和功能模块翻译属性
   String get appTitle => _getValue('appTitle');
   String get videoPlayer => _getValue('videoPlayer');
   String get videoPlayerSubtitle => _getValue('videoPlayerSubtitle');
@@ -254,6 +255,8 @@ class AppLocalizations {
   String get musicPlayerSubtitle => _getValue('musicPlayerSubtitle');
   String get musicList => _getValue('musicList');
   String get musicListSubtitle => _getValue('musicListSubtitle');
+  
+  // 播放器控制功能翻译属性
   String get hardwareDecoder => _getValue('hardwareDecoder');
   String get softwareDecoder => _getValue('softwareDecoder');
   String get pausePlay => _getValue('pausePlay');
@@ -267,34 +270,34 @@ class AppLocalizations {
   String get pictureInPicture => _getValue('pictureInPicture');
   String get exitPictureInPicture => _getValue('exitPictureInPicture');
   
-  // 带参数的翻译方法
+  // 生成带参数的视频编号文本
   String videoNumber(int number) {
     final template = _getValue('videoNumber');
     return template.replaceAll('%s', number.toString());
   }
   
-  // 保持原有的复合方法
+  // 生成播放列表状态复合文本
   String playlistStatus(int current, int total, bool shuffleMode) {
     final mode = shuffleMode ? shufflePlay : sequentialPlay;
     return '$current / $total • $mode';
   }
 }
 
-// 本地化委托
+// 本地化委托类，实现Flutter国际化机制
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const AppLocalizationsDelegate();
   
   @override
   bool isSupported(Locale locale) {
-    // 支持的语言代码列表
+    // 检查语言代码是否在支持列表中
     return ['en', 'zh', 'ja', 'fr', 'es', 'pt', 'ru'].contains(locale.languageCode);
   }
   
   @override
   Future<AppLocalizations> load(Locale locale) async {
-    return AppLocalizations(locale);
+    return AppLocalizations(locale); // 创建本地化实例
   }
   
   @override
-  bool shouldReload(AppLocalizationsDelegate old) => false;
+  bool shouldReload(AppLocalizationsDelegate old) => false; // 不需要重新加载
 }
