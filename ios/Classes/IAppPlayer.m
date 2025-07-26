@@ -146,7 +146,6 @@ AVPictureInPictureController *_pipController; // 画中画控制器
 - (void)clear {
     _isInitialized = false; // 重置初始化状态
     _isPlaying = false; // 重置播放状态
-    _disposed = false; // 重置释放状态
     _key = nil; // 重置密钥
     
     // 重置重试相关状态
@@ -188,58 +187,96 @@ AVPictureInPictureController *_pipController; // 画中画控制器
                 NSLog(@"移除 rate 观察者异常: %@", exception.description);
             }
             
-            /// 使用当前观察项移除 KVO 观察者
-            if (_currentObservedItem != nil) {
+            AVPlayerItem* currentItem = _player.currentItem;
+            if (currentItem != nil) {
                 @try {
-                    [_currentObservedItem removeObserver:self forKeyPath:@"status" context:statusContext]; // 移除状态观察
+                    [currentItem removeObserver:self forKeyPath:@"status" context:statusContext]; // 移除状态观察
                 }
                 @catch (NSException *exception) {
                     NSLog(@"移除 status 观察者异常: %@", exception.description);
                 }
                 
                 @try {
-                    [_currentObservedItem removeObserver:self forKeyPath:@"presentationSize" context:presentationSizeContext]; // 移除尺寸观察
+                    [currentItem removeObserver:self forKeyPath:@"presentationSize" context:presentationSizeContext]; // 移除尺寸观察
                 }
                 @catch (NSException *exception) {
                     NSLog(@"移除 presentationSize 观察者异常: %@", exception.description);
                 }
                 
                 @try {
-                    [_currentObservedItem removeObserver:self
-                                               forKeyPath:@"loadedTimeRanges"
-                                                  context:timeRangeContext]; // 移除加载时间观察
+                    [currentItem removeObserver:self forKeyPath:@"loadedTimeRanges" context:timeRangeContext]; // 移除加载时间观察
                 }
                 @catch (NSException *exception) {
                     NSLog(@"移除 loadedTimeRanges 观察者异常: %@", exception.description);
                 }
                 
                 @try {
-                    [_currentObservedItem removeObserver:self
-                                               forKeyPath:@"playbackLikelyToKeepUp"
-                                                  context:playbackLikelyToKeepUpContext]; // 移除缓冲充足观察
+                    [currentItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp" context:playbackLikelyToKeepUpContext]; // 移除缓冲充足观察
                 }
                 @catch (NSException *exception) {
                     NSLog(@"移除 playbackLikelyToKeepUp 观察者异常: %@", exception.description);
                 }
                 
                 @try {
-                    [_currentObservedItem removeObserver:self
-                                               forKeyPath:@"playbackBufferEmpty"
-                                                  context:playbackBufferEmptyContext]; // 移除缓冲空观察
+                    [currentItem removeObserver:self forKeyPath:@"playbackBufferEmpty" context:playbackBufferEmptyContext]; // 移除缓冲空观察
                 }
                 @catch (NSException *exception) {
                     NSLog(@"移除 playbackBufferEmpty 观察者异常: %@", exception.description);
                 }
                 
                 @try {
-                    [_currentObservedItem removeObserver:self
-                                               forKeyPath:@"playbackBufferFull"
-                                                  context:playbackBufferFullContext]; // 移除缓冲满观察
+                    [currentItem removeObserver:self forKeyPath:@"playbackBufferFull" context:playbackBufferFullContext]; // 移除缓冲满观察
                 }
                 @catch (NSException *exception) {
                     NSLog(@"移除 playbackBufferFull 观察者异常: %@", exception.description);
                 }
             }
+            
+            // 从保存的 _currentObservedItem 移除
+            if (_currentObservedItem != nil && _currentObservedItem != currentItem) {
+                @try {
+                    [_currentObservedItem removeObserver:self forKeyPath:@"status" context:statusContext];
+                }
+                @catch (NSException *exception) {
+                    // 静默处理，因为可能已经被移除
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self forKeyPath:@"presentationSize" context:presentationSizeContext];
+                }
+                @catch (NSException *exception) {
+                    // 静默处理
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self forKeyPath:@"loadedTimeRanges" context:timeRangeContext];
+                }
+                @catch (NSException *exception) {
+                    // 静默处理
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp" context:playbackLikelyToKeepUpContext];
+                }
+                @catch (NSException *exception) {
+                    // 静默处理
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self forKeyPath:@"playbackBufferEmpty" context:playbackBufferEmptyContext];
+                }
+                @catch (NSException *exception) {
+                    // 静默处理
+                }
+                
+                @try {
+                    [_currentObservedItem removeObserver:self forKeyPath:@"playbackBufferFull" context:playbackBufferFullContext];
+                }
+                @catch (NSException *exception) {
+                    // 静默处理
+                }
+            }
+            
             [[NSNotificationCenter defaultCenter] removeObserver:self]; // 移除通知
             self._observersAdded = false; // 更新观察状态
             _currentObservedItem = nil; // 清空观察项
