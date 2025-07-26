@@ -162,9 +162,6 @@ class IAppPlayerController {
   // 画中画模式状态
   bool _wasInPipMode = false;
 
-  // 画中画前全屏状态
-  bool _wasInFullScreenBeforePiP = false;
-
   // 画中画前控件状态
   bool _wasControlsEnabledBeforePiP = false;
   
@@ -250,6 +247,10 @@ class IAppPlayerController {
   // 字幕滑动窗口配置
   static const int _subtitleWindowSize = 300; // 保留前后300条字幕
   static const Duration _subtitleWindowDuration = Duration(minutes: 10); // 保留前后10分钟的字幕
+
+  // 保存最后的数据源和播放位置，用于恢复
+  IAppPlayerDataSource? _lastDataSource;
+  Duration? _lastPlayPosition;
 
   // 构造函数，初始化配置和数据源
   IAppPlayerController(
@@ -428,6 +429,8 @@ class IAppPlayerController {
 
   // 加载 ASMS 字幕段
   Future _loadAsmsSubtitlesSegments(Duration position) async {
+    if (_disposed) return;
+    
     try {
       if (_asmsSegmentsLoading) {
         return;
@@ -478,6 +481,8 @@ class IAppPlayerController {
           urls: segmentsToLoad,
         ));
 
+        if (_disposed) return;
+        
         if (source == _iappPlayerSubtitlesSource) {
           subtitlesLines.addAll(subtitlesParsed);
           _asmsSegmentsLoaded.addAll(segmentsToLoad);
@@ -1381,7 +1386,6 @@ Future<void> checkAndExitPictureInPicture() async {
 
     if (isPipSupported) {
       // 保存当前状态
-      _wasInFullScreenBeforePiP = _isFullScreen;
       _wasControlsEnabledBeforePiP = _controlsEnabled;
       
       // 保存播放状态（重要：确保返回时能恢复播放）
@@ -1499,19 +1503,105 @@ Future<void> checkAndExitPictureInPicture() async {
       if (!isPlaying()! && _wasPlayingBeforePause == true) {
         await play();
       }
-    } else if (_lastPipExitReason == 'close') {
-      // 关闭按钮：暂停播放
-      await pause();
     } else {
-      // 默认行为（系统关闭等）：暂停播放
-      await pause();
+      // 关闭按钮或默认行为：停止并释放播放器资源
+      await stopAndReleasePlayer();
     }
     
     // 发送事件
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
+  }
+
+  // 停止并释放播放器资源
+  Future<void> stopAndReleasePlayer() async {
+    try {
+      // 保存当前播放信息以便恢复
+      _lastDataSource = _iappPlayerDataSource;
+      _lastPlayPosition = videoPlayerController?.value.position;
+      
+      // 停止并释放播放器
+      await _disposeVideoPlayer();
+      
+      // 清理播放器相关状态
+      _clearPlayerStates();
+      
+      // 发送停止事件
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.stopped));
+      
+      // 通知UI更新
+      _postControllerEvent(IAppPlayerControllerEvent.changeSubtitles);
+    } catch (e) {
+      IAppPlayerUtils.log("停止并释放播放器失败: $e");
+    }
+  }
+
+  // 专门处理播放器的释放
+  Future<void> _disposeVideoPlayer() async {
+    if (videoPlayerController != null) {
+      try {
+        // 停止播放
+        await videoPlayerController!.pause();
+      } catch (e) {
+        IAppPlayerUtils.log("暂停播放器失败: $e");
+      }
+      
+      try {
+        // 重置播放位置
+        await videoPlayerController!.seekTo(Duration.zero);
+      } catch (e) {
+        IAppPlayerUtils.log("重置播放位置失败: $e");
+      }
+      
+      // 移除监听器
+      videoPlayerController!.removeListener(_onFullScreenStateChanged);
+      videoPlayerController!.removeListener(_onVideoPlayerChanged);
+      
+      // 释放播放器
+      await videoPlayerController!.dispose();
+      videoPlayerController = null;
+    }
+  }
+
+  // 清理播放器相关状态（不包括UI状态）
+  void _clearPlayerStates() {
+    // 播放状态
+    _hasCurrentDataSourceStarted = false;
+    _hasCurrentDataSourceInitialized = false;
+    _videoPlayerValueOnError = null;
+    _lastVideoPlayerValue = null;
+    _cachedIsLiveStream = null;
     
-    // 重置退出原因
+    // 字幕相关
+    subtitlesLines.clear();
+    _asmsSegmentsLoaded.clear();
+    _asmsSegmentsLoading = false;
+    _pendingSubtitleSegments = null;
+    _lastSubtitleCheckPosition = null;
+    renderedSubtitle = null;
+    
+    // 缓冲状态
+    _clearBufferingState();
+    
+    // 画中画状态
+    _clearPipStates();
+  }
+
+  // 清理画中画相关状态
+  void _clearPipStates() {
+    _wasInPipMode = false;
+    _wasControlsEnabledBeforePiP = false;
     _lastPipExitReason = null;
+  }
+
+  // 恢复最后播放的视频
+  Future<void> restoreLastVideo() async {
+    if (_lastDataSource != null) {
+      await setupDataSource(_lastDataSource!);
+      if (_lastPlayPosition != null) {
+        await seekTo(_lastPlayPosition!);
+      }
+      await play();
+    }
   }
 
   // 处理缓冲开始
@@ -1700,6 +1790,23 @@ Future<void> checkAndExitPictureInPicture() async {
     _lastBufferingChangeTime = null;
   }
 
+  // 清理所有引用（dispose专用）
+  void _clearAllReferences() {
+    // 清理集合
+    _iappPlayerSubtitlesSourceList.clear();
+    _iappPlayerAsmsTracks.clear();
+    
+    // 清理对象引用
+    _playlistController = null;
+    _iappPlayerDataSource = null;
+    _iappPlayerSubtitlesSource = null;
+    _iappPlayerAsmsTrack = null;
+    _iappPlayerAsmsAudioTracks = null;
+    _iappPlayerAsmsAudioTrack = null;
+    _lastDataSource = null;
+    _lastPlayPosition = null;
+  }
+
   // 销毁控制器
   Future<void> dispose({bool forceDispose = false}) async {
     if (!iappPlayerConfiguration.autoDispose && !forceDispose) {
@@ -1707,17 +1814,26 @@ Future<void> checkAndExitPictureInPicture() async {
     }
     if (!_disposed) {
       _disposed = true;
+      
+      // 取消所有定时器
       _nextVideoTimer?.cancel();
       _nextVideoTimer = null;
       _bufferingDebounceTimer?.cancel();
       _bufferingDebounceTimer = null;
+      
+      // 取消视频事件订阅
       await _videoEventStreamSubscription?.cancel();
       _videoEventStreamSubscription = null;
+      
+      // 清理事件监听器
       _eventListeners.clear();
+      
+      // 释放播放器（如果还未释放）
       if (videoPlayerController != null) {
-        videoPlayerController!.removeListener(_onFullScreenStateChanged);
-        videoPlayerController!.removeListener(_onVideoPlayerChanged);
+        await _disposeVideoPlayer();
       }
+      
+      // 关闭所有 StreamController
       if (!_controllerEventStreamController.isClosed) {
         await _controllerEventStreamController.close();
       }
@@ -1727,15 +1843,14 @@ Future<void> checkAndExitPictureInPicture() async {
       if (!_controlsVisibilityStreamController.isClosed) {
         await _controlsVisibilityStreamController.close();
       }
-      if (videoPlayerController != null) {
-        await videoPlayerController!.pause();
-        await videoPlayerController!.dispose();
-        videoPlayerController = null;
-      }
-      _clearBufferingState();
-      _cachedIsLiveStream = null;
-      _pendingSubtitleSegments = null;
-      _lastSubtitleCheckPosition = null;
+      
+      // 清理播放器状态
+      _clearPlayerStates();
+      
+      // 清理其他集合和引用
+      _clearAllReferences();
+      
+      // 清理临时文件
       await _clearTempFiles();
     }
   }
