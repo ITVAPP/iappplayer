@@ -1812,15 +1812,6 @@ Future<void> checkAndExitPictureInPicture() async {
       final listenersCopy = List<Function(IAppPlayerEvent)?>.from(_eventListeners);
       _eventListeners.clear();
       
-      // 通知所有监听器播放器即将销毁
-      for (final listener in listenersCopy) {
-        try {
-          listener?.call(IAppPlayerEvent(IAppPlayerEventType.dispose));
-        } catch (e) {
-          // 忽略监听器异常
-        }
-      }
-      
       // 释放播放器（如果还未释放）
       if (videoPlayerController != null) {
         await _disposeVideoPlayer();
