@@ -1325,27 +1325,31 @@ internal class IAppPlayer(
     fun dispose() {
         if (isDisposed.getAndSet(true)) return
         
+        // 先保存状态，避免在dispose过程中状态被改变
+        val wasPlayerCreated = isPlayerCreated
+        val wasUsingCronet = isUsingCronet
+        
         // 停止播放
-        safeExecute {
-            if (isPlayerCreated) {
+        if (wasPlayerCreated) {
+            safeExecute {
                 exoPlayer?.stop()
             }
         }
         
         // 清理重试机制
         resetRetryState()
-        retryHandler = null // 释放Handler引用
+        retryHandler = null
         
         // 移除监听器
-        if (isPlayerCreated && exoPlayerEventListener != null) {
+        if (wasPlayerCreated && exoPlayerEventListener != null) {
             safeExecute {
                 exoPlayer?.removeListener(exoPlayerEventListener!!)
             }
         }
         exoPlayerEventListener = null
         
-        // 清理视频表面
-        if (isPlayerCreated) {
+        // 清理视频表面（在释放surface之前）
+        if (wasPlayerCreated) {
             safeExecute {
                 exoPlayer?.clearVideoSurface()
             }
@@ -1355,12 +1359,8 @@ internal class IAppPlayer(
         disposeRemoteNotifications()
         disposeMediaSession()
         
-        // 释放表面
-        surface?.release()
-        surface = null
-        
-        // 释放播放器
-        if (isPlayerCreated) {
+        // 释放播放器（在释放surface之前）
+        if (wasPlayerCreated) {
             safeExecute {
                 exoPlayer?.release()
             }
@@ -1368,10 +1368,14 @@ internal class IAppPlayer(
         exoPlayer = null
         isPlayerCreated = false
         
+        // 释放表面
+        surface?.release()
+        surface = null
+        
         // 清理事件通道
         eventChannel.setStreamHandler(null)
         
-        // 释放纹理
+        // 释放纹理（最后释放）
         safeExecute {
             textureEntry.release()
         }
@@ -1384,7 +1388,7 @@ internal class IAppPlayer(
         currentUserAgent = null
         
         // 释放Cronet引擎
-        if (isUsingCronet) {
+        if (wasUsingCronet) {
             releaseCronetEngine()
             isUsingCronet = false
         }
@@ -1576,12 +1580,11 @@ private inner class CustomMediaCodecSelector : MediaCodecSelector {
         
         // 释放Cronet引擎
         @JvmStatic
+        @Synchronized
         private fun releaseCronetEngine() {
-            synchronized(cronetLock) {
-                if (cronetRefCount.decrementAndGet() == 0) {
-                    globalCronetEngine?.shutdown()
-                    globalCronetEngine = null
-                }
+            if (cronetRefCount.decrementAndGet() == 0) {
+                globalCronetEngine?.shutdown()
+                globalCronetEngine = null
             }
         }
         
