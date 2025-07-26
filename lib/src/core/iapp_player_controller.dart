@@ -21,6 +21,9 @@ class IAppPlayerController {
   static const String _speedParameter = "speed"; // 速度参数
   static const String _dataSourceParameter = "dataSource"; // 数据源参数
   static const String _authorizationHeader = "Authorization"; // 授权头
+  
+  // 添加最大监听器数量限制
+  static const int _maxEventListeners = 50;
 
   // 播放器配置
   final IAppPlayerConfiguration iappPlayerConfiguration;
@@ -1059,29 +1062,22 @@ void _onVideoPlayerChanged() async {
 
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
+  if (_disposed) return;
+  
   try {
-    // 先尝试退出画中画
-    if (videoPlayerController?.value.isPip == true) {
-      await disablePictureInPicture();
-      // 等待画中画真正退出（增加等待时间）
-      await Future.delayed(Duration(milliseconds: 300));
-    }
-    
-    // 确保退出全屏（添加多重检查）
-    if (_isFullScreen) {
-      exitFullScreen();
-      // 延迟后再次检查
-      await Future.delayed(Duration(milliseconds: 200));
-      if (_isFullScreen) {
-        // 如果还在全屏，强制退出
-        _isFullScreen = false;
-        _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
-        // 强制刷新UI状态
-        _postControllerEvent(IAppPlayerControllerEvent.changeSubtitles);
-      }
-    }
+    // 尝试退出画中画（不管当前是否在画中画模式）
+    await videoPlayerController?.disablePictureInPicture();
   } catch (e) {
-    IAppPlayerUtils.log("退出画中画失败: $e");
+    // 忽略错误，可能已经不在画中画模式
+  }
+  
+  // 等待画中画动画完成
+  await Future.delayed(Duration(milliseconds: 300));
+  
+  // 确保退出全屏
+  if (_isFullScreen) {
+    _isFullScreen = false;
+    _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
   }
 }
 
@@ -1089,6 +1085,16 @@ Future<void> checkAndExitPictureInPicture() async {
   void addEventsListener(Function(IAppPlayerEvent) eventListener) {
     // 防止重复添加相同的监听器
     if (!_eventListeners.contains(eventListener)) {
+      // 检查监听器数量
+      if (_eventListeners.length >= _maxEventListeners) {
+        IAppPlayerUtils.log(
+          "警告：事件监听器数量已达上限($_maxEventListeners)，请检查是否存在未移除的监听器"
+        );
+        // 移除最早添加的监听器（跳过第一个，它是全局监听器）
+        if (_eventListeners.length > 1) {
+          _eventListeners.removeAt(1);
+        }
+      }
       _eventListeners.add(eventListener);
     }
   }
@@ -1803,7 +1809,17 @@ Future<void> checkAndExitPictureInPicture() async {
       _videoEventStreamSubscription = null;
       
       // 清理事件监听器
+      final listenersCopy = List<Function(IAppPlayerEvent)?>.from(_eventListeners);
       _eventListeners.clear();
+      
+      // 通知所有监听器播放器即将销毁
+      for (final listener in listenersCopy) {
+        try {
+          listener?.call(IAppPlayerEvent(IAppPlayerEventType.dispose));
+        } catch (e) {
+          // 忽略监听器异常
+        }
+      }
       
       // 释放播放器（如果还未释放）
       if (videoPlayerController != null) {
