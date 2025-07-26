@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iapp_player/iapp_player.dart';
 
-// 导入通用工具类和语言类
 import 'app_localizations.dart';
 import 'common_utils.dart';
 
-// 音乐播放列表示例
+// 音乐播放列表页面组件
 class MusicPlaylistExample extends StatefulWidget {
   const MusicPlaylistExample({Key? key}) : super(key: key);
 
@@ -21,7 +20,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   bool _isLoading = true;
   int _currentIndex = 0;
   bool _shuffleMode = false;
-  bool _isPlaying = false; // 添加播放状态跟踪
+  bool _isPlaying = false;
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -32,19 +31,20 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     _initializePlayer();
   }
 
+  // 初始化音乐播放器和歌词配置
   Future<void> _initializePlayer() async {
-    // 安全读取LRC歌词文件
+    // 安全加载LRC歌词文件内容
     final lyrics1 = await safeLoadSubtitle('assets/lyrics/song1.lrc');
     final lyrics2 = await safeLoadSubtitle('assets/lyrics/song2.lrc');
     final lyrics3 = await safeLoadSubtitle('assets/lyrics/song3.lrc');
     
-    // 构建歌词内容列表，过滤掉null值
+    // 过滤空歌词并构建内容列表
     final subtitleContents = [lyrics1, lyrics2, lyrics3]
         .where((content) => content != null)
         .cast<String>()
         .toList();
     
-    // 修复：使用正确的本地资源路径
+    // 创建音频播放器实例
     final result = await IAppPlayerConfig.createPlayer(
       urls: [
         'assets/music/song1.mp3',
@@ -60,45 +60,50 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
       ],
       subtitleContents: subtitleContents.isNotEmpty ? subtitleContents : null,
       audioOnly: true,
-      enableFullscreen: true, // 添加全屏功能
+      enableFullscreen: true,
       eventListener: (event) {
+        // 监听播放器初始化完成事件
         if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
           setState(() {
             _isLoading = false;
             _isPlaying = _controller?.isPlaying() ?? false;
           });
-          // 初始化后检查方向
           handleOrientationChange();
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
+        } 
+        // 监听播放列表曲目切换事件
+        else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistItem) {
           final index = event.parameters?['index'] as int?;
-          if (index != null && index != _currentIndex) {  // 【优化】只在索引真正改变时更新
+          if (index != null && index != _currentIndex) {
             setState(() {
               _currentIndex = index;
             });
           }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistShuffle) {
+        } 
+        // 监听播放模式切换事件（随机/顺序）
+        else if (event.iappPlayerEventType == IAppPlayerEventType.changedPlaylistShuffle) {
           final shuffleMode = event.parameters?['shuffleMode'] as bool?;
-          if (shuffleMode != null && shuffleMode != _shuffleMode) {  // 【优化】只在模式真正改变时更新
+          if (shuffleMode != null && shuffleMode != _shuffleMode) {
             setState(() {
               _shuffleMode = shuffleMode;
             });
           }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
-          // 监听播放事件
-          if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+        } 
+        // 监听音乐播放开始事件
+        else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
+          if (!_isPlaying) {
             setState(() {
               _isPlaying = true;
             });
           }
-        } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
-          // 监听暂停事件
-          if (_isPlaying) {  // 【优化】只在状态真正改变时更新
+        } 
+        // 监听音乐暂停事件
+        else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
+          if (_isPlaying) {
             setState(() {
               _isPlaying = false;
             });
           }
         }
-        // 【优化】移除progress事件监听，歌词更新由独立组件处理
       },
       shuffleMode: false,
       loopVideos: true,
@@ -113,6 +118,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
       ],
     );
 
+    // 检查组件挂载状态并更新控制器
     if (mounted) {
       setState(() {
         _controller = result.activeController;
@@ -121,7 +127,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     }
   }
 
-  // 修复：添加更新当前索引的方法
+  // 更新当前播放曲目索引状态
   void _updateCurrentIndex() {
     if (_playlistController != null && mounted) {
       final newIndex = _playlistController!.currentDataSourceIndex;
@@ -139,9 +145,9 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     super.dispose();
   }
 
+  // 释放音乐播放器和播放列表控制器资源
   Future<void> _releasePlayer() async {
     try {
-      // 移除全局缓存清理
       _playlistController?.dispose();
       _controller = null;
       _playlistController = null;
@@ -155,7 +161,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
     final l10n = AppLocalizations.of(context);
     final totalSongs = _playlistController?.dataSourceList.length ?? 0;
     final titles = ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'];
-    final artists = ['Unknown Artist', 'Unknown Artist', 'Unknown Artist']; // 修复：添加歌手信息
+    final artists = ['Unknown Artist', 'Unknown Artist', 'Unknown Artist'];
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -182,13 +188,13 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
         child: SafeArea(
           child: Column(
             children: [
-              // 顶部内容区域
+              // 主要内容区域
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      SizedBox(height: UIConstants.spaceLG), // 顶部间距
-                      // 播放器区域 - 保持原尺寸，带发光效果
+                      SizedBox(height: UIConstants.spaceLG),
+                      // 音乐播放器视觉化区域（带发光效果）
                       Container(
                         height: UIConstants.musicPlayerHeight,
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
@@ -196,12 +202,13 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                           borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                           color: Colors.black,
                           boxShadow: [
-                            // 发光效果
+                            // 主发光效果
                             BoxShadow(
                               color: const Color(0xFFfa709a).withOpacity(0.5),
                               blurRadius: UIConstants.shadowLG,
                               spreadRadius: 5,
                             ),
+                            // 外围发光效果
                             BoxShadow(
                               color: const Color(0xFFfa709a).withOpacity(0.3),
                               blurRadius: UIConstants.shadowLG * 2,
@@ -221,12 +228,13 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                                 ),
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceMD - 1), // 15 - 减少间距
-                      // 当前歌曲信息 - 添加歌词显示
+                      SizedBox(height: UIConstants.spaceMD - 1),
+                      // 当前歌曲信息展示区域
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: UIConstants.spaceXL),
                         child: Column(
                           children: [
+                            // 显示当前歌曲标题
                             Text(
                               _currentIndex < titles.length ? titles[_currentIndex] : '',
                               style: TextStyle(
@@ -236,6 +244,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                               ),
                             ),
                             SizedBox(height: UIConstants.spaceXS),
+                            // 显示艺术家信息
                             Text(
                               _currentIndex < artists.length ? artists[_currentIndex] : '',
                               style: TextStyle(
@@ -243,17 +252,17 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                                 color: Colors.white.withOpacity(0.6),
                               ),
                             ),
-                            // 【优化】使用独立的歌词显示组件
+                            // 歌词显示组件
                             LyricDisplay(controller: _controller),
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceMD), // 增加底部间距
+                      SizedBox(height: UIConstants.spaceMD),
                     ],
                   ),
                 ),
               ),
-              // 控制按钮区域 - 固定在底部
+              // 固定底部音乐控制区域
               Container(
                 padding: EdgeInsets.all(UIConstants.spaceLG),
                 decoration: BoxDecoration(
@@ -264,16 +273,15 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                 ),
                 child: Column(
                   children: [
-                    // 播放控制按钮行 - 【优化】使用通用组件
+                    // 音乐播放控制按钮行
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // 上一首
+                        // 上一首切换按钮
                         CircleControlButton(
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playPrevious();
-                                  // 延迟更新索引
                                   Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                                 }
                               : null,
@@ -283,7 +291,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                             const Color(0xFFfee140),
                           ],
                         ),
-                        // 播放/暂停
+                        // 播放暂停切换按钮
                         CircleControlButton(
                           onPressed: _controller != null && !_isLoading
                               ? () {
@@ -303,12 +311,11 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                             const Color(0xFFfee140),
                           ],
                         ),
-                        // 下一首
+                        // 下一首切换按钮
                         CircleControlButton(
                           onPressed: _playlistController != null && !_isLoading
                               ? () {
                                   _playlistController!.playNext();
-                                  // 延迟更新索引
                                   Future.delayed(Duration(milliseconds: 100), _updateCurrentIndex);
                                 }
                               : null,
@@ -320,8 +327,8 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                         ),
                       ],
                     ),
-                    SizedBox(height: UIConstants.spaceLG - 4), // 20
-                    // 模式切换按钮 - 显示播放进度信息
+                    SizedBox(height: UIConstants.spaceLG - 4),
+                    // 播放模式和进度信息展示按钮
                     ModernControlButton(
                       onPressed: _playlistController != null
                           ? () => _playlistController!.toggleShuffleMode()
@@ -330,7 +337,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                       label: l10n.playlistStatus(_currentIndex + 1, totalSongs, _shuffleMode),
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    // 全屏播放按钮
+                    // 全屏播放切换按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
                           ? () {
