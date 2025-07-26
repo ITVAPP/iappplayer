@@ -850,12 +850,10 @@ class _VideoProgressIndicatorState extends State<VideoProgressIndicator> {
       final int duration = controller.value.duration!.inMilliseconds;
       final int position = controller.value.position.inMilliseconds;
 
-      // 优化：使用更高效的算法查找最大缓冲值
+      // 查找最大缓冲值
       int maxBuffering = 0;
       if (controller.value.buffered.isNotEmpty) {
-        // 大多数情况下，缓冲区是有序的，最后一个就是最大的
         maxBuffering = controller.value.buffered.last.end.inMilliseconds;
-        // 但为了保险起见，还是遍历一遍
         for (final DurationRange range in controller.value.buffered) {
           final int end = range.end.inMilliseconds;
           if (end > maxBuffering) {
