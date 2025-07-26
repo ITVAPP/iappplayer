@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-// 导入其他页面和工具类
 import 'app_localizations.dart';
 import 'common_utils.dart';
 import 'single_video_page.dart';
@@ -10,9 +9,10 @@ import 'music_player_page.dart';
 import 'music_playlist_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const MyApp()); // 启动应用根组件
 }
 
+// 应用程序根组件类，配置全局主题和路由
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
@@ -20,37 +20,38 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'IAppPlayer Example',
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: false, // 隐藏调试标识
       theme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.deepPurple,
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF0A0E21),
+        brightness: Brightness.dark, // 设置深色主题
+        primarySwatch: Colors.deepPurple, // 主色调为深紫色
+        useMaterial3: true, // 启用Material Design 3样式
+        scaffoldBackgroundColor: const Color(0xFF0A0E21), // 脚手架背景色
       ),
-      // 添加国际化支持
+      // 配置多语言支持代理
       localizationsDelegates: const [
         AppLocalizationsDelegate(),
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const HomePage(),
+      supportedLocales: AppLocalizations.supportedLocales, // 支持的语言列表
+      home: const HomePage(), // 设置首页组件
     );
   }
 }
 
+// 应用首页组件类，展示多媒体播放器功能选项
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context); // 获取本地化文本实例
     
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: LinearGradient( // 设置渐变背景
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
@@ -62,25 +63,25 @@ class HomePage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // 自定义标题栏 - 减少间距
+              // 构建应用标题区域
               Container(
                 padding: EdgeInsets.only(
-                  top: UIConstants.spaceMD, // 减少顶部间距
+                  top: UIConstants.spaceMD,
                   left: UIConstants.spaceLG,
                   right: UIConstants.spaceLG,
-                  bottom: UIConstants.spaceMD, // 减少底部间距
+                  bottom: UIConstants.spaceMD,
                 ),
                 child: Column(
                   children: [
-                    // 使用图片替代图标
+                    // 显示应用Logo图片
                     Image.asset(
                       'assets/images/logo.png',
                       width: UIConstants.iconLogo,
                       height: UIConstants.iconLogo,
                     ),
-                    SizedBox(height: UIConstants.spaceSM), // 减少间距
+                    SizedBox(height: UIConstants.spaceSM),
                     Text(
-                      'IApp Player',
+                      'IApp Player', // 应用标题文本
                       style: TextStyle(
                         fontSize: UIConstants.fontXXXXL,
                         fontWeight: FontWeight.bold,
@@ -90,17 +91,17 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
-              // 选项卡片
+              // 构建功能选项卡片列表
               Expanded(
                 child: ListView(
                   padding: EdgeInsets.only(
-                    left: UIConstants.spaceLG - 4, // 20
-                    right: UIConstants.spaceLG - 4, // 20
-                    bottom: UIConstants.spaceLG - 4, // 20
-                    top: 0, // 第一个选项卡无上边距
+                    left: UIConstants.spaceLG - 4, // 左边距20像素
+                    right: UIConstants.spaceLG - 4, // 右边距20像素
+                    bottom: UIConstants.spaceLG - 4, // 底边距20像素
+                    top: 0, // 顶部无边距
                   ),
                   children: [
-                    _buildModernCard(
+                    _buildModernCard( // 构建视频播放器卡片
                       context,
                       icon: Icons.movie_outlined,
                       title: l10n.videoPlayer,
@@ -115,7 +116,7 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    _buildModernCard(
+                    _buildModernCard( // 构建视频列表卡片
                       context,
                       icon: Icons.playlist_play,
                       title: l10n.videoList,
@@ -130,7 +131,7 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    _buildModernCard(
+                    _buildModernCard( // 构建音乐播放器卡片
                       context,
                       icon: Icons.music_note_outlined,
                       title: l10n.musicPlayer,
@@ -145,7 +146,7 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    _buildModernCard(
+                    _buildModernCard( // 构建音乐列表卡片
                       context,
                       icon: Icons.queue_music,
                       title: l10n.musicList,
@@ -169,6 +170,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // 构建现代风格功能卡片组件
   Widget _buildModernCard(
     BuildContext context, {
     required IconData icon,
@@ -180,19 +182,19 @@ class HomePage extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap, // 绑定点击事件
         borderRadius: BorderRadius.circular(UIConstants.radiusLG),
         child: Container(
-          padding: EdgeInsets.all(UIConstants.spaceMD), 
+          padding: EdgeInsets.all(UIConstants.spaceMD),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(UIConstants.radiusLG),
-            gradient: LinearGradient(
+            gradient: LinearGradient( // 设置卡片渐变背景
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: gradient,
             ),
             boxShadow: [
-              BoxShadow(
+              BoxShadow( // 添加阴影效果
                 color: gradient[0].withOpacity(0.3),
                 blurRadius: UIConstants.shadowMD,
                 offset: Offset(0, UIConstants.shadowSM),
@@ -201,10 +203,10 @@ class HomePage extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Container(
+              Container( // 构建图标容器
                 padding: EdgeInsets.all(UIConstants.spaceMD),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withOpacity(0.2), // 半透明白色背景
                   borderRadius: BorderRadius.circular(UIConstants.radiusMD),
                 ),
                 child: Icon(
@@ -213,12 +215,12 @@ class HomePage extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              SizedBox(width: UIConstants.spaceLG - 4), // 20
-              Expanded(
+              SizedBox(width: UIConstants.spaceLG - 4), // 间距20像素
+              Expanded( // 构建文本信息区域
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    Text( // 显示卡片标题
                       title,
                       style: TextStyle(
                         fontSize: UIConstants.fontXL,
@@ -227,7 +229,7 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: UIConstants.spaceXS),
-                    Text(
+                    Text( // 显示卡片副标题
                       subtitle,
                       style: TextStyle(
                         fontSize: UIConstants.fontSM,
@@ -237,7 +239,7 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
+              Icon( // 显示右箭头图标
                 Icons.arrow_forward_ios_rounded,
                 color: Colors.white.withOpacity(0.8),
                 size: UIConstants.iconSM,
@@ -249,19 +251,20 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // 执行带动画效果的页面导航
   void _navigateWithAnimation(BuildContext context, Widget page) {
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => page,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOutCubic;
+          const begin = Offset(1.0, 0.0); // 动画起始位置
+          const end = Offset.zero; // 动画结束位置
+          const curve = Curves.easeInOutCubic; // 动画曲线
           var tween = Tween(begin: begin, end: end).chain(
             CurveTween(curve: curve),
           );
-          return SlideTransition(
+          return SlideTransition( // 创建滑动过渡动画
             position: animation.drive(tween),
             child: child,
           );
