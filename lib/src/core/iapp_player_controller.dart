@@ -1512,29 +1512,6 @@ Future<void> checkAndExitPictureInPicture() async {
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
   }
 
-  // 停止并释放播放器资源
-  Future<void> stopAndReleasePlayer() async {
-    try {
-      // 保存当前播放信息以便恢复
-      _lastDataSource = _iappPlayerDataSource;
-      _lastPlayPosition = videoPlayerController?.value.position;
-      
-      // 停止并释放播放器
-      await _disposeVideoPlayer();
-      
-      // 清理播放器相关状态
-      _clearPlayerStates();
-      
-      // 发送停止事件
-      _postEvent(IAppPlayerEvent(IAppPlayerEventType.stopped));
-      
-      // 通知UI更新
-      _postControllerEvent(IAppPlayerControllerEvent.changeSubtitles);
-    } catch (e) {
-      IAppPlayerUtils.log("停止并释放播放器失败: $e");
-    }
-  }
-
   // 专门处理播放器的释放
   Future<void> _disposeVideoPlayer() async {
     if (videoPlayerController != null) {
