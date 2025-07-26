@@ -193,10 +193,18 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
                 [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nowPlayingInfoDict;
             } else {
                 dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+                
+                // 使用 weak-strong 模式，但要确保在使用前检查
                 __weak typeof(self) weakSelf = self;
+                __weak IAppPlayer* weakPlayer = player;  // 添加对 player 的弱引用
+                
                 dispatch_async(queue, ^{
                     __strong typeof(weakSelf) strongSelf = weakSelf;
-                    if (!strongSelf) return;
+                    __strong IAppPlayer* strongPlayer = weakPlayer;
+                    
+                    // 检查 self 和 player 是否仍然存在
+                    if (!strongSelf || !strongPlayer || strongPlayer.disposed) return;
+                    
                     @try {
                         UIImage *tempArtworkImage = nil;
                         if ([imageUrl rangeOfString:@"http"].location == NSNotFound) {
@@ -205,12 +213,14 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
                             NSURL *nsImageUrl = [NSURL URLWithString:imageUrl];
                             tempArtworkImage = [UIImage imageWithData:[NSData dataWithContentsOfURL:nsImageUrl]];
                         }
-                        if (tempArtworkImage) {
+                        
+                        // 再次检查播放器是否仍然有效
+                        if (tempArtworkImage && !strongPlayer.disposed) {
                             MPMediaItemArtwork* artworkImage = [[MPMediaItemArtwork alloc] initWithImage:tempArtworkImage];
                             [strongSelf->_artworkImageDict setObject:artworkImage forKey:key];
                             [nowPlayingInfoDict setObject:artworkImage forKey:MPMediaItemPropertyArtwork];
+                            [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nowPlayingInfoDict;
                         }
-                        [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nowPlayingInfoDict;
                     } @catch (NSException *exception) {}
                 });
             }
