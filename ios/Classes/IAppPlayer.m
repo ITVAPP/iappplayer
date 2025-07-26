@@ -1133,6 +1133,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (@available(iOS 9.0, *)) {
         [[AVAudioSession sharedInstance] setActive:YES error:nil]; // 激活音频会话
         [[UIApplication sharedApplication] beginReceivingRemoteControlEvents]; // 接收远程控制
+        
+        // 创建或获取播放器层
+        if (!self._playerLayer) {
+            self._playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player]; // 创建播放器层
+        }
+        
         if (!_pipController && self._playerLayer && [AVPictureInPictureController isPictureInPictureSupported]) {
             _pipController = [[AVPictureInPictureController alloc] initWithPlayerLayer:self._playerLayer]; // 初始化控制器
             _pipController.delegate = self; // 设置代理
@@ -1141,24 +1147,22 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 /// 启用画中画模式
-- (void)enablePictureInPicture:(CGRect)frame {
+- (void)enablePictureInPicture {
     [self disablePictureInPicture]; // 禁用现有画中画
-    [self usePlayerLayer:frame]; // 使用播放器层
-}
-
-/// 设置播放器层并启用画中画
-- (void)usePlayerLayer:(CGRect)frame {
+    
     if (_player) {
-        self._playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player]; // 创建播放器层
-        UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController]; // 获取根视图控制器
-        self._playerLayer.frame = frame; // 设置帧
-        self._playerLayer.needsDisplayOnBoundsChange = YES; // 标记需要显示
-        [vc.view.layer addSublayer:self._playerLayer]; // 添加层
-        vc.view.layer.needsDisplayOnBoundsChange = YES; // 标记需要更新
+        // 创建播放器层
+        if (!self._playerLayer) {
+            self._playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player]; // 创建播放器层
+        }
+        
         if (@available(iOS 9.0, *)) {
             _pipController = NULL; // 清空控制器
         }
+        
         [self setupPipController]; // 初始化控制器
+        
+        // 延迟启动画中画，确保控制器初始化完成
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
             [self setPictureInPicture:true]; // 启用画中画
@@ -1169,8 +1173,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 /// 禁用画中画模式
 - (void)disablePictureInPicture {
     [self setPictureInPicture:false]; // 设置非画中画状态
-    if (_playerLayer){
-        [_playerLayer removeFromSuperlayer]; // 移除层
+    if (@available(iOS 9.0, *)) {
+        if (_pipController) {
+            _pipController = nil; // 清空控制器
+        }
+    }
+    if (_playerLayer) {
         _playerLayer = nil; // 清空层
         if (_eventSink != nil) {
             _eventSink(@{@"event" : @"pipStop"}); // 发送停止事件
