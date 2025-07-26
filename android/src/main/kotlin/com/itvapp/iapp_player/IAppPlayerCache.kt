@@ -1,11 +1,12 @@
 package com.itvapp.iapp_player
 
-import android.content.Context
-import androidx.media3.datasource.cache.SimpleCache
-import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
-import androidx.media3.database.StandaloneDatabaseProvider
 import java.io.File
-import java.lang.Exception
+
+import android.content.Context
+
+import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
 
 // 媒体播放器缓存管理单例对象
 object IAppPlayerCache {

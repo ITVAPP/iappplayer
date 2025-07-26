@@ -1,19 +1,21 @@
 package com.itvapp.iapp_player
 
+import java.util.HashMap
+
 import android.content.Context
 import android.net.Uri
-import com.itvapp.iapp_player.DataSourceUtils.getUserAgent
-import com.itvapp.iapp_player.DataSourceUtils.getDataSourceFactory
-import com.itvapp.iapp_player.DataSourceUtils.getProtocolInfo
-import androidx.work.WorkerParameters
-import androidx.media3.datasource.cache.CacheWriter
-import androidx.work.Worker
+
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.HttpDataSource.HttpDataSourceException
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.CacheWriter
 import androidx.media3.datasource.cache.SimpleCache
-import java.lang.Exception
-import java.util.*
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+
+import com.itvapp.iapp_player.DataSourceUtils.getDataSourceFactory
+import com.itvapp.iapp_player.DataSourceUtils.getProtocolInfo
+import com.itvapp.iapp_player.DataSourceUtils.getUserAgent
 
 // 缓存工作器，执行视频流预缓存并存储至缓存供后续使用
 class CacheWorker(

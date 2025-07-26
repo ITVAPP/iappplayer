@@ -1,18 +1,20 @@
 package com.itvapp.iapp_player
 
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.URL
+
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+
 import androidx.work.Data
-import androidx.work.WorkerParameters
 import androidx.work.Worker
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.lang.Exception
-import java.net.HttpURLConnection
-import java.net.URL
+import androidx.work.WorkerParameters
+
 import kotlin.math.min
 
 // 处理图像下载、解码和缓存的后台工作，使用现代化的错误处理和内存管理

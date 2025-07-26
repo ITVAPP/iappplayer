@@ -1,7 +1,8 @@
 package com.itvapp.iapp_player
 
-import io.flutter.plugin.common.EventChannel.EventSink
 import java.util.ArrayList
+
+import io.flutter.plugin.common.EventChannel.EventSink
 
 // 队列管理事件发送，支持延迟分发
 internal class QueuingEventSink : EventSink {
