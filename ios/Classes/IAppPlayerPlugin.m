@@ -273,9 +273,7 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
     // 处理Flutter方法调用，分发到对应功能
     if ([@"init" isEqualToString:call.method]) {
-        // 先清理映射关系
         [_playerToTextureIdMap removeAllObjects];
-        // 然后清理播放器
         for (NSNumber* textureId in _players) {
             [_players[textureId] dispose];
         }
@@ -421,11 +419,8 @@ bool _remoteCommandsInitialized = false; // 远程命令初始化标志
             result(nil);
         } else if ([@"enablePictureInPicture" isEqualToString:call.method]) {
             // 启用画中画模式
-            double left = [argsMap[@"left"] doubleValue];
-            double top = [argsMap[@"top"] doubleValue];
-            double width = [argsMap[@"width"] doubleValue];
-            double height = [argsMap[@"height"] doubleValue];
-            [player enablePictureInPicture:CGRectMake(left, top, width, height)];
+            [player enablePictureInPicture];
+            result(nil);
         } else if ([@"isPictureInPictureSupported" isEqualToString:call.method]) {
             // 检查画中画支持状态
             if (@available(iOS 9.0, *)) {
