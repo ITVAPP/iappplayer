@@ -103,7 +103,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// 设置视频轨道参数
 - (void)setTrackParameters:(int)width :(int)height :(int)bitrate; // 设置视频分辨率和比特率
 /// 启用画中画模式
-- (void)enablePictureInPicture:(CGRect)frame; // 启用画中画模式
+- (void)enablePictureInPicture; // 启用画中画模式
 /// 设置画中画状态
 - (void)setPictureInPicture:(BOOL)pictureInPicture; // 设置画中画状态
 /// 禁用画中画模式
