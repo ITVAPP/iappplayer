@@ -61,6 +61,11 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   StreamSubscription? _controllerEventSubscription; // 控制器事件订阅
   bool _needsUpdate = false; // 批量更新标志
   Timer? _updateDebounceTimer; // 更新防抖定时器
+  
+  // 宽高比缓存
+  double? _cachedAspectRatio;
+  int? _lastAspectRatioCheck;
+  static const int _aspectRatioCacheDuration = 500; // 缓存有效期500ms
 
   @override
   void initState() {
@@ -69,7 +74,7 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
   
     // 页面初始化后延迟检查并关闭可能存在的画中画
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(Duration(milliseconds: 300), () {
+      Future.delayed(Duration(milliseconds: 500), () {
         if (mounted) {
           widget.controller.checkAndExitPictureInPicture();
         }
@@ -130,6 +135,9 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
       _controllerEventSubscription?.cancel();
       _controllerEventSubscription =
           widget.controller.controllerEventStream.listen(onControllerEvent); // 更新事件监听
+      // 控制器变化时清除宽高比缓存
+      _cachedAspectRatio = null;
+      _lastAspectRatioCheck = null;
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -143,6 +151,11 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
         break;
       case IAppPlayerControllerEvent.changeSubtitles:
       case IAppPlayerControllerEvent.setupDataSource:
+        // 数据源变化时清除宽高比缓存
+        if (event == IAppPlayerControllerEvent.setupDataSource) {
+          _cachedAspectRatio = null;
+          _lastAspectRatioCheck = null;
+        }
         _scheduleUpdate(); // 批量更新UI
         break;
       default:
@@ -252,27 +265,52 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
     return false;
   }
 
-  /// 获取安全宽高比
+  /// 获取宽高比
   double _getSafeAspectRatio() {
+    // 检查缓存是否有效
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (_cachedAspectRatio != null && 
+        _lastAspectRatioCheck != null && 
+        now - _lastAspectRatioCheck! < _aspectRatioCacheDuration) {
+      return _cachedAspectRatio!;
+    }
+    
     try {
+      double? aspectRatio;
+      
+      // 依次尝试获取宽高比
       final controllerAspectRatio = widget.controller.getAspectRatio();
       if (controllerAspectRatio != null && _isValidAspectRatio(controllerAspectRatio)) {
-        return controllerAspectRatio; // 使用控制器宽高比
+        aspectRatio = controllerAspectRatio; // 使用控制器宽高比
+      } else {
+        final videoAspectRatio = widget.controller.videoPlayerController?.value.aspectRatio;
+        if (videoAspectRatio != null && _isValidAspectRatio(videoAspectRatio)) {
+          aspectRatio = videoAspectRatio; // 使用视频宽高比
+        } else {
+          final configAspectRatio = widget.controller.iappPlayerConfiguration.aspectRatio;
+          if (configAspectRatio != null && _isValidAspectRatio(configAspectRatio)) {
+            aspectRatio = configAspectRatio; // 使用配置宽高比
+          } else {
+            aspectRatio = _defaultAspectRatio; // 默认16:9
+          }
+        }
       }
-      final videoAspectRatio = widget.controller.videoPlayerController?.value.aspectRatio;
-      if (videoAspectRatio != null && _isValidAspectRatio(videoAspectRatio)) {
-        return videoAspectRatio; // 使用视频宽高比
-      }
-      final configAspectRatio = widget.controller.iappPlayerConfiguration.aspectRatio;
-      if (configAspectRatio != null && _isValidAspectRatio(configAspectRatio)) {
-        return configAspectRatio; // 使用配置宽高比
-      }
-      return _defaultAspectRatio; // 默认16:9
+      
+      // 更新缓存
+      _cachedAspectRatio = aspectRatio;
+      _lastAspectRatioCheck = now;
+      
+      return aspectRatio;
     } catch (e) {
       assert(() {
         IAppPlayerUtils.log('获取宽高比失败: $e，使用默认值 16:9'); // 记录宽高比失败
         return true;
       }());
+      
+      // 即使失败也更新缓存，避免重复计算
+      _cachedAspectRatio = _defaultAspectRatio;
+      _lastAspectRatioCheck = now;
+      
       return _defaultAspectRatio;
     }
   }
@@ -403,7 +441,7 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
     
     // 当应用恢复到前台时，再次检查画中画状态
     if (state == AppLifecycleState.resumed) {
-      Future.delayed(Duration(milliseconds: 500), () {
+      Future.delayed(Duration(milliseconds: 1000), () {
         if (mounted) {
           widget.controller.checkAndExitPictureInPicture();
         }
