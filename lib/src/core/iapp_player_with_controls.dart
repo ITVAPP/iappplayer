@@ -64,6 +64,8 @@ class _IAppPlayerWithControlsState extends State<IAppPlayerWithControls> {
   void dispose() {
     // 清理资源
     _controllerEventSubscription?.cancel();
+    _controllerEventSubscription = null;
+    _initialized = false;
     super.dispose();
   }
 
@@ -295,8 +297,12 @@ class _IAppPlayerVideoFitWidgetState extends State<_IAppPlayerVideoFitWidget> {
     if (_initializedListener != null) {
       // 安全检查，避免空指针异常
       widget.iappPlayerController.videoPlayerController?.removeListener(_initializedListener!);
+      _initializedListener = null;
     }
     _controllerEventSubscription?.cancel();
+    _controllerEventSubscription = null;
+    _initialized = false;
+    _started = false;
     super.dispose();
   }
 }
