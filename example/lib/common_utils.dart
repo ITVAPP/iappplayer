@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iapp_player/iapp_player.dart';
-import 'dart:async';
 
 // UI设计规范常量类，统一管理界面尺寸和样式参数
 class UIConstants {
