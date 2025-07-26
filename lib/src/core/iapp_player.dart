@@ -123,6 +123,9 @@ class _IAppPlayerState extends State<IAppPlayer> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this); // 移除生命周期观察者
     _controllerEventSubscription?.cancel(); // 取消事件订阅
     _updateDebounceTimer?.cancel(); // 清理定时器
+    _cachedAspectRatio = null;
+    _lastAspectRatioCheck = null;
+    
     widget.controller.dispose(); // 释放控制器
     VisibilityDetectorController.instance
         .forget(Key("${widget.controller.hashCode}_key")); // 移除可见性检测
