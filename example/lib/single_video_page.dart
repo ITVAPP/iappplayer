@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iapp_player/iapp_player.dart';
 
-// 导入通用工具类和语言类
 import 'app_localizations.dart';
 import 'common_utils.dart';
 
-// 解码器类型状态管理
+// 定义解码器类型枚举
 enum DecoderState {
   hardware,
   software,
 }
 
-// 单视频播放示例
+// 单视频播放页面组件
 class SingleVideoExample extends StatefulWidget {
   const SingleVideoExample({Key? key}) : super(key: key);
 
@@ -25,10 +24,10 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
   IAppPlayerController? _controller;
   bool _isLoading = true;
   DecoderState _currentDecoder = DecoderState.hardware;
-  bool _isPlaying = false; // 添加播放状态跟踪
-  bool _isPipMode = false; // 添加画中画状态跟踪
-  Key _playerContainerKey = UniqueKey(); // 添加：用于强制重建播放器
-  bool _isSwitchingDecoder = false; // 添加：防止重复切换
+  bool _isPlaying = false;
+  bool _isPipMode = false;
+  Key _playerContainerKey = UniqueKey();
+  bool _isSwitchingDecoder = false;
 
   @override
   IAppPlayerController? get controller => _controller;
@@ -39,51 +38,56 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     _initializePlayer();
   }
 
+  // 初始化播放器配置
   Future<void> _initializePlayer() async {
     try {
-      // 安全读取字幕，即使失败也不影响播放
+      // 安全加载字幕文件内容
       final subtitleContent = await safeLoadSubtitle('assets/subtitles/video1.srt');
       
-      // 修复：使用正确的本地资源路径
+      // 创建播放器实例并配置参数
       final result = await IAppPlayerConfig.createPlayer(
         url: 'assets/videos/video1.mp4',
         dataSourceType: IAppPlayerDataSourceType.file,
         title: 'Superman (1941)',
         imageUrl: 'https://www.itvapp.net/images/logo-1.png',
-        subtitleContent: subtitleContent, // 可能为null，但不影响播放
-        enableFullscreen: true, // 添加全屏功能
+        subtitleContent: subtitleContent,
+        enableFullscreen: true,
         eventListener: (event) {
+          // 监听播放器初始化完成事件
           if (event.iappPlayerEventType == IAppPlayerEventType.initialized) {
             setState(() {
               _isLoading = false;
               _isPlaying = _controller?.isPlaying() ?? false;
             });
-            // 初始化后检查方向
             handleOrientationChange();
-          } else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
-            // 监听播放事件
-            if (!_isPlaying) {  // 【优化】只在状态真正改变时更新
+          } 
+          // 监听视频播放开始事件
+          else if (event.iappPlayerEventType == IAppPlayerEventType.play) {
+            if (!_isPlaying) {
               setState(() {
                 _isPlaying = true;
               });
             }
-          } else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
-            // 监听暂停事件
-            if (_isPlaying) {  // 【优化】只在状态真正改变时更新
+          } 
+          // 监听视频暂停事件
+          else if (event.iappPlayerEventType == IAppPlayerEventType.pause) {
+            if (_isPlaying) {
               setState(() {
                 _isPlaying = false;
               });
             }
-          } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStart) {
-            // 监听进入画中画
-            if (!_isPipMode) {  // 【优化】只在状态真正改变时更新
+          } 
+          // 监听画中画模式开启事件
+          else if (event.iappPlayerEventType == IAppPlayerEventType.pipStart) {
+            if (!_isPipMode) {
               setState(() {
                 _isPipMode = true;
               });
             }
-          } else if (event.iappPlayerEventType == IAppPlayerEventType.pipStop) {
-            // 监听退出画中画
-            if (_isPipMode) {  // 【优化】只在状态真正改变时更新
+          } 
+          // 监听画中画模式退出事件
+          else if (event.iappPlayerEventType == IAppPlayerEventType.pipStop) {
+            if (_isPipMode) {
               setState(() {
                 _isPipMode = false;
               });
@@ -102,22 +106,24 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
         ],
       );
 
+      // 检查组件是否仍然挂载并更新控制器状态
       if (mounted) {
         setState(() {
           _controller = result.activeController;
-          _isLoading = false;  // 无论成功与否都要设置加载完成
+          _isLoading = false;
         });
       }
     } catch (e) {
       print('Player initialization failed: $e');
       if (mounted) {
         setState(() {
-          _isLoading = false;  // 错误时也要设置加载完成
+          _isLoading = false;
         });
       }
     }
   }
 
+  // 根据当前解码器状态返回对应类型
   IAppPlayerDecoderType _getDecoderType() {
     switch (_currentDecoder) {
       case DecoderState.hardware:
@@ -127,27 +133,27 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     }
   }
 
-  // 切换解码器
+  // 切换解码器类型并重新初始化播放器
   void _switchDecoder(DecoderState newDecoder) async {
     if (_currentDecoder == newDecoder || _isSwitchingDecoder) return;
     
-    _isSwitchingDecoder = true; // 设置切换标志
+    _isSwitchingDecoder = true;
     
     try {
-      // 先释放旧的播放器
+      // 释放当前播放器资源
       await _releasePlayer();
       
       setState(() {
         _currentDecoder = newDecoder;
         _isLoading = true;
-        _isPipMode = false;  // 重置画中画状态
-        _playerContainerKey = UniqueKey(); // 强制重建播放器容器
+        _isPipMode = false;
+        _playerContainerKey = UniqueKey();
       });
       
-      // 重新初始化播放器
+      // 使用新解码器重新初始化播放器
       await _initializePlayer();
     } finally {
-      _isSwitchingDecoder = false; // 确保标志被重置
+      _isSwitchingDecoder = false;
     }
   }
 
@@ -157,25 +163,28 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     super.dispose();
   }
 
+  // 释放播放器资源并清理状态
   Future<void> _releasePlayer() async {
     try {
-      // 移除全局缓存清理，避免影响其他页面
       if (_controller != null) {
-        // 先退出画中画模式
+        // 退出画中画模式
         if (_isPipMode && (_controller!.isVideoInitialized() ?? false)) {
           try {
             await _controller!.disablePictureInPicture();
-            _isPipMode = false; // 立即更新状态
+            _isPipMode = false;
           } catch (e) {
             print('Exit PiP failed: $e');
-            _isPipMode = false; // 即使失败也要重置状态
+            _isPipMode = false;
           }
         }
         
+        // 停止播放并静音
         if (_controller!.isPlaying() ?? false) {
           await _controller!.pause();
           await _controller!.setVolume(0);
         }
+        
+        // 销毁控制器实例
         await Future.microtask(() {
           _controller!.dispose();
         });
@@ -215,12 +224,12 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
         child: SafeArea(
           child: Column(
             children: [
-              // 顶部内容区域
+              // 主要内容区域
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // 播放器区域
+                      // 视频播放器容器
                       Container(
                         margin: EdgeInsets.all(UIConstants.spaceMD),
                         decoration: BoxDecoration(
@@ -238,7 +247,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           child: AspectRatio(
                             aspectRatio: 16 / 9,
                             child: Container(
-                              key: _playerContainerKey, // 添加key以强制重建
+                              key: _playerContainerKey,
                               color: Colors.black,
                               child: _controller != null
                                   ? IAppPlayer(
@@ -254,7 +263,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           ),
                         ),
                       ),
-                      // 解码器选择器
+                      // 解码器选项切换器
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: UIConstants.spaceMD),
                         padding: EdgeInsets.all(UIConstants.spaceMD),
@@ -278,12 +287,12 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                           ],
                         ),
                       ),
-                      SizedBox(height: UIConstants.spaceMD), // 统一间距
+                      SizedBox(height: UIConstants.spaceMD),
                     ],
                   ),
                 ),
               ),
-              // 控制按钮区域 - 固定在底部
+              // 固定底部控制按钮区域
               Container(
                 padding: EdgeInsets.all(UIConstants.spaceLG),
                 decoration: BoxDecoration(
@@ -294,7 +303,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                 ),
                 child: Column(
                   children: [
-                    // 播放/暂停按钮
+                    // 播放暂停控制按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
                           ? () {
@@ -312,7 +321,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                       isPrimary: true,
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    // 画中画按钮 - 简化后的使用方式
+                    // 画中画模式切换按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
                           ? () {
@@ -329,7 +338,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                       label: _isPipMode ? l10n.exitPictureInPicture : l10n.pictureInPicture,
                     ),
                     SizedBox(height: UIConstants.spaceMD),
-                    // 全屏按钮
+                    // 全屏模式切换按钮
                     ModernControlButton(
                       onPressed: _controller != null && !_isLoading
                           ? () {
@@ -357,6 +366,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
     );
   }
 
+  // 构建解码器选项UI组件
   Widget _buildDecoderOption(String label, DecoderState decoder, IconData icon) {
     final isSelected = _currentDecoder == decoder;
     
