@@ -319,7 +319,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
                               if (_isPipMode) {
                                 _controller!.disablePictureInPicture();
                               } else {
-                                _controller!.enablePictureInPicture(); // 直接调用，无需GlobalKey
+                                _controller!.enablePictureInPicture(); 
                               }
                             }
                           : null,
