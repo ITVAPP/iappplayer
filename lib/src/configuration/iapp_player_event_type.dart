@@ -4,6 +4,7 @@ enum IAppPlayerEventType {
   play,
   pause,
   seekTo,
+  stopped,
   openFullscreen,
   hideFullscreen,
   setVolume,
