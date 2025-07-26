@@ -351,7 +351,7 @@ eventListener: (IAppPlayerEvent event) {
 | 方法 | 描述 | 示例 |
 |:---:|:---|:---|
 | `setMixWithOthers(bool)` | 设置是否与其他音频混合播放 | `controller.setMixWithOthers(true)` |
-| `enablePictureInPicture(GlobalKey)` | 启用画中画（需要 GlobalKey） | `controller.enablePictureInPicture(playerKey)` |
+| `enablePictureInPicture()` | 启用画中画 | `controller.enablePictureInPicture()` |
 | `disablePictureInPicture()` | 禁用画中画 | `controller.disablePictureInPicture()` |
 | `setControlsEnabled(bool)` | 启用/禁用控件 | `controller.setControlsEnabled(false)` |
 | `setControlsAlwaysVisible(bool)` | 设置控件始终可见 | `controller.setControlsAlwaysVisible(true)` |
@@ -369,9 +369,7 @@ eventListener: (IAppPlayerEvent event) {
 controller.setMixWithOthers(true);
 
 // 启用画中画功能
-final GlobalKey playerKey = GlobalKey();
-controller.setIAppPlayerGlobalKey(playerKey);
-controller.enablePictureInPicture(playerKey);
+controller.enablePictureInPicture();
 
 // 禁用控件（如展示模式）
 controller.setControlsEnabled(false);

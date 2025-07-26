@@ -351,7 +351,7 @@ eventListener: (IAppPlayerEvent event) {
 | Method | Description | Example |
 |:---:|:---|:---|
 | `setMixWithOthers(bool)` | Set whether to mix with other audio | `controller.setMixWithOthers(true)` |
-| `enablePictureInPicture(GlobalKey)` | Enable PiP (requires GlobalKey) | `controller.enablePictureInPicture(playerKey)` |
+| `enablePictureInPicture()` | Enable picture-in-picture | `controller.enablePictureInPicture()` |
 | `disablePictureInPicture()` | Disable PiP | `controller.disablePictureInPicture()` |
 | `setControlsEnabled(bool)` | Enable/disable controls | `controller.setControlsEnabled(false)` |
 | `setControlsAlwaysVisible(bool)` | Set controls always visible | `controller.setControlsAlwaysVisible(true)` |
@@ -369,9 +369,7 @@ eventListener: (IAppPlayerEvent event) {
 controller.setMixWithOthers(true);
 
 // Enable Picture-in-Picture
-final GlobalKey playerKey = GlobalKey();
-controller.setIAppPlayerGlobalKey(playerKey);
-controller.enablePictureInPicture(playerKey);
+controller.enablePictureInPicture();
 
 // Disable controls for kiosk mode
 controller.setControlsEnabled(false);
