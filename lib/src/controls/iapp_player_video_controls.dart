@@ -720,8 +720,8 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   // 构建画中画按钮
   Widget _buildPipButton() {
     return _buildControlButton(
-      onTap: () => iappPlayerController!.enablePictureInPicture(iappPlayerController!.iappPlayerGlobalKey!),
-      icon: iappPlayerControlsConfiguration.pipMenuIcon,
+      onTap: () => iappPlayerController!.enablePictureInPicture(),
+        icon: iappPlayerControlsConfiguration.pipMenuIcon,
     );
   }
 
@@ -729,7 +729,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
   Widget _buildPipButtonWrapperWidget() {
     // 初始化画中画支持状态
     _pipSupportedFuture ??= iappPlayerController!.isPictureInPictureSupported();
-    
+  
     return FutureBuilder<bool>(
       future: _pipSupportedFuture,
       builder: (context, snapshot) {
@@ -737,7 +737,7 @@ class _IAppPlayerVideoControlsState extends IAppPlayerControlsState<IAppPlayerVi
           _isPipSupported = snapshot.data;
         }
         final bool isPipSupported = _isPipSupported ?? false;
-        if (isPipSupported && _iappPlayerController!.iappPlayerGlobalKey != null) {
+        if (isPipSupported) {
           return _buildPipButton();
         } else {
           return const SizedBox();
