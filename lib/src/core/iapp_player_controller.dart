@@ -1504,8 +1504,8 @@ Future<void> checkAndExitPictureInPicture() async {
         await play();
       }
     } else {
-      // 关闭按钮或默认行为：停止并释放播放器资源
-      await stopAndReleasePlayer();
+      // 关闭按钮或默认行为
+      await pause();
     }
     
     // 发送事件
