@@ -63,9 +63,10 @@ android {
                 storePassword keystoreProperties['storePassword']
             }
         }
+    }
     
     defaultConfig {
-        applicationId "net.itvapp.iapp_player_example"
+        applicationId "net.itvapp.iapp_player"
         minSdkVersion 21
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
@@ -80,8 +81,8 @@ android {
             signingConfig signingConfigs.release
             
             // 添加混淆
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled false
+            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
