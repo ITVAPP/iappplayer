@@ -1,4 +1,4 @@
-name: Build APK
+name: iappplayer APK
 on:
   workflow_dispatch:
 
