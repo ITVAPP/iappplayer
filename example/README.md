@@ -38,13 +38,11 @@ Continuous playback of multiple videos
 Beautiful audio player with lyrics
 - LRC lyrics synchronization
 - Visual effects and animations
-- Gradient design
 
 #### 🎶 Music Playlist
 Alternative music playback interface
 - Continuous playback
 - Advanced controls
-- Modern UI design
 
 #### 🌍 Internationalization
 Supports 8 languages: English, Simplified Chinese, Traditional Chinese, Japanese, French, Spanish, Portuguese, Russian
@@ -61,13 +59,6 @@ lib/
 ├── app_localizations.dart    # Localization support
 └── common_utils.dart         # Common utilities
 ```
-
-### UI Components
-
-- **UIConstants** - Design system constants (spacing, radius, sizes)
-- **PlayerOrientationMixin** - Auto rotation handler for fullscreen
-- **LyricDisplay** - Animated lyrics widget with real-time sync
-- **ModernControlButton** - Gradient control buttons with ripple effects
 
 ---
 
@@ -92,13 +83,11 @@ lib/
 带歌词显示的精美音频播放器
 - LRC 歌词同步
 - 视觉效果和动画
-- 渐变设计
 
 #### 🎶 音乐播放列表
 另一种音乐播放界面
 - 连续播放
 - 高级控制
-- 现代化 UI 设计
 
 #### 🌍 国际化
 支持 8 种语言：英语、简体中文、繁体中文、日语、法语、西班牙语、葡萄牙语、俄语
@@ -115,15 +104,6 @@ lib/
 ├── app_localizations.dart    # 本地化支持
 └── common_utils.dart         # 通用工具类
 ```
-
-### UI 组件
-
-- **UIConstants** - 设计系统常量（间距、圆角、尺寸）
-- **PlayerOrientationMixin** - 自动旋转处理全屏切换
-- **LyricDisplay** - 实时同步的动画歌词组件
-- **ModernControlButton** - 带涟漪效果的渐变控制按钮
-
----
 
 <p align="center">
   <strong>Built with IAppPlayer Flutter Plugin</strong>
