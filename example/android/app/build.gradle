@@ -77,12 +77,14 @@ android {
     
     buildTypes {
         release {
-            // 使用 release 签名配置
-            signingConfig signingConfigs.release
+            // 使用 release 签名配置（如果存在）
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             
-            // 使用代码混淆和资源压缩
-            minifyEnabled true
-            shrinkResources true
+            // 不使用代码混淆和资源压缩，避免构建错误
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
