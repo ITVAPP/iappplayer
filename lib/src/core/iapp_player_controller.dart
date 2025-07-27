@@ -21,9 +21,6 @@ class IAppPlayerController {
   static const String _speedParameter = "speed"; // 速度参数
   static const String _dataSourceParameter = "dataSource"; // 数据源参数
   static const String _authorizationHeader = "Authorization"; // 授权头
-  
-  // 添加最大监听器数量限制
-  static const int _maxEventListeners = 50;
 
   // 播放器配置
   final IAppPlayerConfiguration iappPlayerConfiguration;
@@ -165,11 +162,20 @@ class IAppPlayerController {
   // 画中画模式状态
   bool _wasInPipMode = false;
 
+  // 画中画前全屏状态
+  bool _wasInFullScreenBeforePiP = false;
+
   // 画中画前控件状态
   bool _wasControlsEnabledBeforePiP = false;
   
   // 画中画退出原因
   String? _lastPipExitReason;
+
+  // 全局键
+  GlobalKey? _iappPlayerGlobalKey;
+
+  // 获取全局键
+  GlobalKey? get iappPlayerGlobalKey => _iappPlayerGlobalKey;
 
   // 视频事件流订阅
   StreamSubscription<VideoEvent>? _videoEventStreamSubscription;
@@ -250,10 +256,6 @@ class IAppPlayerController {
   // 字幕滑动窗口配置
   static const int _subtitleWindowSize = 300; // 保留前后300条字幕
   static const Duration _subtitleWindowDuration = Duration(minutes: 10); // 保留前后10分钟的字幕
-
-  // 保存最后的数据源和播放位置，用于恢复
-  IAppPlayerDataSource? _lastDataSource;
-  Duration? _lastPlayPosition;
 
   // 构造函数，初始化配置和数据源
   IAppPlayerController(
@@ -432,8 +434,6 @@ class IAppPlayerController {
 
   // 加载 ASMS 字幕段
   Future _loadAsmsSubtitlesSegments(Duration position) async {
-    if (_disposed) return;
-    
     try {
       if (_asmsSegmentsLoading) {
         return;
@@ -484,8 +484,6 @@ class IAppPlayerController {
           urls: segmentsToLoad,
         ));
 
-        if (_disposed) return;
-        
         if (source == _iappPlayerSubtitlesSource) {
           subtitlesLines.addAll(subtitlesParsed);
           _asmsSegmentsLoaded.addAll(segmentsToLoad);
@@ -1062,22 +1060,29 @@ void _onVideoPlayerChanged() async {
 
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
-  if (_disposed) return;
-  
   try {
-    // 尝试退出画中画（不管当前是否在画中画模式）
-    await videoPlayerController?.disablePictureInPicture();
+    // 先尝试退出画中画
+    if (videoPlayerController?.value.isPip == true) {
+      await disablePictureInPicture();
+      // 等待画中画真正退出（增加等待时间）
+      await Future.delayed(Duration(milliseconds: 300));
+    }
+    
+    // 确保退出全屏（添加多重检查）
+    if (_isFullScreen) {
+      exitFullScreen();
+      // 延迟后再次检查
+      await Future.delayed(Duration(milliseconds: 200));
+      if (_isFullScreen) {
+        // 如果还在全屏，强制退出
+        _isFullScreen = false;
+        _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
+        // 强制刷新UI状态
+        _postControllerEvent(IAppPlayerControllerEvent.changeSubtitles);
+      }
+    }
   } catch (e) {
-    // 忽略错误，可能已经不在画中画模式
-  }
-  
-  // 等待画中画动画完成
-  await Future.delayed(Duration(milliseconds: 300));
-  
-  // 确保退出全屏
-  if (_isFullScreen) {
-    _isFullScreen = false;
-    _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
+    IAppPlayerUtils.log("退出画中画失败: $e");
   }
 }
 
@@ -1085,16 +1090,6 @@ Future<void> checkAndExitPictureInPicture() async {
   void addEventsListener(Function(IAppPlayerEvent) eventListener) {
     // 防止重复添加相同的监听器
     if (!_eventListeners.contains(eventListener)) {
-      // 检查监听器数量
-      if (_eventListeners.length >= _maxEventListeners) {
-        IAppPlayerUtils.log(
-          "警告：事件监听器数量已达上限($_maxEventListeners)，请检查是否存在未移除的监听器"
-        );
-        // 移除最早添加的监听器（跳过第一个，它是全局监听器）
-        if (_eventListeners.length > 1) {
-          _eventListeners.removeAt(1);
-        }
-      }
       _eventListeners.add(eventListener);
     }
   }
@@ -1382,40 +1377,44 @@ Future<void> checkAndExitPictureInPicture() async {
   }
 
   // 启用画中画
-  Future<void>? enablePictureInPicture() async {
-    if (videoPlayerController == null) {
-      throw StateError("数据源未初始化");
-    }
-
-    final bool isPipSupported =
-        (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
-
-    if (isPipSupported) {
-      // 保存当前状态
-      _wasControlsEnabledBeforePiP = _controlsEnabled;
-      
-      // 保存播放状态（重要：确保返回时能恢复播放）
-      _wasPlayingBeforePause = isPlaying();
-      
-      // 禁用控件
-      setControlsEnabled(false);
-      
-      if (Platform.isAndroid || Platform.isIOS) {
-        // 进入画中画
-        await videoPlayerController?.enablePictureInPicture();
-        
-        // 发送事件
-        _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
-        
-        return;
-      } else {
-        IAppPlayerUtils.log("当前平台不支持画中画");
-      }
-    } else {
-      IAppPlayerUtils.log(
-          "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
-    }
+Future<void>? enablePictureInPicture(GlobalKey iappPlayerGlobalKey) async {
+  if (videoPlayerController == null) {
+    throw StateError("数据源未初始化");
   }
+
+  final bool isPipSupported =
+      (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
+
+  if (isPipSupported) {
+    // 保存当前状态
+    _wasInFullScreenBeforePiP = _isFullScreen;
+    _wasControlsEnabledBeforePiP = _controlsEnabled;
+    
+    // 保存播放状态（重要：确保返回时能恢复播放）
+    _wasPlayingBeforePause = isPlaying();
+    
+    // 禁用控件
+    setControlsEnabled(false);
+    
+    // 设置全局键
+    _iappPlayerGlobalKey = iappPlayerGlobalKey;
+    
+    if (Platform.isAndroid || Platform.isIOS) {
+      // 3. 现在可以安全进入画中画
+      await videoPlayerController?.enablePictureInPicture();
+      
+      // 4. 发送事件
+      _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStart));
+      
+      return;
+    } else {
+      IAppPlayerUtils.log("当前平台不支持画中画");
+    }
+  } else {
+    IAppPlayerUtils.log(
+        "设备不支持画中画，Android 请检查是否使用活动 v2 嵌入");
+  }
+}
 
   // 禁用画中画
   Future<void>? disablePictureInPicture() {
@@ -1423,6 +1422,11 @@ Future<void> checkAndExitPictureInPicture() async {
       throw StateError("数据源未初始化");
     }
     return videoPlayerController!.disablePictureInPicture();
+  }
+
+  // 设置全局键
+  void setIAppPlayerGlobalKey(GlobalKey iappPlayerGlobalKey) {
+    _iappPlayerGlobalKey = iappPlayerGlobalKey;
   }
 
   // 检查画中画支持
@@ -1509,82 +1513,19 @@ Future<void> checkAndExitPictureInPicture() async {
       if (!isPlaying()! && _wasPlayingBeforePause == true) {
         await play();
       }
+    } else if (_lastPipExitReason == 'close') {
+      // 关闭按钮：暂停播放
+      await pause();
     } else {
-      // 关闭按钮或默认行为
+      // 默认行为（系统关闭等）：暂停播放
       await pause();
     }
     
     // 发送事件
     _postEvent(IAppPlayerEvent(IAppPlayerEventType.pipStop));
-  }
-
-  // 专门处理播放器的释放
-  Future<void> _disposeVideoPlayer() async {
-    if (videoPlayerController != null) {
-      try {
-        // 停止播放
-        await videoPlayerController!.pause();
-      } catch (e) {
-        IAppPlayerUtils.log("暂停播放器失败: $e");
-      }
-      
-      try {
-        // 重置播放位置
-        await videoPlayerController!.seekTo(Duration.zero);
-      } catch (e) {
-        IAppPlayerUtils.log("重置播放位置失败: $e");
-      }
-      
-      // 移除监听器
-      videoPlayerController!.removeListener(_onFullScreenStateChanged);
-      videoPlayerController!.removeListener(_onVideoPlayerChanged);
-      
-      // 释放播放器
-      await videoPlayerController!.dispose();
-      videoPlayerController = null;
-    }
-  }
-
-  // 清理播放器相关状态（不包括UI状态）
-  void _clearPlayerStates() {
-    // 播放状态
-    _hasCurrentDataSourceStarted = false;
-    _hasCurrentDataSourceInitialized = false;
-    _videoPlayerValueOnError = null;
-    _lastVideoPlayerValue = null;
-    _cachedIsLiveStream = null;
     
-    // 字幕相关
-    subtitlesLines.clear();
-    _asmsSegmentsLoaded.clear();
-    _asmsSegmentsLoading = false;
-    _pendingSubtitleSegments = null;
-    _lastSubtitleCheckPosition = null;
-    renderedSubtitle = null;
-    
-    // 缓冲状态
-    _clearBufferingState();
-    
-    // 画中画状态
-    _clearPipStates();
-  }
-
-  // 清理画中画相关状态
-  void _clearPipStates() {
-    _wasInPipMode = false;
-    _wasControlsEnabledBeforePiP = false;
+    // 重置退出原因
     _lastPipExitReason = null;
-  }
-
-  // 恢复最后播放的视频
-  Future<void> restoreLastVideo() async {
-    if (_lastDataSource != null) {
-      await setupDataSource(_lastDataSource!);
-      if (_lastPlayPosition != null) {
-        await seekTo(_lastPlayPosition!);
-      }
-      await play();
-    }
   }
 
   // 处理缓冲开始
@@ -1773,23 +1714,6 @@ Future<void> checkAndExitPictureInPicture() async {
     _lastBufferingChangeTime = null;
   }
 
-  // 清理所有引用（dispose专用）
-  void _clearAllReferences() {
-    // 清理集合
-    _iappPlayerSubtitlesSourceList.clear();
-    _iappPlayerAsmsTracks.clear();
-    
-    // 清理对象引用
-    _playlistController = null;
-    _iappPlayerDataSource = null;
-    _iappPlayerSubtitlesSource = null;
-    _iappPlayerAsmsTrack = null;
-    _iappPlayerAsmsAudioTracks = null;
-    _iappPlayerAsmsAudioTrack = null;
-    _lastDataSource = null;
-    _lastPlayPosition = null;
-  }
-
   // 销毁控制器
   Future<void> dispose({bool forceDispose = false}) async {
     if (!iappPlayerConfiguration.autoDispose && !forceDispose) {
@@ -1797,27 +1721,17 @@ Future<void> checkAndExitPictureInPicture() async {
     }
     if (!_disposed) {
       _disposed = true;
-      
-      // 取消所有定时器
       _nextVideoTimer?.cancel();
       _nextVideoTimer = null;
       _bufferingDebounceTimer?.cancel();
       _bufferingDebounceTimer = null;
-      
-      // 取消视频事件订阅
       await _videoEventStreamSubscription?.cancel();
       _videoEventStreamSubscription = null;
-      
-      // 清理事件监听器
-      final listenersCopy = List<Function(IAppPlayerEvent)?>.from(_eventListeners);
       _eventListeners.clear();
-      
-      // 释放播放器（如果还未释放）
       if (videoPlayerController != null) {
-        await _disposeVideoPlayer();
+        videoPlayerController!.removeListener(_onFullScreenStateChanged);
+        videoPlayerController!.removeListener(_onVideoPlayerChanged);
       }
-      
-      // 关闭所有 StreamController
       if (!_controllerEventStreamController.isClosed) {
         await _controllerEventStreamController.close();
       }
@@ -1827,14 +1741,15 @@ Future<void> checkAndExitPictureInPicture() async {
       if (!_controlsVisibilityStreamController.isClosed) {
         await _controlsVisibilityStreamController.close();
       }
-      
-      // 清理播放器状态
-      _clearPlayerStates();
-      
-      // 清理其他集合和引用
-      _clearAllReferences();
-      
-      // 清理临时文件
+      if (videoPlayerController != null) {
+        await videoPlayerController!.pause();
+        await videoPlayerController!.dispose();
+        videoPlayerController = null;
+      }
+      _clearBufferingState();
+      _cachedIsLiveStream = null;
+      _pendingSubtitleSegments = null;
+      _lastSubtitleCheckPosition = null;
       await _clearTempFiles();
     }
   }
