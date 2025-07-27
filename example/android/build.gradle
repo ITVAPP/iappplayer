@@ -28,22 +28,6 @@ subprojects {
 
 subprojects {
     project.evaluationDependsOn(":app")
-    
-    // 避免资源压缩的问题
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            android {
-                buildTypes {
-                    release {
-                        // 确保资源压缩和代码压缩同时启用或禁用
-                        if (minifyEnabled == false) {
-                            shrinkResources = false
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 task clean(type: Delete) {
