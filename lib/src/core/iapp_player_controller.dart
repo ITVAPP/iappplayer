@@ -1060,28 +1060,19 @@ void _onVideoPlayerChanged() async {
 // 检查并退出画中画模式
 Future<void> checkAndExitPictureInPicture() async {
   try {
-    // 先尝试退出画中画
-    if (videoPlayerController?.value.isPip == true) {
-      await disablePictureInPicture();
-      // 等待画中画真正退出（增加等待时间）
-      await Future.delayed(Duration(milliseconds: 300));
-    }
-    
-    // 确保退出全屏（添加多重检查）
-    if (_isFullScreen) {
-      exitFullScreen();
-      // 延迟后再次检查
-      await Future.delayed(Duration(milliseconds: 200));
-      if (_isFullScreen) {
-        // 如果还在全屏，强制退出
-        _isFullScreen = false;
-        _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
-        // 强制刷新UI状态
-        _postControllerEvent(IAppPlayerControllerEvent.changeSubtitles);
-      }
-    }
+    // 尝试退出画中画（不管当前是否在画中画模式）
+    await videoPlayerController?.disablePictureInPicture();
   } catch (e) {
-    IAppPlayerUtils.log("退出画中画失败: $e");
+    // 忽略错误，可能已经不在画中画模式
+  }
+  
+  // 等待画中画动画完成
+  await Future.delayed(Duration(milliseconds: 300));
+  
+  // 确保退出全屏
+  if (_isFullScreen) {
+    _isFullScreen = false;
+    _postControllerEvent(IAppPlayerControllerEvent.hideFullscreen);
   }
 }
 
