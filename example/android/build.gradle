@@ -1,32 +1,51 @@
 buildscript {
     ext.kotlin_version = '1.9.23'
-    ext.gradleVersion = "4.1.0"
     ext.multidexVersion = "2.0.1"
     
     repositories {
-        google() // 添加 Google 仓库
-        mavenCentral() // 添加 Maven Central 仓库
+        google()
+        mavenCentral()
     }
+    
     dependencies {
         classpath 'com.android.tools.build:gradle:8.6.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" // 添加 Kotlin 插件依赖
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 allprojects {
     repositories {
-        google() // 添加 Google 仓库
-        mavenCentral() // 添加 Maven Central 仓库
+        google()
+        mavenCentral()
     }
 }
 
 rootProject.buildDir = "../build"
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
+    
+    // 避免资源压缩的问题
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            android {
+                buildTypes {
+                    release {
+                        // 确保资源压缩和代码压缩同时启用或禁用
+                        if (minifyEnabled == false) {
+                            shrinkResources = false
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
-tasks.register("clean", Delete) {
+
+task clean(type: Delete) {
     delete rootProject.buildDir
 }
