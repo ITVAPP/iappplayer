@@ -106,11 +106,11 @@ jobs:
             RELEASE_NOTES=$(cat <<-END
           iappplayer $VERSION
           
-          ## 更新内容
-          - 自动构建版本
-          
-          ## 下载说明
-          - APK 文件：iappplayer_${VERSION_NUMBER}.apk
+          ## Updates
+          - Automated build version
+
+          ## Sample Files
+          - Android version example: iappplayer_${VERSION_NUMBER}.apk
           END
           )
           fi
