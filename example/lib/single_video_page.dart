@@ -48,7 +48,7 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       final result = await IAppPlayerConfig.createPlayer(
         url: 'assets/videos/video1.mp4',
         dataSourceType: IAppPlayerDataSourceType.file,
-        title: 'Superman (1941)',
+        title: 'Big Buck Bunny',
         imageUrl: 'https://www.itvapp.net/images/logo-1.png',
         subtitleContent: subtitleContent,
         enableFullscreen: true,
