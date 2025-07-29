@@ -54,9 +54,9 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
       dataSourceType: IAppPlayerDataSourceType.file,
       titles: ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'],
       imageUrls: [
-        'assets/images/song1.png',
-        'assets/images/song2.png',
-        'assets/images/song3.png',
+        'assets/images/song1.webp',
+        'assets/images/song2.webp',
+        'assets/images/song3.webp',
       ],
       subtitleContents: subtitleContents.isNotEmpty ? subtitleContents : null,
       audioOnly: true,
