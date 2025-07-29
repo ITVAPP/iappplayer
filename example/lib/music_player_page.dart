@@ -119,7 +119,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
       url: 'assets/music/song2.mp3',
       dataSourceType: IAppPlayerDataSourceType.file,
       title: 'Are You That Somebody',
-      imageUrl: 'assets/images/song2.png',
+      imageUrl: 'assets/images/song2.webp',
       audioOnly: true,
       aspectRatio: 1.0,
       subtitleContent: lrcContent,
