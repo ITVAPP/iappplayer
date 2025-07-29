@@ -54,9 +54,9 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
       dataSourceType: IAppPlayerDataSourceType.file,
       titles: ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'],
       imageUrls: [
-        'https://www.itvapp.net/images/logo-1.png',
-        'https://www.itvapp.net/images/logo-1.png',
-        'https://www.itvapp.net/images/logo-1.png',
+        'assets/images/song1.png',
+        'assets/images/song2.png',
+        'assets/images/song3.png',
       ],
       subtitleContents: subtitleContents.isNotEmpty ? subtitleContents : null,
       audioOnly: true,
@@ -160,8 +160,8 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final totalSongs = _playlistController?.dataSourceList.length ?? 0;
-    final titles = ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'];
-    final artists = ['Unknown Artist', 'Unknown Artist', 'Unknown Artist'];
+    final titles = ['月亮代表我的心', 'Are You That Somebody', 'My Love Is Your Love'];
+    final artists = ['邓丽君', 'Aaliyah', 'Whitney Houston'];
 
     return Scaffold(
       extendBodyBehindAppBar: true,
