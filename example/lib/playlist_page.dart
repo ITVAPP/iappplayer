@@ -115,7 +115,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
 
   // 根据当前索引获取视频标题
   String _getCurrentVideoTitle(BuildContext context) {
-    final titles = ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'];
+    final titles = ['Big Buck Bunny', 'AI video', 'Sintel'];
     if (_currentIndex >= 0 && _currentIndex < titles.length) {
       return titles[_currentIndex];
     }
