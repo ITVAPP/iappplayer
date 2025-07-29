@@ -31,30 +31,95 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
   // 初始化单曲音乐播放器配置
   Future<void> _initializePlayer() async {
     // 定义内置LRC歌词内容
-    const lrcContent = '''[00:02.05]愿得一人心
-[00:08.64]词：胡小健 曲：罗俊霖
-[00:27.48]曾在我背包小小夹层里的那个人
-[00:34.23]陪伴我度过漫长岁月的那个人
-[00:41.01]我不能够说出她名字的那个人
-[00:47.76]在被我淡忘的那个人
-[00:54.47]有什么东西快要从胸口跳出
-[01:01.23]一直都紧紧的锁在心里头
-[01:07.93]你看进我的眼睛里面有什么
-[01:14.69]是不是找到失落的自己
-[01:21.44]愿得一人心
-[01:24.87]白首不相离
-[01:28.15]这简单的话语
-[01:31.58]需要巨大的勇气
-[01:34.95]没想过失去你
-[01:38.33]却是在骗自己
-[01:41.66]最后你深深藏在我的歌声里''';
+    const lrcContent = '''[00:01.35]Dirty South, can y'all really feel me
+[00:04.27]East coast feel me
+[00:06.01]West coast feel me
+[00:07.76]Dirty South, can y'all really feel me
+[00:11.06]East coast feel me
+[00:12.58]West coast feel me
+[00:14.18]Dirty South, dirty dirty, can y'all really feel me
+[00:18.12]East coast feel me
+[00:19.87]West coast feel me
+[00:21.59]Dirty South, dirty dirty, can y'all really feel me
+[00:25.00]East coast feel me
+[00:27.08]West coast feel me
+[00:28.53]Boy, I been watching you like a hawk in the sky
+[00:33.67]That flies, cause you were my prey (my prey)
+[00:37.21]Boy, I promise you if we keep bumpin heads
+[00:40.29]I know that one of these days (days)
+[00:43.56]We gon hook it up while we talk on the phone
+[00:47.70]But see, I don't know if that's good
+[00:50.55]I been holding back this secret from you
+[00:54.24]I probably shouldn't tell it but
+[00:56.95]If I, if I let you know
+[00:59.87]You can't tell nobody
+[01:01.75]I'm talking bout nobody
+[01:03.27]Are you responsible
+[01:07.00]Boy I gotta watch my back
+[01:08.93]Cause I'm not just anybody
+[01:11.13]Is it my go, is it your go
+[01:14.32]Sometimes I'm goody-goody
+[01:15.12]Right now I'm naughty naughty
+[01:16.94]Say yes or say no
+[01:20.65]Cause I really need somebody
+[01:21.80]Tell me you're that somebody
+[01:24.15]Boy, won't you pick me up at the park right now
+[01:29.38]Up the block, while everyone sleeps (sleeps, sleeps)
+[01:33.17]I'll be waiting there with my tucks, my loads, my hat
+[01:37.38]Just so I'm low key
+[01:39.34]If you tell the world (don't sleep, you know that we'll be weak)
+[01:45.06]Oh boy, see I'm trusting you with my heart, my soul
+[01:49.70]I probably shouldn't let ya but if I
+[01:53.71]If I, if I let this go
+[01:55.77]You can't tell nobody
+[01:57.43]I'm talking bout nobody
+[01:59.13]I hope you're responsible
+[02:02.20]Boy I gotta watch my back
+[02:04.51]Cause I'm not just anybody
+[02:06.78]Is it my go, is it your go
+[02:09.82]Sometimes I'm goody-goody
+[02:10.78]Right now I'm naughty naughty
+[02:13.73]Say yes or say no
+[02:16.46]Cause I really need somebody
+[02:18.01]Tell me you're that somebody
+[02:19.71]Baby girl
+[02:21.11]I'm the man from the big VA
+[02:23.28]Won't you come play round my way
+[02:25.12]And listen to what I gotta say
+[02:26.94]Don't you know I am the man
+[02:29.87]Rock shows here to Japan
+[02:31.89]Have people shaking-shaking my hand
+[02:33.77]Baby girl, better known as Aaliyah
+[02:36.34]Give me hives, corns, and high fevers
+[02:39.86]Make the playa haters believe us
+[02:41.75]Gotta tell somebody
+[02:43.15]Cause I really need somebody
+[02:45.68]Tell me you're that somebody
+[02:46.75]You can't tell nobody, I'm talking about nobody
+[02:55.44]I hope you're responsible
+[02:58.60]Boy I gotta watch my back
+[03:00.22]Cause I'm not just anybody
+[03:02.39]Is it my go, is it your go
+[03:05.52]Sometimes I'm goody-goody
+[03:06.27]Right now I'm naughty naughty
+[03:09.31]Say yes or say no
+[03:12.13]Cause I really need somebody
+[03:13.82]Tell me you're that somebody
+[03:15.39]You can't tell nobody, I'm talking about nobody
+[03:23.15]I hope you're responsible
+[03:24.58]Boy I gotta watch my back
+[03:27.92]Cause I'm not just anybody
+[03:30.21]Is it my go, is it your go
+[03:33.24]Sometimes I'm goody-goody
+[03:35.44]Right now I'm naughty naughty
+[03:36.43]Say yes or say no''';
     
     // 创建单曲音频播放器实例
     final result = await IAppPlayerConfig.createPlayer(
-      url: 'assets/music/song1.mp3',
+      url: 'assets/music/song2.mp3',
       dataSourceType: IAppPlayerDataSourceType.file,
-      title: 'Creative Design',
-      imageUrl: 'https://www.itvapp.net/images/logo-1.png',
+      title: 'Are You That Somebody',
+      imageUrl: 'assets/images/song2.png',
       audioOnly: true,
       aspectRatio: 1.0,
       subtitleContent: lrcContent,
