@@ -15,6 +15,12 @@ class MusicPlayerExample extends StatefulWidget {
 
 class _MusicPlayerExampleState extends State<MusicPlayerExample> 
     with WidgetsBindingObserver, PlayerOrientationMixin {
+  // 歌曲信息常量定义
+  static const String _songTitle = 'Are You That Somebody';
+  static const String _artistName = 'Aaliyah';
+  static const String _songImageUrl = 'assets/images/song2.webp';
+  static const String _songUrl = 'assets/music/song2.mp3';
+  
   IAppPlayerController? _controller;
   bool _isLoading = true;
   bool _isPlaying = false;
@@ -116,10 +122,11 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
     
     // 创建单曲音频播放器实例
     final result = await IAppPlayerConfig.createPlayer(
-      url: 'assets/music/song2.mp3',
+      url: _songUrl,
       dataSourceType: IAppPlayerDataSourceType.file,
-      title: 'Are You That Somebody',
-      imageUrl: 'assets/images/song2.webp',
+      title: _songTitle, 
+      author: _artistName,
+      imageUrl: _songImageUrl, 
       audioOnly: true,
       aspectRatio: 1.0,
       subtitleContent: lrcContent,
@@ -226,7 +233,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                   child: Column(
                     children: [
                       SizedBox(height: UIConstants.spaceLG),
-                      // 正方形音乐播放器区域（带发光效果）
+                      // 音乐播放器区域
                       Container(
                         width: UIConstants.musicPlayerSquareSize,
                         height: UIConstants.musicPlayerSquareSize,
@@ -235,13 +242,11 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                           borderRadius: BorderRadius.circular(UIConstants.radiusLG),
                           color: Colors.black,
                           boxShadow: [
-                            // 主发光效果
                             BoxShadow(
                               color: const Color(0xFF4facfe).withOpacity(0.5),
                               blurRadius: UIConstants.shadowLG,
                               spreadRadius: 5,
                             ),
-                            // 外围发光效果
                             BoxShadow(
                               color: const Color(0xFF4facfe).withOpacity(0.3),
                               blurRadius: UIConstants.shadowLG * 2,
@@ -272,7 +277,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                           children: [
                             // 显示歌曲标题
                             Text(
-                              'Creative Design',
+                              _songTitle,
                               style: TextStyle(
                                 fontSize: UIConstants.fontXXXL,
                                 fontWeight: FontWeight.bold,
@@ -282,7 +287,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                             SizedBox(height: UIConstants.spaceSM),
                             // 显示艺术家信息
                             Text(
-                              'Unknown Artist',
+                              _artistName,
                               style: TextStyle(
                                 fontSize: UIConstants.fontLG,
                                 color: Colors.white.withOpacity(0.6),
@@ -346,7 +351,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                           : l10n.fullscreenPlay,
                     ),
                   ],
-                ),
+                ],
               ),
             ],
           ),
