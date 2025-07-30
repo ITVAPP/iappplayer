@@ -279,7 +279,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                             Text(
                               _songTitle,
                               style: TextStyle(
-                                fontSize: UIConstants.fontXXXL,
+                                fontSize: UIConstants.fontXL,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
