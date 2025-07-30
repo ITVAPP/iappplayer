@@ -322,19 +322,26 @@ However, due to major changes in Flutter versions, complete compatibility cannot
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <img src="./media/donate-wechat.png" alt="WeChat Donation" width="260"/>
+    <td align="center" width="33%">
+      <img src="./media/donate-wechat.png" alt="WeChat Donation" width="200"/>
       <br/>
       <b>WeChat Pay</b>
       <br/>
       <sub>Scan with WeChat</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="./media/donate-alipay.png" alt="Alipay Donation" width="260"/>
+    <td align="center" width="33%">
+      <img src="./media/donate-alipay.png" alt="Alipay Donation" width="200"/>
       <br/>
       <b>Alipay</b>
       <br/>
       <sub>Scan with Alipay</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./media/donate-paypal.png" alt="PayPal Donation" width="200"/>
+      <br/>
+      <b>PayPal</b>
+      <br/>
+      <sub><a href="https://paypal.me/itvapp/" target="_blank">Click to PayPal</a></sub>
     </td>
   </tr>
 </table>
@@ -345,12 +352,6 @@ However, due to major changes in Flutter versions, complete compatibility cannot
 
 - 💰 **Any amount** - The price of a coffee can make a developer happy all day!
 - 🙏 **Non-mandatory** - IAppPlayer is forever free, donations are completely voluntary
-- 📢 **Acknowledgments** - If you wish, we'll thank you for your support in the project
-- 🚀 **Continuous updates** - Your support helps us:
-  - 🔧 Continuously fix bugs and optimize performance
-  - ✨ Develop more practical features
-  - 📚 Improve documentation and examples
-  - 💡 Explore more innovative features
 
 > 💭 **Developer's Note**: Every bit of support is recognition for open source. Thank you for making the open source world better!
 
