@@ -46,9 +46,9 @@ class _SingleVideoExampleState extends State<SingleVideoExample>
       
       // 创建播放器实例并配置参数
       final result = await IAppPlayerConfig.createPlayer(
-        url: 'assets/videos/video1.mp4',
+        url: 'assets/videos/video2.mp4',
         dataSourceType: IAppPlayerDataSourceType.file,
-        title: 'Big Buck Bunny',
+        title: 'AI VIDEO',
         imageUrl: 'https://www.itvapp.net/images/logo-1.png',
         subtitleContent: subtitleContent,
         enableFullscreen: true,
