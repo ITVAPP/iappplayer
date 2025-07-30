@@ -322,19 +322,26 @@ void dispose() {
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <img src="../media/donate-wechat.png" alt="微信赞赏码" width="260"/>
+    <td align="center" width="33%">
+      <img src="../media/donate-wechat.png" alt="微信赞赏码" width="200"/>
       <br/>
       <b>微信赞赏</b>
       <br/>
       <sub>使用微信扫一扫</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="../media/donate-alipay.png" alt="支付宝捐赠" width="260"/>
+    <td align="center" width="33%">
+      <img src="../media/donate-alipay.png" alt="支付宝捐赠" width="200"/>
       <br/>
       <b>支付宝捐赠</b>
       <br/>
       <sub>使用支付宝扫一扫</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="../media/donate-paypal.png" alt="PayPal捐赠" width="200"/>
+      <br/>
+      <b>PayPal 捐赠</b>
+      <br/>
+      <sub><a href="https://paypal.me/itvapp/" target="_blank">点击前往 PayPal</a></sub>
     </td>
   </tr>
 </table>
@@ -345,12 +352,6 @@ void dispose() {
 
 - 💰 **金额随意** - 一杯咖啡的钱就能让开发者开心一整天！
 - 🙏 **非强制性** - IAppPlayer 永远免费，捐赠完全自愿
-- 📢 **捐赠鸣谢** - 如果您愿意，我们会在项目中感谢您的支持
-- 🚀 **持续更新** - 您的支持将帮助我们：
-  - 🔧 持续修复Bug和优化性能
-  - ✨ 开发更多实用功能
-  - 📚 完善文档和示例
-  - 💡 探索更多创新特性
 
 > 💭 **开发者寄语**：每一份支持都是对开源事业的认可，感谢您让开源世界变得更美好！
 
