@@ -351,7 +351,7 @@ class _MusicPlayerExampleState extends State<MusicPlayerExample>
                           : l10n.fullscreenPlay,
                     ),
                   ],
-                ],
+                ),
               ),
             ],
           ),
