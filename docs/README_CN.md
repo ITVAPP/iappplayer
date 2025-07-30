@@ -1,5 +1,9 @@
 # IAppPlayer
 
+<p align="center">
+  <img src="https://www.itvapp.net/images/logo-1.png" alt="IAppPlayer Logo" width="120"/>
+</p>
+
 [![返回首页](https://img.shields.io/badge/🏠-电视宝应用商店-blue?style=for-the-badge)](https://www.itvapp.net)
 [![English](https://img.shields.io/badge/📄-English-green?style=for-the-badge)](../README.md)
 [![GitHub Issues](https://img.shields.io/github/issues/ITVAPP/IAppPlayer?style=for-the-badge)](https://github.com/ITVAPP/IAppPlayer/issues)
