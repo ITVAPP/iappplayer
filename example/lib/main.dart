@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_localizations.dart';
@@ -9,6 +10,13 @@ import 'music_player_page.dart';
 import 'music_playlist_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 隐藏状态栏
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: [
+    SystemUiOverlay.bottom,
+  ]);
+  
   runApp(const MyApp()); // 启动应用根组件
 }
 
