@@ -15,6 +15,37 @@ class MusicPlaylistExample extends StatefulWidget {
 
 class _MusicPlaylistExampleState extends State<MusicPlaylistExample> 
     with WidgetsBindingObserver, PlayerOrientationMixin {
+  // 播放列表数据常量定义
+  static const List<String> _songUrls = [
+    'assets/music/song1.mp3',
+    'assets/music/song2.mp3',
+    'assets/music/song3.mp3',
+  ];
+  
+  static const List<String> _songTitles = [
+    '月亮代表我的心',
+    'Are You That Somebody',
+    'My Love Is Your Love',
+  ];
+  
+  static const List<String> _artistNames = [
+    '邓丽君',
+    'Aaliyah', 
+    'Whitney Houston',
+  ];
+  
+  static const List<String> _songImageUrls = [
+    'assets/images/song1.webp',
+    'assets/images/song2.webp',
+    'assets/images/song3.webp',
+  ];
+  
+  static const List<String> _lyricsFiles = [
+    'assets/lyrics/song1.lrc',
+    'assets/lyrics/song2.lrc',
+    'assets/lyrics/song3.lrc',
+  ];
+  
   IAppPlayerController? _controller;
   IAppPlayerPlaylistController? _playlistController;
   bool _isLoading = true;
@@ -34,30 +65,21 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   // 初始化音乐播放器和歌词配置
   Future<void> _initializePlayer() async {
     // 安全加载LRC歌词文件内容
-    final lyrics1 = await safeLoadSubtitle('assets/lyrics/song1.lrc');
-    final lyrics2 = await safeLoadSubtitle('assets/lyrics/song2.lrc');
-    final lyrics3 = await safeLoadSubtitle('assets/lyrics/song3.lrc');
-    
-    // 过滤空歌词并构建内容列表
-    final subtitleContents = [lyrics1, lyrics2, lyrics3]
-        .where((content) => content != null)
-        .cast<String>()
-        .toList();
+    final List<String> subtitleContents = [];
+    for (final lyricsFile in _lyricsFiles) {
+      final content = await safeLoadSubtitle(lyricsFile);
+      if (content != null) {
+        subtitleContents.add(content);
+      }
+    }
     
     // 创建音频播放器实例
     final result = await IAppPlayerConfig.createPlayer(
-      urls: [
-        'assets/music/song1.mp3',
-        'assets/music/song2.mp3',
-        'assets/music/song3.mp3',
-      ],
+      urls: _songUrls,
       dataSourceType: IAppPlayerDataSourceType.file,
-      titles: ['Creative Design', 'Corporate Creative', 'Cool Hiphop Beat'],
-      imageUrls: [
-        'assets/images/song1.webp',
-        'assets/images/song2.webp',
-        'assets/images/song3.webp',
-      ],
+      titles: _songTitles,
+      author: 'IApp Player',  // 使用应用名称作为通知栏作者信息
+      imageUrls: _songImageUrls,
       subtitleContents: subtitleContents.isNotEmpty ? subtitleContents : null,
       audioOnly: true,
       enableFullscreen: true,
@@ -160,8 +182,14 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final totalSongs = _playlistController?.dataSourceList.length ?? 0;
-    final titles = ['月亮代表我的心', 'Are You That Somebody', 'My Love Is Your Love'];
-    final artists = ['邓丽君', 'Aaliyah', 'Whitney Houston'];
+    
+    // 使用静态常量获取当前歌曲信息
+    final currentTitle = _currentIndex < _songTitles.length 
+        ? _songTitles[_currentIndex] 
+        : '';
+    final currentArtist = _currentIndex < _artistNames.length 
+        ? _artistNames[_currentIndex] 
+        : '';
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -236,7 +264,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                           children: [
                             // 显示当前歌曲标题
                             Text(
-                              _currentIndex < titles.length ? titles[_currentIndex] : '',
+                              currentTitle,
                               style: TextStyle(
                                 fontSize: UIConstants.fontXXL,
                                 fontWeight: FontWeight.bold,
@@ -246,7 +274,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                             SizedBox(height: UIConstants.spaceXS),
                             // 显示艺术家信息
                             Text(
-                              _currentIndex < artists.length ? artists[_currentIndex] : '',
+                              currentArtist,
                               style: TextStyle(
                                 fontSize: UIConstants.fontLG,
                                 color: Colors.white.withOpacity(0.6),
