@@ -28,6 +28,7 @@
 | 📖 **Detailed Documentation** | [📚 API Reference](docs/API_REFERENCE.md) | Complete API parameter documentation |
 | 🎯 **Common Examples** | [📚 Code Examples](docs/API_CODE.md) | Common usage examples documentation |
 | 🖼️ **Screenshots** | [📸 Screenshot Gallery](docs/APP_SCREENSHOTS.md) | Player UI screenshots |
+| 🌐 **Online Docs** | [🔗 Web Documentation](https://iappplayer.itvapp.net) | Online documentation and interactive demos |
 
 ## ✨ Core Features
 
