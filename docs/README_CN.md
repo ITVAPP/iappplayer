@@ -28,6 +28,7 @@
 | 📖 **详细文档** | [📚 参数说明](./API_REFERENCE_CN.md) | 完整API参数文档 |
 | 🎯 **常用示例** | [📚 常用示例](./API_CODE_CN.md) | 常用示例说明文档 |
 | 🖼️ **应用截图** | [📸 截图展示](./APP_SCREENSHOTS_CN.md) | 播放器实际效果展示 |
+| 🌐 **在线文档** | [🔗 网页文档](https://iappplayer.itvapp.net) | 在线文档和互动演示 |
 
 ## ✨ 核心功能特性
 
