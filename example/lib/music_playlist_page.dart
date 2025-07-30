@@ -266,7 +266,7 @@ class _MusicPlaylistExampleState extends State<MusicPlaylistExample>
                             Text(
                               currentTitle,
                               style: TextStyle(
-                                fontSize: UIConstants.fontXXL,
+                                fontSize: UIConstants.fontXL,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
