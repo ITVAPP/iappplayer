@@ -1013,26 +1013,11 @@ class _IAppPlayerAudioControlsState extends IAppPlayerControlsState<IAppPlayerAu
   // 构建紧凑模式歌曲信息区域
   Widget _buildCompactSongInfoArea() {
     final title = _getCurrentTitle();
-    final singer = _getCurrentSinger();
     
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (singer != null) ...[
-          Text(
-            singer,
-            style: TextStyle(
-              fontSize: 12,
-              color: _controlsConfiguration.textColor.withOpacity(0.7),
-              fontWeight: FontWeight.normal,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          _compactSongInfoSpacer,
-        ],
         Text(
           title,
           style: TextStyle(
