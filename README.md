@@ -1,5 +1,9 @@
 # IAppPlayer
 
+<p align="center">
+  <img src="https://www.itvapp.net/images/logo-1.png" alt="IAppPlayer Logo" width="120"/>
+</p>
+
 [![Back to Home](https://img.shields.io/badge/🏠-TV%20Treasure%20App%20Store-blue?style=for-the-badge)](https://www.itvapp.net)
 [![中文](https://img.shields.io/badge/📄-中文-green?style=for-the-badge)](docs/README_CN.md)
 [![GitHub Issues](https://img.shields.io/github/issues/ITVAPP/IAppPlayer?style=for-the-badge)](https://github.com/ITVAPP/IAppPlayer/issues)
