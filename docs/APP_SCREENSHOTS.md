@@ -1,7 +1,7 @@
 # IAppPlayer App Screenshots
 
 [![Back to Home](https://img.shields.io/badge/🏠-TV_Treasure_App_Store-blue?style=for-the-badge)](https://www.itvapp.net)
-[![Back to Docs](https://img.shields.io/badge/📄-Back_to_Docs-green?style=for-the-badge)](./README.md)
+[![Back to Docs](https://img.shields.io/badge/📄-Back_to_Docs-green?style=for-the-badge)](/README.md)
 [![中文](https://img.shields.io/badge/🌐-中文-blue?style=for-the-badge)](./APP_SCREENSHOTS_CN.md)
 
 > 🎬 Showcasing IAppPlayer's actual application effects in different scenarios
