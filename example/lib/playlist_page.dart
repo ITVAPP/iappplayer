@@ -14,6 +14,25 @@ class PlaylistExample extends StatefulWidget {
 
 class _PlaylistExampleState extends State<PlaylistExample> 
     with WidgetsBindingObserver, PlayerOrientationMixin {
+  // 播放列表数据常量定义
+  static const List<String> _videoUrls = [
+    'assets/videos/video1.mp4',
+    'assets/videos/video2.mp4',
+    'assets/videos/video3.mp4',
+  ];
+  
+  static const List<String> _videoTitles = [
+    'Big Buck Bunny',
+    'AI video',
+    'Sintel',
+  ];
+  
+  static const List<String> _videoImageUrls = [
+    'https://www.itvapp.net/images/logo-1.png',
+    'https://www.itvapp.net/images/logo-1.png',
+    'https://www.itvapp.net/images/logo-1.png',
+  ];
+  
   IAppPlayerController? _controller;
   IAppPlayerPlaylistController? _playlistController;
   bool _isLoading = true;
@@ -34,18 +53,11 @@ class _PlaylistExampleState extends State<PlaylistExample>
   Future<void> _initializePlayer() async {
     // 创建多视频播放列表实例
     final result = await IAppPlayerConfig.createPlayer(
-      urls: [
-        'assets/videos/video1.mp4',
-        'assets/videos/video2.mp4',
-        'assets/videos/video3.mp4',
-      ],
+      urls: _videoUrls,
       dataSourceType: IAppPlayerDataSourceType.file,
-      titles: ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'],
-      imageUrls: [
-        'https://www.itvapp.net/images/logo-1.png',
-        'https://www.itvapp.net/images/logo-1.png',
-        'https://www.itvapp.net/images/logo-1.png',
-      ],
+      titles: _videoTitles,
+      author: 'Video Player',  // 使用应用名称作为通知栏作者信息
+      imageUrls: _videoImageUrls,
       enableFullscreen: true,
       eventListener: (event) {
         // 监听播放器初始化完成事件
@@ -115,9 +127,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
 
   // 根据当前索引获取视频标题
   String _getCurrentVideoTitle(BuildContext context) {
-    final titles = ['Big Buck Bunny', 'AI video', 'Sintel'];
-    if (_currentIndex >= 0 && _currentIndex < titles.length) {
-      return titles[_currentIndex];
+    if (_currentIndex >= 0 && _currentIndex < _videoTitles.length) {
+      return _videoTitles[_currentIndex];
     }
     return AppLocalizations.of(context).videoNumber(_currentIndex + 1);
   }
@@ -453,9 +464,8 @@ class _PlaylistExampleState extends State<PlaylistExample>
               height: 260,
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(vertical: UIConstants.spaceXS),
-                itemCount: 3,
+                itemCount: _videoTitles.length,
                 itemBuilder: (context, index) {
-                  final titles = ['Superman (1941)', 'Betty Boop - Snow White', 'Felix the Cat'];
                   final isPlaying = index == _currentIndex;
                   
                   return ListTile(
@@ -464,7 +474,7 @@ class _PlaylistExampleState extends State<PlaylistExample>
                       color: isPlaying ? const Color(0xFF667eea) : Colors.white.withOpacity(0.6),
                     ),
                     title: Text(
-                      titles[index],
+                      _videoTitles[index],
                       style: TextStyle(
                         color: isPlaying ? const Color(0xFF667eea) : Colors.white,
                         fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal,
