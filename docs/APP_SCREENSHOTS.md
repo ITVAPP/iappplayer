@@ -88,7 +88,7 @@
 
 <div align="center">
 
-**[⬅️ Back to Main Documentation](./README.md)**
+**[⬅️ Back to Main Documentation](/README.md)**
 
 **IAppPlayer - Making Video Playback Simple Yet Powerful!**
 
