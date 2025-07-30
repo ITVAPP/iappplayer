@@ -27,6 +27,7 @@
 | 🚀 **Quick Start** | [👇 Content Below](#-quick-start) | Basic usage and simple examples |
 | 📖 **Detailed Documentation** | [📚 API Reference](docs/API_REFERENCE.md) | Complete API parameter documentation |
 | 🎯 **Common Examples** | [📚 Code Examples](docs/API_CODE.md) | Common usage examples documentation |
+| 🖼️ **Screenshots** | [📸 Screenshot Gallery](docs/APP_SCREENSHOTS.md) | Player UI screenshots |
 
 ## ✨ Core Features
 
@@ -306,6 +307,52 @@ However, due to major changes in Flutter versions, complete compatibility cannot
 > - 📝 **Documentation Improvements** - Help improve and enhance project documentation
 > 
 > 🌟 **All valuable contributions will be carefully reviewed. Let's build a better player together!**
+
+## ☕ Support the Developer
+
+### 💝 Buy Me a Coffee
+
+> 🎯 **IAppPlayer is a completely free and open-source project**  
+> 
+> We've invested significant time and effort in developing, maintaining, and improving this player, hoping it can help more developers. If IAppPlayer has saved you development time or contributed to your project's success, feel free to buy us a coffee! ☕
+
+<div align="center">
+
+### 🌟 Your support drives us forward!
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./media/donate-wechat.png" alt="WeChat Donation" width="260"/>
+      <br/>
+      <b>WeChat Pay</b>
+      <br/>
+      <sub>Scan with WeChat</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="./media/donate-alipay.png" alt="Alipay Donation" width="260"/>
+      <br/>
+      <b>Alipay</b>
+      <br/>
+      <sub>Scan with Alipay</sub>
+    </td>
+  </tr>
+</table>
+
+</div>
+
+### 💌 About Donations
+
+- 💰 **Any amount** - The price of a coffee can make a developer happy all day!
+- 🙏 **Non-mandatory** - IAppPlayer is forever free, donations are completely voluntary
+- 📢 **Acknowledgments** - If you wish, we'll thank you for your support in the project
+- 🚀 **Continuous updates** - Your support helps us:
+  - 🔧 Continuously fix bugs and optimize performance
+  - ✨ Develop more practical features
+  - 📚 Improve documentation and examples
+  - 💡 Explore more innovative features
+
+> 💭 **Developer's Note**: Every bit of support is recognition for open source. Thank you for making the open source world better!
 
 ## 📄 License
 
