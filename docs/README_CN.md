@@ -1,9 +1,5 @@
 # IAppPlayer
 
-<p align="center">
-  <img src="https://www.itvapp.net/images/logo-1.png" alt="IAppPlayer Logo" width="120"/>
-</p>
-
 [![返回首页](https://img.shields.io/badge/🏠-电视宝应用商店-blue?style=for-the-badge)](https://www.itvapp.net)
 [![English](https://img.shields.io/badge/📄-English-green?style=for-the-badge)](../README.md)
 [![GitHub Issues](https://img.shields.io/github/issues/ITVAPP/IAppPlayer?style=for-the-badge)](https://github.com/ITVAPP/IAppPlayer/issues)
@@ -277,9 +273,7 @@ void dispose() {
 - **画中画模式** - 系统级画中画支持
 - **通知集成** - 媒体通知和锁屏控制
 
-## 📚 更多文档资源
-
-> 💡 **如果本说明文档有不详尽的地方，请查看源代码中的详细注释** - 我们在代码中提供了丰富的注释说明，涵盖了各个API的用法、参数说明和使用示例。
+> 💡 **如果本说明文档有不详尽的地方，请查看源代码中的详细注释**
 
 ## 🚨 重要提示
 
