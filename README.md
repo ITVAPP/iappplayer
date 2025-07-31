@@ -1,9 +1,5 @@
 # IAppPlayer
 
-<p align="center">
-  <img src="https://www.itvapp.net/images/logo-1.png" alt="IAppPlayer Logo" width="120"/>
-</p>
-
 [![Back to Home](https://img.shields.io/badge/🏠-TV%20Treasure%20App%20Store-blue?style=for-the-badge)](https://www.itvapp.net)
 [![中文](https://img.shields.io/badge/📄-中文-green?style=for-the-badge)](docs/README_CN.md)
 [![GitHub Issues](https://img.shields.io/github/issues/ITVAPP/IAppPlayer?style=for-the-badge)](https://github.com/ITVAPP/IAppPlayer/issues)
@@ -277,9 +273,7 @@ void dispose() {
 - **Picture-in-Picture** - System-level PiP support
 - **Notification Integration** - Media notifications and lock screen controls
 
-## 📚 More Documentation Resources
-
-> 💡 **If this documentation is not comprehensive enough, please check the detailed comments in the source code** - We provide rich comments in the code, covering usage, parameter descriptions, and examples for each API.
+> 💡 **If this documentation is not comprehensive enough, please check the detailed comments in the source code**
 
 ## 🚨 Important Notice
 
@@ -294,20 +288,6 @@ Please submit related issues to the Flutter team.
 This library strives to support at least the second-to-last Flutter version (N-1 support).
 
 However, due to major changes in Flutter versions, complete compatibility cannot be fully guaranteed. Major or minor version updates will be released when necessary.
-
-## 🤝 Open Source Contribution
-
-> 💡 **This plugin is under active development, and community participation is welcome!**
-> 
-> 🔄 **Version Update Notes** - As the project is in rapid iteration, you may encounter incompatible changes in each version. We will try to detail them in the changelog.
-> 
-> 💪 **How to Contribute** - This plugin is freely developed and maintained by [TV Treasure App Store (www.itvapp.net)]. We warmly welcome your participation through:
-> - 🐛 **Submit Bug Reports** - Report issues promptly through GitHub Issues
-> - ✨ **Feature Suggestions** - Propose your needs and improvement ideas  
-> - 🔧 **Code Contributions** - Submit Pull Requests directly to fix issues or add new features
-> - 📝 **Documentation Improvements** - Help improve and enhance project documentation
-> 
-> 🌟 **All valuable contributions will be carefully reviewed. Let's build a better player together!**
 
 ## ☕ Support the Developer
 
